@@ -56,6 +56,14 @@
         </div>
     </div>
 
+    <!-- Info Banner (Hidden after first connection) -->
+    <div id="infoBanner"
+        class="w-full max-w-md mb-4 bg-blue-900 bg-opacity-50 border border-blue-500 rounded-lg p-3 text-sm text-blue-200">
+        <i class="fas fa-info-circle mr-2"></i>
+        <span>Your Fossibot Bluetooth name may start with <strong>POWER</strong> or MAC address
+            <strong>DC:1E:</strong></span>
+    </div>
+
     <!-- Install Button (Hidden by default) -->
     <button id="installBtn"
         class="hidden w-full max-w-md bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-xl mb-4 shadow-lg flex items-center justify-center gap-2">
@@ -180,6 +188,7 @@
         // UI Elements
         const connectBtn = document.getElementById('connectBtn');
         const reconnectBtn = document.getElementById('reconnectBtn');
+        const infoBanner = document.getElementById('infoBanner');
         const statusText = document.getElementById('statusText');
         const statusDot = document.getElementById('statusDot');
         const controlsDiv = document.getElementById('controls');
@@ -201,6 +210,8 @@
                 controlsDiv.classList.remove('opacity-50', 'pointer-events-none');
                 connectBtn.classList.add('hidden');
                 reconnectBtn.classList.add('hidden');
+                // Hide info banner after first successful connection
+                infoBanner.classList.add('hidden');
             } else {
                 statusText.textContent = "Disconnected";
                 statusText.classList.remove('text-green-500');
