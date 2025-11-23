@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fossibot Control</title>
     <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="icon-512.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -47,7 +48,9 @@
     <!-- Header -->
     <div class="w-full max-w-md mb-8 flex justify-between items-center">
         <h1 class="text-2xl font-bold text-gray-100">Fossibot F2400</h1>
-        <div id="connectionStatus" class="text-sm text-gray-400 flex items-center">
+        <div id="connectionStatus" onclick="disconnect()"
+            class="text-sm text-gray-400 flex items-center cursor-pointer hover:text-white transition-colors"
+            title="Click to Disconnect">
             <span class="status-dot status-disconnected" id="statusDot"></span>
             <span id="statusText">Disconnected</span>
         </div>
@@ -65,10 +68,15 @@
         <i class="fab fa-bluetooth-b"></i> Connect to Device
     </button>
 
+    <!-- Reconnect Button (Hidden by default) -->
+    <button id="reconnectBtn"
+        class="hidden w-full max-w-md bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-6 rounded-xl mb-8 shadow-lg btn-control flex items-center justify-center gap-2">
+        <i class="fas fa-sync-alt"></i> Reconnect
+    </button>
+
     <!-- Controls Grid -->
     <div id="controls"
         class="w-full max-w-md grid grid-cols-2 gap-4 opacity-50 pointer-events-none transition-opacity duration-300">
-
         <!-- USB -->
         <div class="bg-gray-800 p-4 rounded-xl flex flex-col items-center gap-3 shadow-md">
             <i class="fas fa-usb text-3xl text-blue-400"></i>
@@ -80,7 +88,6 @@
                     class="flex-1 bg-gray-700 hover:bg-red-600 py-2 rounded-lg btn-control">OFF</button>
             </div>
         </div>
-
         <!-- AC -->
         <div class="bg-gray-800 p-4 rounded-xl flex flex-col items-center gap-3 shadow-md">
             <i class="fas fa-plug text-3xl text-yellow-400"></i>
@@ -92,7 +99,6 @@
                     class="flex-1 bg-gray-700 hover:bg-red-600 py-2 rounded-lg btn-control">OFF</button>
             </div>
         </div>
-
         <!-- DC -->
         <div class="bg-gray-800 p-4 rounded-xl flex flex-col items-center gap-3 shadow-md">
             <i class="fas fa-car-battery text-3xl text-orange-400"></i>
@@ -104,7 +110,6 @@
                     class="flex-1 bg-gray-700 hover:bg-red-600 py-2 rounded-lg btn-control">OFF</button>
             </div>
         </div>
-
         <!-- Light -->
         <div class="bg-gray-800 p-4 rounded-xl flex flex-col items-center gap-3 shadow-md">
             <i class="fas fa-lightbulb text-3xl text-white"></i>
@@ -116,7 +121,6 @@
                     class="flex-1 bg-gray-700 hover:bg-red-600 py-2 rounded-lg btn-control">OFF</button>
             </div>
         </div>
-
     </div>
 
     <!-- Log -->
@@ -175,6 +179,7 @@
 
         // UI Elements
         const connectBtn = document.getElementById('connectBtn');
+        const reconnectBtn = document.getElementById('reconnectBtn');
         const statusText = document.getElementById('statusText');
         const statusDot = document.getElementById('statusDot');
         const controlsDiv = document.getElementById('controls');
@@ -189,19 +194,27 @@
 
         function updateStatus(connected) {
             if (connected) {
-                statusText.textContent = "Connected";
+                statusText.textContent = "Connected (Click to Disconnect)";
                 statusText.classList.add('text-green-500');
                 statusDot.classList.remove('status-disconnected');
                 statusDot.classList.add('status-connected');
                 controlsDiv.classList.remove('opacity-50', 'pointer-events-none');
                 connectBtn.classList.add('hidden');
+                reconnectBtn.classList.add('hidden');
             } else {
                 statusText.textContent = "Disconnected";
                 statusText.classList.remove('text-green-500');
                 statusDot.classList.add('status-disconnected');
                 statusDot.classList.remove('status-connected');
                 controlsDiv.classList.add('opacity-50', 'pointer-events-none');
-                connectBtn.classList.remove('hidden');
+
+                if (device) {
+                    connectBtn.classList.add('hidden');
+                    reconnectBtn.classList.remove('hidden');
+                } else {
+                    connectBtn.classList.remove('hidden');
+                    reconnectBtn.classList.add('hidden');
+                }
             }
         }
 
@@ -222,7 +235,6 @@
         }
 
         function generateCommandBytes(address, feature, value) {
-            // Payload: [Address, 0x06, FeatureHi, FeatureLo, ValueHi, ValueLo]
             const feat_low = feature & 0xff;
             const feat_high = (feature >> 8) & 0xff;
             const val_low = value & 0xff;
@@ -233,19 +245,25 @@
             const cs_low = checksum & 0xff;
             const cs_high = (checksum >> 8) & 0xff;
 
-            // Append Checksum (High, Low based on Python script success)
             return new Uint8Array([...payload, cs_high, cs_low]);
         }
 
-        async function connect() {
+        async function connect(isReconnect = false) {
             try {
-                log("Requesting Bluetooth Device...");
-                device = await navigator.bluetooth.requestDevice({
-                    filters: [{ namePrefix: 'POWER' }, { namePrefix: 'Fossibot' }, { namePrefix: 'BrightEMS' }],
-                    optionalServices: [SERVICE_UUID]
-                });
+                if (!isReconnect) {
+                    log("Requesting Bluetooth Device...");
+                    device = await navigator.bluetooth.requestDevice({
+                        acceptAllDevices: true,
+                        optionalServices: [SERVICE_UUID]
+                    });
 
-                device.addEventListener('gattserverdisconnected', onDisconnected);
+                    device.addEventListener('gattserverdisconnected', onDisconnected);
+                }
+
+                if (!device) {
+                    log("No device selected.");
+                    return;
+                }
 
                 log("Connecting to GATT Server...");
                 server = await device.gatt.connect();
@@ -261,6 +279,14 @@
 
             } catch (error) {
                 log("Connection failed: " + error);
+                updateStatus(false);
+            }
+        }
+
+        function disconnect() {
+            if (device && device.gatt.connected) {
+                log("Disconnecting...");
+                device.gatt.disconnect();
             }
         }
 
@@ -287,7 +313,8 @@
             }
         }
 
-        connectBtn.addEventListener('click', connect);
+        connectBtn.addEventListener('click', () => connect(false));
+        reconnectBtn.addEventListener('click', () => connect(true));
 
     </script>
 </body>
