@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fossibot Control</title>
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: manipulation;
+        }
+
+        .btn-control {
+            transition: all 0.2s;
+        }
+
+        .btn-control:active {
+            transform: scale(0.95);
+        }
+
+        .status-dot {
+            height: 10px;
+            width: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+
+        .status-disconnected {
+            background-color: #ef4444;
+        }
+
+        .status-connected {
+            background-color: #22c55e;
+        }
+    </style>
+</head>
+
+<body class="flex flex-col items-center min-h-screen p-4">
+
+    <!-- Header -->
+    <div class="w-full max-w-md mb-8 flex justify-between items-center">
+        <h1 class="text-2xl font-bold text-gray-100">Fossibot F2400</h1>
+        <div id="connectionStatus" class="text-sm text-gray-400 flex items-center">
+            <span class="status-dot status-disconnected" id="statusDot"></span>
+            <span id="statusText">Disconnected</span>
+        </div>
+    </div>
+
+    <!-- Install Button (Hidden by default) -->
+    <button id="installBtn"
+        class="hidden w-full max-w-md bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-xl mb-4 shadow-lg flex items-center justify-center gap-2">
+        <i class="fas fa-download"></i> Install App
+    </button>
+
+    <!-- Connect Button -->
+    <button id="connectBtn"
+        class="w-full max-w-md bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl mb-8 shadow-lg btn-control flex items-center justify-center gap-2">
+        <i class="fab fa-bluetooth-b"></i> Connect to Device
+    </button>
+
+    <!-- Controls Grid -->
+    <div id="controls"
+        class="w-full max-w-md grid grid-cols-2 gap-4 opacity-50 pointer-events-none transition-opacity duration-300">
+
+        <!-- USB -->
+        <div class="bg-gray-800 p-4 rounded-xl flex flex-col items-center gap-3 shadow-md">
+            <i class="fas fa-usb text-3xl text-blue-400"></i>
+            <span class="font-semibold">USB</span>
+            <div class="flex gap-2 w-full">
+                <button onclick="sendCommand('usb_on')"
+                    class="flex-1 bg-gray-700 hover:bg-green-600 py-2 rounded-lg btn-control">ON</button>
+                <button onclick="sendCommand('usb_off')"
+                    class="flex-1 bg-gray-700 hover:bg-red-600 py-2 rounded-lg btn-control">OFF</button>
+            </div>
+        </div>
+
+        <!-- AC -->
+        <div class="bg-gray-800 p-4 rounded-xl flex flex-col items-center gap-3 shadow-md">
+            <i class="fas fa-plug text-3xl text-yellow-400"></i>
+            <span class="font-semibold">AC Output</span>
+            <div class="flex gap-2 w-full">
+                <button onclick="sendCommand('ac_on')"
+                    class="flex-1 bg-gray-700 hover:bg-green-600 py-2 rounded-lg btn-control">ON</button>
+                <button onclick="sendCommand('ac_off')"
+                    class="flex-1 bg-gray-700 hover:bg-red-600 py-2 rounded-lg btn-control">OFF</button>
+            </div>
+        </div>
+
+        <!-- DC -->
+        <div class="bg-gray-800 p-4 rounded-xl flex flex-col items-center gap-3 shadow-md">
+            <i class="fas fa-car-battery text-3xl text-orange-400"></i>
+            <span class="font-semibold">DC Output</span>
+            <div class="flex gap-2 w-full">
+                <button onclick="sendCommand('dc_on')"
+                    class="flex-1 bg-gray-700 hover:bg-green-600 py-2 rounded-lg btn-control">ON</button>
+                <button onclick="sendCommand('dc_off')"
+                    class="flex-1 bg-gray-700 hover:bg-red-600 py-2 rounded-lg btn-control">OFF</button>
+            </div>
+        </div>
+
+        <!-- Light -->
+        <div class="bg-gray-800 p-4 rounded-xl flex flex-col items-center gap-3 shadow-md">
+            <i class="fas fa-lightbulb text-3xl text-white"></i>
+            <span class="font-semibold">Light</span>
+            <div class="flex gap-2 w-full">
+                <button onclick="sendCommand('light_on')"
+                    class="flex-1 bg-gray-700 hover:bg-green-600 py-2 rounded-lg btn-control">ON</button>
+                <button onclick="sendCommand('light_off')"
+                    class="flex-1 bg-gray-700 hover:bg-red-600 py-2 rounded-lg btn-control">OFF</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Log -->
+    <div class="w-full max-w-md mt-8">
+        <h3 class="text-xs font-bold text-gray-500 uppercase mb-2">Activity Log</h3>
+        <div id="log"
+            class="bg-gray-900 text-green-400 font-mono text-xs p-3 rounded-lg h-32 overflow-y-auto border border-gray-800">
+        </div>
+    </div>
+
+    <script>
+        // PWA Install Logic
+        let deferredPrompt;
+        const installBtn = document.getElementById('installBtn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.classList.remove('hidden');
+        });
+
+        installBtn.addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User response to the install prompt: ${outcome}`);
+            deferredPrompt = null;
+            installBtn.classList.add('hidden');
+        });
+
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./service-worker.js')
+                .then(() => console.log('Service Worker Registered'));
+        }
+
+        // Configuration
+        const SERVICE_UUID = '0000a002-0000-1000-8000-00805f9b34fb';
+        const CHAR_UUID = '0000c304-0000-1000-8000-00805f9b34fb';
+
+        // State
+        let device, server, service, characteristic;
+
+        // Constants
+        const REGISTER_MODBUS_ADDRESS = 17;
+        const COMMANDS = {
+            "usb_on": [REGISTER_MODBUS_ADDRESS, 24, 1],
+            "usb_off": [REGISTER_MODBUS_ADDRESS, 24, 0],
+            "dc_on": [REGISTER_MODBUS_ADDRESS, 25, 1],
+            "dc_off": [REGISTER_MODBUS_ADDRESS, 25, 0],
+            "ac_on": [REGISTER_MODBUS_ADDRESS, 26, 1],
+            "ac_off": [REGISTER_MODBUS_ADDRESS, 26, 0],
+            "light_on": [REGISTER_MODBUS_ADDRESS, 27, 1],
+            "light_off": [REGISTER_MODBUS_ADDRESS, 27, 0],
+        };
+
+        // UI Elements
+        const connectBtn = document.getElementById('connectBtn');
+        const statusText = document.getElementById('statusText');
+        const statusDot = document.getElementById('statusDot');
+        const controlsDiv = document.getElementById('controls');
+        const logDiv = document.getElementById('log');
+
+        function log(msg) {
+            const line = document.createElement('div');
+            line.textContent = `> ${msg}`;
+            logDiv.appendChild(line);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function updateStatus(connected) {
+            if (connected) {
+                statusText.textContent = "Connected";
+                statusText.classList.add('text-green-500');
+                statusDot.classList.remove('status-disconnected');
+                statusDot.classList.add('status-connected');
+                controlsDiv.classList.remove('opacity-50', 'pointer-events-none');
+                connectBtn.classList.add('hidden');
+            } else {
+                statusText.textContent = "Disconnected";
+                statusText.classList.remove('text-green-500');
+                statusDot.classList.add('status-disconnected');
+                statusDot.classList.remove('status-connected');
+                controlsDiv.classList.add('opacity-50', 'pointer-events-none');
+                connectBtn.classList.remove('hidden');
+            }
+        }
+
+        // Checksum Algorithm (ta)
+        function calculateChecksum(arr) {
+            let t = 0xffff;
+            for (let byte of arr) {
+                t ^= byte;
+                for (let i = 0; i < 8; i++) {
+                    if (t & 1) {
+                        t = (t >> 1) ^ 40961;
+                    } else {
+                        t >>= 1;
+                    }
+                }
+            }
+            return t & 0xffff;
+        }
+
+        function generateCommandBytes(address, feature, value) {
+            // Payload: [Address, 0x06, FeatureHi, FeatureLo, ValueHi, ValueLo]
+            const feat_low = feature & 0xff;
+            const feat_high = (feature >> 8) & 0xff;
+            const val_low = value & 0xff;
+            const val_high = (value >> 8) & 0xff;
+
+            const payload = [address, 6, feat_high, feat_low, val_high, val_low];
+            const checksum = calculateChecksum(payload);
+            const cs_low = checksum & 0xff;
+            const cs_high = (checksum >> 8) & 0xff;
+
+            // Append Checksum (High, Low based on Python script success)
+            return new Uint8Array([...payload, cs_high, cs_low]);
+        }
+
+        async function connect() {
+            try {
+                log("Requesting Bluetooth Device...");
+                device = await navigator.bluetooth.requestDevice({
+                    filters: [{ namePrefix: 'POWER' }, { namePrefix: 'Fossibot' }, { namePrefix: 'BrightEMS' }],
+                    optionalServices: [SERVICE_UUID]
+                });
+
+                device.addEventListener('gattserverdisconnected', onDisconnected);
+
+                log("Connecting to GATT Server...");
+                server = await device.gatt.connect();
+
+                log("Getting Service...");
+                service = await server.getPrimaryService(SERVICE_UUID);
+
+                log("Getting Characteristic...");
+                characteristic = await service.getCharacteristic(CHAR_UUID);
+
+                log("Connected!");
+                updateStatus(true);
+
+            } catch (error) {
+                log("Connection failed: " + error);
+            }
+        }
+
+        function onDisconnected(event) {
+            log("Device disconnected");
+            updateStatus(false);
+        }
+
+        async function sendCommand(cmdName) {
+            if (!characteristic) {
+                log("Not connected!");
+                return;
+            }
+
+            const [addr, reg, val] = COMMANDS[cmdName];
+            const data = generateCommandBytes(addr, reg, val);
+
+            try {
+                log(`Sending ${cmdName}...`);
+                await characteristic.writeValue(data);
+                log("Command sent successfully");
+            } catch (error) {
+                log("Send failed: " + error);
+            }
+        }
+
+        connectBtn.addEventListener('click', connect);
+
+    </script>
+</body>
+
+</html>
