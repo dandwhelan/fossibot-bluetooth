@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fossibot-v1';
+const CACHE_NAME = 'fossibot-v2';
 const ASSETS = [
     './',
     './index.html',
