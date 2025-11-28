@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fossibot Control</title>
+    <link rel="manifest" href="manifest.json">
     <style>
         :root {
             --bg-body: #1a1a1a;
@@ -207,61 +208,78 @@
             transition: stroke-dasharray 1s ease-out, color 1s;
         }
 
-        .controls-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
+        /* New UI Styles */
+        .control-row {
+            display: flex;
             gap: 1rem;
+            width: 100%;
             margin-bottom: 2rem;
             transition: opacity 0.3s;
         }
 
-        .control-card {
+        .control-tile {
+            flex: 1;
             background-color: var(--bg-card);
-            padding: 1rem;
-            border-radius: 0.75rem;
+            border-radius: 1rem;
+            padding: 1.5rem;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 0.75rem;
+            justify-content: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+            color: var(--text-muted);
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
-        .control-icon {
-            width: 2rem;
-            height: 2rem;
+        .control-tile:active {
+            transform: scale(0.98);
         }
 
-        .control-title {
-            font-weight: 600;
-        }
-
-        .toggle-group {
-            display: flex;
-            gap: 0.5rem;
-            width: 100%;
-        }
-
-        .btn-toggle {
-            flex: 1;
-            padding: 0.5rem;
-            border-radius: 0.5rem;
-            border: none;
-            cursor: pointer;
-            font-weight: 600;
-            transition: background-color 0.2s;
-            color: white;
-        }
-
-        .btn-toggle.on {
+        .control-tile.active {
             background-color: var(--btn-green);
+            color: white;
+            box-shadow: 0 0 15px rgba(74, 222, 128, 0.3);
         }
 
-        .btn-toggle.off {
-            background-color: var(--btn-red);
+        .control-tile svg {
+            width: 2.5rem;
+            height: 2.5rem;
+            margin-bottom: 0.25rem;
         }
 
-        .btn-toggle.neutral {
-            background-color: var(--btn-neutral);
+        .control-tile span {
+            font-weight: 700;
+            font-size: 0.875rem;
+        }
+
+        .header-light-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header-light-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .header-light-btn.active {
+            color: #facc15;
+            filter: drop-shadow(0 0 8px rgba(250, 204, 21, 0.5));
+        }
+
+        .header-light-btn svg {
+            width: 1.75rem;
+            height: 1.75rem;
         }
 
         .log-container {
@@ -298,10 +316,29 @@
 
 <body>
     <div class="container header">
-        <h1 class="title">Fossibot F2400</h1>
-        <div id="connectionStatus" class="status">
-            <span class="status-dot status-disconnected" id="statusDot"></span>
-            <span id="statusText">Disconnected</span>
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <button id="btn-light" class="header-light-btn" onclick="toggle('light')" title="Toggle Light">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M9 18h6"></path>
+                    <path d="M10 22h4"></path>
+                    <path d="M12 2v1"></path>
+                    <path d="M12 7v5"></path>
+                    <path d="M12 15v.01"></path>
+                    <path d="M17 16a5 5 0 0 0 0-10 5 5 0 0 0 0 10zm-10 0a5 5 0 0 0 0-10 5 5 0 0 0 0 10z"></path>
+                </svg>
+            </button>
+            <h1 class="title">Fossibot F2400</h1>
+        </div>
+        <div style="display: flex; gap: 1rem; align-items: center;">
+            <button id="installBtn" class="btn-main hidden"
+                style="padding: 0.5rem 1rem; font-size: 0.875rem; background-color: var(--btn-green);">
+                Install App
+            </button>
+            <div id="connectionStatus" class="status">
+                <span class="status-dot status-disconnected" id="statusDot"></span>
+                <span id="statusText">Disconnected</span>
+            </div>
         </div>
     </div>
 
@@ -330,9 +367,9 @@
                 <div class="dash-label">Input</div>
                 <div class="dash-val text-green"><span id="inputWatts">--</span> <span
                         style="font-size:0.875rem; color:#6b7280;">W</span></div>
-                <div class="dash-sub">Sys: <span id="sysWatts">--</span>W</div>
             </div>
             <div class="dash-col">
+                <div class="dash-sub" style="margin-bottom: 0.5rem;">Sys: <span id="sysWatts">--</span>W</div>
                 <div class="battery-ring-container">
                     <svg width="100%" height="100%" viewBox="0 0 36 36" style="transform: rotate(-90deg);">
                         <path class="ring-bg"
@@ -359,61 +396,30 @@
         </div>
     </div>
 
-    <div id="controls" class="container controls-grid disabled">
+    <div id="controls" class="container control-row disabled">
         <!-- USB -->
-        <div class="control-card">
-            <svg class="control-icon text-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <div id="btn-usb" class="control-tile" onclick="toggle('usb')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
                 <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
             </svg>
-            <span class="control-title">USB</span>
-            <div class="toggle-group">
-                <button id="btn-usb-on" onclick="sendCommand('usb_on')" class="btn-toggle neutral">ON</button>
-                <button id="btn-usb-off" onclick="sendCommand('usb_off')" class="btn-toggle neutral">OFF</button>
-            </div>
+            <span>USB</span>
         </div>
         <!-- AC -->
-        <div class="control-card">
-            <svg class="control-icon" style="color:#facc15;" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="2">
+        <div id="btn-ac" class="control-tile" onclick="toggle('ac')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 2v20M2 12h20"></path>
             </svg>
-            <span class="control-title">AC Output</span>
-            <div class="toggle-group">
-                <button id="btn-ac-on" onclick="sendCommand('ac_on')" class="btn-toggle neutral">ON</button>
-                <button id="btn-ac-off" onclick="sendCommand('ac_off')" class="btn-toggle neutral">OFF</button>
-            </div>
+            <span>AC</span>
         </div>
         <!-- DC -->
-        <div class="control-card">
-            <svg class="control-icon" style="color:#fb923c;" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="2">
+        <div id="btn-dc" class="control-tile" onclick="toggle('dc')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="2" y="6" width="20" height="12" rx="2" ry="2"></rect>
                 <line x1="6" y1="12" x2="6" y2="12"></line>
                 <line x1="18" y1="12" x2="18" y2="12"></line>
             </svg>
-            <span class="control-title">DC Output</span>
-            <div class="toggle-group">
-                <button id="btn-dc-on" onclick="sendCommand('dc_on')" class="btn-toggle neutral">ON</button>
-                <button id="btn-dc-off" onclick="sendCommand('dc_off')" class="btn-toggle neutral">OFF</button>
-            </div>
-        </div>
-        <!-- Light -->
-        <div class="control-card">
-            <svg class="control-icon" style="color:white;" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="2">
-                <path d="M9 18h6"></path>
-                <path d="M10 22h4"></path>
-                <path d="M12 2v1"></path>
-                <path d="M12 7v5"></path>
-                <path d="M12 15v.01"></path>
-                <path d="M17 16a5 5 0 0 0 0-10 5 5 0 0 0 0 10zm-10 0a5 5 0 0 0 0-10 5 5 0 0 0 0 10z"></path>
-            </svg>
-            <span class="control-title">Light</span>
-            <div class="toggle-group">
-                <button id="btn-light-on" onclick="sendCommand('light_on')" class="btn-toggle neutral">ON</button>
-                <button id="btn-light-off" onclick="sendCommand('light_off')" class="btn-toggle neutral">OFF</button>
-            </div>
+            <span>DC</span>
         </div>
     </div>
 
@@ -430,7 +436,12 @@
         let device, server, service, writeChar, notifyChar, pollInterval;
 
         const COMMANDS = { usb_on: [17, 24, 1], usb_off: [17, 24, 0], dc_on: [17, 25, 1], dc_off: [17, 25, 0], ac_on: [17, 26, 1], ac_off: [17, 26, 0], light_on: [17, 27, 1], light_off: [17, 27, 0] };
-        const btns = { usb: { on: document.getElementById('btn-usb-on'), off: document.getElementById('btn-usb-off') }, ac: { on: document.getElementById('btn-ac-on'), off: document.getElementById('btn-ac-off') }, dc: { on: document.getElementById('btn-dc-on'), off: document.getElementById('btn-dc-off') }, light: { on: document.getElementById('btn-light-on'), off: document.getElementById('btn-light-off') } };
+        const btns = {
+            usb: document.getElementById('btn-usb'),
+            ac: document.getElementById('btn-ac'),
+            dc: document.getElementById('btn-dc'),
+            light: document.getElementById('btn-light')
+        };
         const connectBtn = document.getElementById('connectBtn');
         const disconnectBtn = document.getElementById('disconnectBtn');
 
@@ -576,14 +587,21 @@
             }
         }
 
-        function updateButtonState(btnGroup, isOn) {
+        function updateButtonState(btn, isOn) {
             if (isOn) {
-                btnGroup.on.classList.remove('neutral'); btnGroup.on.classList.add('on');
-                btnGroup.off.classList.remove('off'); btnGroup.off.classList.add('neutral');
+                btn.classList.add('active');
             } else {
-                btnGroup.on.classList.remove('on'); btnGroup.on.classList.add('neutral');
-                btnGroup.off.classList.remove('neutral'); btnGroup.off.classList.add('off');
+                btn.classList.remove('active');
             }
+        }
+
+        function toggle(type) {
+            const btn = btns[type];
+            if (!btn || btn.classList.contains('disabled')) return;
+
+            const isCurrentlyOn = btn.classList.contains('active');
+            const cmd = `${type}_${isCurrentlyOn ? 'off' : 'on'}`;
+            sendCommand(cmd);
         }
 
         async function sendCommand(cmdName) {
@@ -617,6 +635,37 @@
 
         connectBtn.addEventListener('click', connect);
         disconnectBtn.addEventListener('click', disconnect);
+
+        // PWA Install Logic
+        let deferredPrompt;
+        const installBtn = document.getElementById('installBtn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.classList.remove('hidden');
+        });
+
+        installBtn.addEventListener('click', async () => {
+            installBtn.classList.add('hidden');
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            deferredPrompt = null;
+        });
+
+        window.addEventListener('appinstalled', () => {
+            installBtn.classList.add('hidden');
+            deferredPrompt = null;
+        });
+
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then(reg => console.log('SW registered'))
+                    .catch(err => console.log('SW failed', err));
+            });
+        }
     </script>
 </body>
 

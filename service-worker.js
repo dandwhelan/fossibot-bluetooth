@@ -1,12 +1,9 @@
-const CACHE_NAME = 'fossibot-v2';
+const CACHE_NAME = 'fossibot-v3';
 const ASSETS = [
     './',
     './index.html',
     './manifest.json',
-    './icon-512.png',
-    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css',
-    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/webfonts/fa-solid-900.woff2',
-    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/webfonts/fa-brands-400.woff2'
+    './icon-512.png'
 ];
 
 self.addEventListener('install', (e) => {
