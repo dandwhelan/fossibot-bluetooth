@@ -50,7 +50,7 @@
         }
 
         .title {
-            font-size: 1.5rem;
+            font-size: 1.25rem;
             font-weight: 700;
             margin: 0;
         }
@@ -318,23 +318,15 @@
     <div class="container header">
         <div style="display: flex; align-items: center; gap: 0.75rem;">
             <button id="btn-light" class="header-light-btn" onclick="toggle('light')" title="Toggle Light">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round">
-                    <path d="M9 18h6"></path>
-                    <path d="M10 22h4"></path>
-                    <path d="M12 2v1"></path>
-                    <path d="M12 7v5"></path>
-                    <path d="M12 15v.01"></path>
-                    <path d="M17 16a5 5 0 0 0 0-10 5 5 0 0 0 0 10zm-10 0a5 5 0 0 0 0-10 5 5 0 0 0 0 10z"></path>
+                <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                    <path
+                        d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z">
+                    </path>
                 </svg>
             </button>
             <h1 class="title">Fossibot F2400</h1>
         </div>
         <div style="display: flex; gap: 1rem; align-items: center;">
-            <button id="installBtn" class="btn-main hidden"
-                style="padding: 0.5rem 1rem; font-size: 0.875rem; background-color: var(--btn-green);">
-                Install App
-            </button>
             <div id="connectionStatus" class="status">
                 <span class="status-dot status-disconnected" id="statusDot"></span>
                 <span id="statusText">Disconnected</span>
@@ -426,6 +418,12 @@
     <div class="container log-container">
         <h3 class="log-title">Activity Log</h3>
         <div id="log" class="log-box"></div>
+    </div>
+
+    <div class="container" style="margin-top: 1rem; text-align: center; padding-bottom: 2rem;">
+        <button id="installBtnBottom" class="btn-main" style="background-color: var(--btn-green); width: 100%;">
+            Install App
+        </button>
     </div>
 
     <script>
@@ -638,23 +636,33 @@
 
         // PWA Install Logic
         let deferredPrompt;
-        const installBtn = document.getElementById('installBtn');
+        const installBtnBottom = document.getElementById('installBtnBottom');
+
+        function showInstallPromotion() {
+            installBtnBottom.classList.remove('hidden');
+        }
+
+        function hideInstallPromotion() {
+            installBtnBottom.classList.add('hidden');
+        }
 
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            installBtn.classList.remove('hidden');
+            showInstallPromotion();
         });
 
-        installBtn.addEventListener('click', async () => {
-            installBtn.classList.add('hidden');
+        async function installApp() {
+            hideInstallPromotion();
             deferredPrompt.prompt();
             const { outcome } = await deferredPrompt.userChoice;
             deferredPrompt = null;
-        });
+        }
+
+        installBtnBottom.addEventListener('click', installApp);
 
         window.addEventListener('appinstalled', () => {
-            installBtn.classList.add('hidden');
+            hideInstallPromotion();
             deferredPrompt = null;
         });
 
