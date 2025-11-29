@@ -8,10 +8,10 @@
     <link rel="manifest" href="manifest.json">
     <style>
         :root {
-            --bg-body: #1a1a1a;
+            --bg-body: #111827;
             --bg-card: #1f2937;
-            --bg-log: #111827;
-            --text-main: #ffffff;
+            --bg-log: #000000;
+            --text-main: #f3f4f6;
             --text-muted: #9ca3af;
             --text-green: #4ade80;
             --text-blue: #60a5fa;
@@ -21,13 +21,131 @@
             --btn-red: #dc2626;
             --btn-red-hover: #b91c1c;
             --btn-green: #16a34a;
-            --btn-neutral: #374151;
+        }
+
+        /* Theme: Minimal */
+        [data-theme="minimal"] {
+            --bg-body: #f3f4f6;
+            --bg-card: #ffffff;
+            --bg-log: #1f2937;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --text-green: #059669;
+            --text-blue: #2563eb;
+            --text-red: #dc2626;
+            --btn-blue: #3b82f6;
+            --btn-blue-hover: #2563eb;
+            --btn-red: #ef4444;
+            --btn-red-hover: #dc2626;
+            --btn-green: #10b981;
+        }
+
+        /* Theme: Industrial */
+        [data-theme="industrial"] {
+            --bg-body: #292524;
+            --bg-card: #44403c;
+            --bg-log: #0c0a09;
+            --text-main: #e7e5e4;
+            --text-muted: #a8a29e;
+            --text-green: #facc15;
+            --text-blue: #38bdf8;
+            --text-red: #f87171;
+            --btn-blue: #0ea5e9;
+            --btn-blue-hover: #0284c7;
+            --btn-red: #ef4444;
+            --btn-red-hover: #dc2626;
+            --btn-green: #ca8a04;
+        }
+
+        /* Theme: Rainbow */
+        [data-theme="rainbow"] {
+            --bg-body: #2d0036;
+            --bg-card: #4a0e5c;
+            --bg-log: #1a0524;
+            --text-main: #ffffff;
+            --text-muted: #e0b0ff;
+            --text-green: #00ff00;
+            --text-blue: #00ffff;
+            --text-red: #ff0000;
+            --btn-blue: #9400d3;
+            --btn-blue-hover: #4b0082;
+            --btn-red: #ff0000;
+            --btn-red-hover: #8b0000;
+            --btn-green: #00ff00;
+        }
+
+        /* Theme: Psychedelic */
+        [data-theme="psychedelic"] {
+            --bg-body: #ff00ff;
+            --bg-card: #00ffff;
+            --bg-log: #ffff00;
+            --text-main: #000000;
+            --text-muted: #333333;
+            --text-green: #008000;
+            --text-blue: #0000ff;
+            --text-red: #ff0000;
+            --btn-blue: #ff0000;
+            --btn-blue-hover: #cc0000;
+            --btn-red: #00ff00;
+            --btn-red-hover: #00cc00;
+            --btn-green: #0000ff;
+        }
+
+        /* Theme: Retro */
+        [data-theme="retro"] {
+            --bg-body: #dcbfa6;
+            --bg-card: #cfb997;
+            --bg-log: #3b3228;
+            --text-main: #3b3228;
+            --text-muted: #5c5346;
+            --text-green: #556b2f;
+            --text-blue: #4682b4;
+            --text-red: #8b4513;
+            --btn-blue: #4682b4;
+            --btn-blue-hover: #315a7d;
+            --btn-red: #cd5c5c;
+            --btn-red-hover: #8b3a3a;
+            --btn-green: #556b2f;
+        }
+
+        /* Theme: Ocean */
+        [data-theme="ocean"] {
+            --bg-body: #0f172a;
+            --bg-card: #1e293b;
+            --bg-log: #020617;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --text-green: #2dd4bf;
+            --text-blue: #38bdf8;
+            --text-red: #f43f5e;
+            --btn-blue: #0ea5e9;
+            --btn-blue-hover: #0284c7;
+            --btn-red: #e11d48;
+            --btn-red-hover: #be123c;
+            --btn-green: #0d9488;
+        }
+
+        /* Theme: High Contrast */
+        [data-theme="high-contrast"] {
+            --bg-body: #000000;
+            --bg-card: #000000;
+            --bg-log: #000000;
+            --text-main: #ffffff;
+            --text-muted: #ffffff;
+            --text-green: #ffff00;
+            --text-blue: #00ffff;
+            --text-red: #ff0000;
+            --btn-blue: #0000ff;
+            --btn-blue-hover: #00008b;
+            --btn-red: #ff0000;
+            --btn-red-hover: #8b0000;
+            --btn-green: #008000;
         }
 
         body {
             background-color: var(--bg-body);
             color: var(--text-main);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: system-ui, -apple-system, sans-serif;
             margin: 0;
             padding: 1rem;
             display: flex;
@@ -47,6 +165,8 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 2rem;
+            width: 100%;
+            max-width: 28rem;
         }
 
         .title {
@@ -76,6 +196,26 @@
 
         .status-connected {
             background-color: var(--text-green);
+        }
+
+        .header-icon-btn {
+            background: var(--bg-card);
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.75rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-icon-btn.active {
+            color: #facc15;
+            background-color: rgba(250, 204, 21, 0.1);
+            box-shadow: 0 0 10px rgba(250, 204, 21, 0.3);
         }
 
         .btn-group {
@@ -126,13 +266,6 @@
             display: none !important;
         }
 
-        .helper-text {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            margin-bottom: 2rem;
-            text-align: center;
-        }
-
         .dashboard {
             background-color: var(--bg-card);
             padding: 1.5rem;
@@ -146,11 +279,32 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            width: 100%;
+            gap: 0.5rem;
         }
 
         .dash-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .dash-col.left {
+            align-items: flex-start;
+            text-align: left;
+        }
+
+        .dash-col.center {
+            align-items: center;
             text-align: center;
-            width: 33%;
+            flex: 0 0 auto;
+            min-width: 6rem;
+        }
+
+        .dash-col.right {
+            align-items: flex-end;
+            text-align: right;
         }
 
         .dash-label {
@@ -192,8 +346,13 @@
 
         .battery-text {
             position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             font-size: 1.25rem;
             font-weight: 700;
+            margin: 0;
+            white-space: nowrap;
         }
 
         .battery-unit {
@@ -208,7 +367,6 @@
             transition: stroke-dasharray 1s ease-out, color 1s;
         }
 
-        /* New UI Styles */
         .control-row {
             display: flex;
             gap: 1rem;
@@ -255,44 +413,9 @@
             font-size: 0.875rem;
         }
 
-        .header-light-btn {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            cursor: pointer;
-            padding: 0.5rem;
-            border-radius: 50%;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .header-light-btn:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-
-        .header-light-btn.active {
-            color: #facc15;
-            filter: drop-shadow(0 0 8px rgba(250, 204, 21, 0.5));
-        }
-
-        .header-light-btn svg {
-            width: 1.75rem;
-            height: 1.75rem;
-        }
-
         .log-container {
             margin-top: 2rem;
             width: 100%;
-        }
-
-        .log-title {
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            margin-bottom: 0.5rem;
         }
 
         .log-box {
@@ -311,30 +434,125 @@
             opacity: 0.5;
             pointer-events: none;
         }
+
+        .footer {
+            margin-top: auto;
+            padding: 2rem 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* Minimal Theme Overrides */
+        [data-theme="minimal"] .control-tile,
+        [data-theme="minimal"] .header-icon-btn {
+            border: 1px solid #e5e7eb;
+            box-shadow: none;
+        }
+
+        [data-theme="minimal"] .control-tile.active,
+        [data-theme="minimal"] .header-icon-btn.active {
+            box-shadow: none;
+            border-color: var(--btn-green);
+            background-color: #ecfdf5;
+            color: var(--text-green);
+        }
+
+        [data-theme="minimal"] .dashboard {
+            border: 1px solid #e5e7eb;
+            box-shadow: none;
+        }
+
+        /* Industrial Theme Overrides */
+        [data-theme="industrial"] .control-tile,
+        [data-theme="industrial"] .header-icon-btn {
+            background: linear-gradient(145deg, #494541, #3d3a36);
+            box-shadow: 5px 5px 10px #22201e, -5px -5px 10px #66605a;
+            border: 1px solid #57534e;
+        }
+
+        [data-theme="industrial"] .control-tile:active,
+        [data-theme="industrial"] .header-icon-btn:active {
+            background: #44403c;
+            box-shadow: inset 5px 5px 10px #22201e, inset -5px -5px 10px #66605a;
+        }
+
+        [data-theme="industrial"] .control-tile.active,
+        [data-theme="industrial"] .header-icon-btn.active {
+            background: linear-gradient(145deg, #eab308, #ca8a04);
+            color: #000;
+            box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.3);
+            border: 1px solid #a16207;
+        }
+
+        [data-theme="industrial"] .dashboard {
+            background: repeating-linear-gradient(45deg,
+                    #44403c,
+                    #44403c 10px,
+                    #3f3c38 10px,
+                    #3f3c38 20px);
+            border: 2px solid #78716c;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        [data-theme="industrial"] .dash-val {
+            font-family: 'Courier New', Courier, monospace;
+            text-shadow: 0 0 5px currentColor;
+        }
+
+        /* Rainbow Theme Overrides */
+        [data-theme="rainbow"] .dashboard {
+            background: linear-gradient(45deg, #4a0e5c, #2d0036);
+            border: 2px solid #e0b0ff;
+        }
+
+        /* Psychedelic Theme Overrides */
+        [data-theme="psychedelic"] .dashboard,
+        [data-theme="psychedelic"] .control-tile {
+            border: 3px solid #ff00ff;
+            box-shadow: 5px 5px 0px #ffff00;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+        }
+
+        /* High Contrast Theme Overrides */
+        [data-theme="high-contrast"] .control-tile,
+        [data-theme="high-contrast"] .dashboard {
+            border: 2px solid #ffffff;
+        }
+
+        [data-theme="high-contrast"] .btn-main {
+            border: 2px solid #ffffff;
+        }
     </style>
 </head>
 
 <body>
-    <div class="container header">
-        <div style="display: flex; align-items: center; gap: 0.75rem;">
-            <button id="btn-light" class="header-light-btn" onclick="toggle('light')" title="Toggle Light">
-                <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
-                    <path
-                        d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z">
-                    </path>
-                </svg>
-            </button>
+    <div class="header">
+        <!-- Light Button (Top Left) -->
+        <button id="btn-light" class="header-icon-btn" onclick="toggle('light')">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+        </button>
+
+        <div style="text-align: right;">
             <h1 class="title">Fossibot F2400</h1>
-        </div>
-        <div style="display: flex; gap: 1rem; align-items: center;">
-            <div id="connectionStatus" class="status">
-                <span class="status-dot status-disconnected" id="statusDot"></span>
+            <div class="status" style="justify-content: flex-end;">
+                <span id="statusDot" class="status-dot status-disconnected"></span>
                 <span id="statusText">Disconnected</span>
             </div>
         </div>
     </div>
 
-    <div class="container btn-group">
+    <div class="btn-group">
         <button id="connectBtn" class="btn-main btn-connect">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round">
@@ -351,17 +569,19 @@
             Disconnect
         </button>
     </div>
-    <p class="helper-text">Look for device named "POWER" or MAC address DC:1E:</p>
 
-    <div id="dashboard" class="container dashboard disabled">
+    <div id="dashboard" class="dashboard disabled">
         <div class="dash-row">
-            <div class="dash-col">
+            <!-- Left: Input -->
+            <div class="dash-col left">
                 <div class="dash-label">Input</div>
                 <div class="dash-val text-green"><span id="inputWatts">--</span> <span
                         style="font-size:0.875rem; color:#6b7280;">W</span></div>
             </div>
-            <div class="dash-col">
-                <div class="dash-sub" style="margin-bottom: 0.5rem;">Sys: <span id="sysWatts">--</span>W</div>
+
+            <!-- Center: System + Battery + Time -->
+            <div class="dash-col center">
+                <div class="dash-sub" style="margin-bottom: 0.5rem;">System: <span id="sysWatts">--</span>W</div>
                 <div class="battery-ring-container">
                     <svg width="100%" height="100%" viewBox="0 0 36 36" style="transform: rotate(-90deg);">
                         <path class="ring-bg"
@@ -379,7 +599,9 @@
                     <div><span id="remainingKwh">--</span> kWh left</div>
                 </div>
             </div>
-            <div class="dash-col">
+
+            <!-- Right: Output -->
+            <div class="dash-col right">
                 <div class="dash-label">Output</div>
                 <div class="dash-val text-blue"><span id="outputWatts">--</span> <span
                         style="font-size:0.875rem; color:#6b7280;">W</span></div>
@@ -416,15 +638,52 @@
     </div>
 
     <div class="container log-container">
-        <h3 class="log-title">Activity Log</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="log-title">Activity Log</div>
+            <button onclick="toggleScanner()"
+                style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.75rem;">Scanner</button>
+        </div>
         <div id="log" class="log-box"></div>
     </div>
 
-    <div class="container" style="margin-top: 1rem; text-align: center; padding-bottom: 2rem;">
-        <button id="installBtnBottom" class="btn-main" style="background-color: var(--btn-green); width: 100%;">
-            Install App
-        </button>
+    <!-- Scanner UI -->
+    <div id="scanner" class="hidden"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 50; padding: 2rem; display: flex; flex-direction: column; gap: 1rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; color: white;">
+            <h2 style="margin: 0;">Register Scanner</h2>
+            <button onclick="toggleScanner()"
+                style="background: none; border: none; color: white; font-size: 1.5rem;">&times;</button>
+        </div>
+        <div style="display: flex; gap: 1rem;">
+            <input id="scanStart" type="number" placeholder="Start Reg" value="0"
+                style="flex: 1; padding: 0.5rem; border-radius: 0.5rem; border: none;">
+            <input id="scanCount" type="number" placeholder="Count" value="100"
+                style="flex: 1; padding: 0.5rem; border-radius: 0.5rem; border: none;">
+            <button onclick="scanRegisters()"
+                style="padding: 0.5rem 1rem; background: var(--btn-blue); color: white; border: none; border-radius: 0.5rem;">Scan</button>
+        </div>
+        <div id="scanResults" class="log-box" style="flex: 1; background: #111;"></div>
     </div>
+
+    <!-- Footer with Theme Select -->
+    <div class="footer">
+        <select id="themeSelect" onchange="setTheme(this.value)"
+            style="background: var(--bg-card); color: var(--text-main); border: 1px solid var(--text-muted); padding: 0.5rem; border-radius: 0.5rem;">
+            <option value="default">Cyberpunk</option>
+            <option value="minimal">Minimal</option>
+            <option value="industrial">Industrial</option>
+            <option value="rainbow">Rainbow</option>
+            <option value="psychedelic">Psychedelic</option>
+            <option value="retro">Retro</option>
+            <option value="ocean">Ocean</option>
+            <option value="high-contrast">High Contrast</option>
+        </select>
+    </div>
+
+    <button id="installBtnBottom" class="btn-main hidden"
+        style="position: fixed; bottom: 1rem; right: 1rem; width: auto; padding: 0.75rem 1.5rem; background-color: var(--btn-green); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); z-index: 100;">
+        Install App
+    </button>
 
     <script>
         const SERVICE_UUID = '0000a002-0000-1000-8000-00805f9b34fb';
@@ -433,7 +692,13 @@
 
         let device, server, service, writeChar, notifyChar, pollInterval;
 
-        const COMMANDS = { usb_on: [17, 24, 1], usb_off: [17, 24, 0], dc_on: [17, 25, 1], dc_off: [17, 25, 0], ac_on: [17, 26, 1], ac_off: [17, 26, 0], light_on: [17, 27, 1], light_off: [17, 27, 0] };
+        const COMMANDS = {
+            usb_on: [17, 24, 1], usb_off: [17, 24, 0],
+            dc_on: [17, 25, 1], dc_off: [17, 25, 0],
+            ac_on: [17, 26, 1], ac_off: [17, 26, 0],
+            light_on: [17, 27, 1], light_off: [17, 27, 0]
+        };
+
         const btns = {
             usb: document.getElementById('btn-usb'),
             ac: document.getElementById('btn-ac'),
@@ -523,7 +788,6 @@
 
         function handleNotification(event) {
             const value = event.target.value;
-
             if (value && value.byteLength >= 6 && value.getUint8(0) === 0x11 && value.getUint8(1) === 0x04) {
                 const getReg = (idx) => {
                     const offset = 6 + (idx * 2);
@@ -539,9 +803,9 @@
 
                 // Status Register 41 Decoding
                 const stateReg = getReg(41);
-                const usbState = (stateReg & 512) !== 0;   // Bit 9
-                const dcState = (stateReg & 1024) !== 0;   // Bit 10
-                const acState = (stateReg & 2048) !== 0;   // Bit 11
+                const usbState = (stateReg & 512) !== 0; // Bit 9
+                const dcState = (stateReg & 1024) !== 0; // Bit 10
+                const acState = (stateReg & 2048) !== 0; // Bit 11
                 const lightState = (stateReg & 4096) !== 0; // Bit 12
 
                 updateButtonState(btns.usb, usbState);
@@ -558,7 +822,10 @@
                 const kwh = (battery / 100) * 2.048;
                 document.getElementById('remainingKwh').textContent = kwh.toFixed(2);
 
-                document.getElementById('remainingHours').textContent = minutes > 0 ? `${Math.floor(minutes / 60)}h ${minutes % 60}m` : "--";
+                document.getElementById('remainingHours').textContent = minutes > 0
+                    ? `${Math.floor(minutes / 60)}h ${minutes % 60}m`
+                    : "--";
+
                 document.getElementById('batteryRing').setAttribute('stroke-dasharray', `${battery}, 100`);
                 document.getElementById('batteryRing').style.color = battery < 20 ? "#ef4444" : "#60a5fa";
             }
@@ -570,11 +837,15 @@
         }
 
         function stopPolling() {
-            if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+            if (pollInterval) {
+                clearInterval(pollInterval);
+                pollInterval = null;
+            }
         }
 
         async function sendReadRequest() {
             if (!writeChar) return;
+            // Packet: [0x11, 0x04, 0x00, 0x00, 0x00, 0x50] (Read 80 registers starting from 0)
             const payload = [0x11, 0x04, 0x00, 0x00, 0x00, 0x50];
             const checksum = calculateChecksum(payload);
             const cmd = new Uint8Array([...payload, (checksum >> 8) & 0xff, checksum & 0xff]);
@@ -596,14 +867,16 @@
         function toggle(type) {
             const btn = btns[type];
             if (!btn || btn.classList.contains('disabled')) return;
-
             const isCurrentlyOn = btn.classList.contains('active');
             const cmd = `${type}_${isCurrentlyOn ? 'off' : 'on'}`;
             sendCommand(cmd);
         }
 
         async function sendCommand(cmdName) {
-            if (!writeChar) { log("Not connected!"); return; }
+            if (!writeChar) {
+                log("Not connected!");
+                return;
+            }
             const [addr, reg, val] = COMMANDS[cmdName];
             const data = generateCommandBytes(addr, reg, val);
             try {
@@ -674,6 +947,52 @@
                     .catch(err => console.log('SW failed', err));
             });
         }
+
+        // Scanner Logic
+        function toggleScanner() {
+            const el = document.getElementById('scanner');
+            el.classList.toggle('hidden');
+        }
+
+        async function scanRegisters() {
+            if (!writeChar) {
+                alert("Not connected!");
+                return;
+            }
+            const start = parseInt(document.getElementById('scanStart').value);
+            const count = parseInt(document.getElementById('scanCount').value);
+            const resultsDiv = document.getElementById('scanResults');
+            resultsDiv.innerHTML = '<div class="text-yellow-400">Scanning...</div>';
+
+            stopPolling();
+
+            for (let i = 0; i < count; i++) {
+                const reg = start + i;
+                const payload = [0x11, 0x04, (reg >> 8) & 0xff, reg & 0xff, 0x00, 0x01];
+                const checksum = calculateChecksum(payload);
+                const cmd = new Uint8Array([...payload, (checksum >> 8) & 0xff, checksum & 0xff]);
+                try {
+                    await writeChar.writeValue(cmd);
+                    await new Promise(r => setTimeout(r, 150));
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+
+            startPolling();
+            resultsDiv.innerHTML += '<div class="text-green-400 mt-2">Done! Check Log for values.</div>';
+        }
+
+        // Theme Logic
+        function setTheme(theme) {
+            document.body.setAttribute('data-theme', theme);
+            localStorage.setItem('fossibot-theme', theme);
+        }
+
+        // Load saved theme
+        const savedTheme = localStorage.getItem('fossibot-theme') || 'default';
+        setTheme(savedTheme);
+        document.getElementById('themeSelect').value = savedTheme;
     </script>
 </body>
 
