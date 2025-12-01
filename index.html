@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fossibot Control</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        :root {
+            --bg-body: #111827;
+            --bg-card: #1f2937;
+            --bg-log: #000000;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --text-green: #4ade80;
+            --text-blue: #60a5fa;
+            --text-red: #ef4444;
+            --btn-blue: #2563eb;
+            --btn-blue-hover: #1d4ed8;
+            --btn-red: #dc2626;
+            --btn-red-hover: #b91c1c;
+            --btn-green: #16a34a;
+            --font-main: system-ui, -apple-system, sans-serif;
+            --border-radius: 1rem;
+        }
+
+        /* Standard Themes */
+        [data-theme="minimal"] {
+            --bg-body: #f3f4f6;
+            --bg-card: #ffffff;
+            --bg-log: #1f2937;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --text-green: #059669;
+            --text-blue: #2563eb;
+            --text-red: #dc2626;
+            --btn-blue: #3b82f6;
+            --btn-blue-hover: #2563eb;
+            --btn-red: #ef4444;
+            --btn-red-hover: #dc2626;
+            --btn-green: #10b981;
+        }
+
+        [data-theme="industrial"] {
+            --bg-body: #292524;
+            --bg-card: #44403c;
+            --bg-log: #0c0a09;
+            --text-main: #e7e5e4;
+            --text-muted: #a8a29e;
+            --text-green: #facc15;
+            --text-blue: #38bdf8;
+            --text-red: #f87171;
+            --btn-blue: #0ea5e9;
+            --btn-blue-hover: #0284c7;
+            --btn-red: #ef4444;
+            --btn-red-hover: #dc2626;
+            --btn-green: #ca8a04;
+        }
+
+        [data-theme="rainbow"] {
+            --bg-body: #2d0036;
+            --bg-card: #4a0e5c;
+            --bg-log: #1a0524;
+            --text-main: #ffffff;
+            --text-muted: #e0b0ff;
+            --text-green: #00ff00;
+            --text-blue: #00ffff;
+            --text-red: #ff0000;
+            --btn-blue: #9400d3;
+            --btn-blue-hover: #4b0082;
+            --btn-red: #ff0000;
+            --btn-red-hover: #8b0000;
+            --btn-green: #00ff00;
+        }
+
+        /* PSYCHEDELIC THEME (ACID MODE) */
+        [data-theme="psychedelic"] {
+            --bg-body: #ff00ff;
+            --bg-card: #00ffff;
+            --bg-log: #ffff00;
+            --text-main: #000000;
+            --text-muted: #333333;
+            --text-green: #008000;
+            --text-blue: #0000ff;
+            --text-red: #ff0000;
+            --btn-blue: #ff0000;
+            --btn-blue-hover: #cc0000;
+            --btn-red: #00ff00;
+            --btn-red-hover: #00cc00;
+            --btn-green: #0000ff;
+        }
+
+        /* Acid Trip Animations */
+        @keyframes acid-bg {
+            0% {
+                background-color: #ff00ff;
+                filter: hue-rotate(0deg);
+            }
+
+            50% {
+                background-color: #00ffff;
+            }
+
+            100% {
+                background-color: #ffff00;
+                filter: hue-rotate(360deg);
+            }
+        }
+
+        @keyframes wobble {
+
+            0%,
+            100% {
+                transform: skew(0deg) scale(1);
+            }
+
+            25% {
+                transform: skew(2deg) scale(1.02);
+            }
+
+            75% {
+                transform: skew(-2deg) scale(0.98);
+            }
+        }
+
+        @keyframes rainbow-text {
+            0% {
+                color: #ff0000;
+            }
+
+            20% {
+                color: #ffff00;
+            }
+
+            40% {
+                color: #00ff00;
+            }
+
+            60% {
+                color: #00ffff;
+            }
+
+            80% {
+                color: #0000ff;
+            }
+
+            100% {
+                color: #ff00ff;
+            }
+        }
+
+        @keyframes acid-border {
+            0% {
+                border-color: #ff0000;
+            }
+
+            50% {
+                border-color: #00ff00;
+            }
+
+            100% {
+                border-color: #0000ff;
+            }
+        }
+
+        [data-theme="psychedelic"] body {
+            animation: acid-bg 10s infinite linear;
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255, 255, 255, 0.2) 20px, rgba(255, 255, 255, 0.2) 40px);
+            background-attachment: fixed;
+            /* Apply the melt filter here */
+            filter: url(#meltFilter);
+            will-change: filter;
+        }
+
+        [data-theme="psychedelic"] .container {
+            animation: wobble 3s infinite ease-in-out;
+            position: relative;
+            z-index: 10;
+        }
+
+        [data-theme="psychedelic"] .btn-main,
+        [data-theme="psychedelic"] .control-tile,
+        [data-theme="psychedelic"] .dashboard {
+            border: 2px solid transparent;
+            animation: acid-border 2s infinite linear;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.8);
+            /* Semi-transparent to see eyes */
+        }
+
+        [data-theme="psychedelic"] h1,
+        [data-theme="psychedelic"] .dash-val {
+            animation: rainbow-text 2s infinite linear;
+            text-shadow: 2px 2px 0px #000;
+        }
+
+        /* PSYCHEDELIC EYES */
+        .psy-eye-container {
+            position: fixed;
+            top: 10%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            height: 150px;
+            pointer-events: none;
+            z-index: 1;
+            /* Behind container but visible */
+            display: none;
+            justify-content: space-between;
+        }
+
+        [data-theme="psychedelic"] .psy-eye-container {
+            display: flex;
+        }
+
+        .psy-eye {
+            width: 120px;
+            height: 120px;
+            background: radial-gradient(circle at 30% 30%, #fff, #f0f0f0);
+            border-radius: 50%;
+            border: 3px solid #000;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.6);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Bloodshot veins */
+        .psy-eye::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(circle at 50% 50%, transparent 50%, rgba(255, 0, 0, 0.1) 60%, rgba(255, 0, 0, 0.5) 100%),
+                repeating-conic-gradient(transparent 0deg, transparent 10deg, rgba(255, 0, 0, 0.4) 10.5deg, transparent 11deg);
+            border-radius: 50%;
+        }
+
+        .psy-pupil {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 65%;
+            /* Big pupil */
+            height: 65%;
+            background: #000;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.2);
+        }
+
+        .psy-glint {
+            position: absolute;
+            top: 25%;
+            left: 25%;
+            width: 15%;
+            height: 15%;
+            background: #fff;
+            border-radius: 50%;
+            z-index: 2;
+        }
+
+        [data-theme="retro"] {
+            --bg-body: #dcbfa6;
+            --bg-card: #cfb997;
+            --bg-log: #3b3228;
+            --text-main: #3b3228;
+            --text-muted: #5c5346;
+            --text-green: #556b2f;
+            --text-blue: #4682b4;
+            --text-red: #8b4513;
+            --btn-blue: #4682b4;
+            --btn-blue-hover: #315a7d;
+            --btn-red: #cd5c5c;
+            --btn-red-hover: #8b3a3a;
+            --btn-green: #556b2f;
+        }
+
+        [data-theme="ocean"] {
+            --bg-body: #0f172a;
+            --bg-card: #1e293b;
+            --bg-log: #020617;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --text-green: #2dd4bf;
+            --text-blue: #38bdf8;
+            --text-red: #f43f5e;
+            --btn-blue: #0ea5e9;
+            --btn-blue-hover: #0284c7;
+            --btn-red: #e11d48;
+            --btn-red-hover: #be123c;
+            --btn-green: #0d9488;
+        }
+
+        [data-theme="high-contrast"] {
+            --bg-body: #000000;
+            --bg-card: #000000;
+            --bg-log: #000000;
+            --text-main: #ffffff;
+            --text-muted: #ffffff;
+            --text-green: #ffff00;
+            --text-blue: #00ffff;
+            --text-red: #ff0000;
+            --btn-blue: #0000ff;
+            --btn-blue-hover: #00008b;
+            --btn-red: #ff0000;
+            --btn-red-hover: #8b0000;
+            --btn-green: #008000;
+        }
+
+        [data-theme="pipboy"] {
+            --bg-body: #000000;
+            --bg-card: #0a2e0a;
+            --bg-log: #000000;
+            --text-main: #0cfc0c;
+            --text-muted: #0a8c0a;
+            --text-green: #0cfc0c;
+            --text-blue: #0cfc0c;
+            --text-red: #0a8c0a;
+            --btn-blue: #0a6e0a;
+            --btn-blue-hover: #084e08;
+            --btn-red: #0a3e0a;
+            --btn-red-hover: #082e08;
+            --btn-green: #0a8c0a;
+            --font-main: 'Courier New', Courier, monospace;
+        }
+
+        /* TERMINAL Theme */
+        [data-theme="terminal"] {
+            --bg-body: #000000;
+            --bg-card: #000000;
+            --bg-log: #000000;
+            --text-main: #00ff00;
+            --text-muted: #008800;
+            --text-green: #00ff00;
+            --text-blue: #00ff00;
+            --text-red: #ff0000;
+            --btn-blue: #000000;
+            --btn-blue-hover: #002200;
+            --btn-red: #000000;
+            --btn-red-hover: #220000;
+            --btn-green: #000000;
+            --font-main: 'Courier New', Courier, monospace;
+            --border-radius: 0;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            font-family: var(--font-main);
+            margin: 0;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            touch-action: manipulation;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 28rem;
+        }
+
+        /* Standard Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            width: 100%;
+            max-width: 28rem;
+        }
+
+        /* Terminal Header Elements */
+        .terminal-window-bar {
+            display: none;
+        }
+
+        .terminal-prompt {
+            display: none;
+        }
+
+        [data-theme="terminal"] .header {
+            display: none;
+        }
+
+        [data-theme="terminal"] .terminal-window-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 28rem;
+            background: #00ff00;
+            color: #000;
+            padding: 0.25rem 0.5rem;
+            margin-bottom: 1rem;
+            font-weight: bold;
+            box-sizing: border-box;
+        }
+
+        [data-theme="terminal"] .terminal-prompt {
+            display: flex;
+            align-items: center;
+            color: #00ff00;
+            margin-top: 1rem;
+            width: 100%;
+            max-width: 28rem;
+        }
+
+        .terminal-input {
+            background: transparent;
+            border: none;
+            color: #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1rem;
+            outline: none;
+            flex: 1;
+            margin-left: 0.5rem;
+        }
+
+        /* Buttons */
+        .btn-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            width: 100%;
+        }
+
+        .btn-main {
+            flex: 1;
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            font-weight: 700;
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: transform 0.1s, background-color 0.2s;
+        }
+
+        .btn-connect {
+            background-color: var(--btn-blue);
+        }
+
+        .btn-disconnect {
+            background-color: var(--btn-red);
+        }
+
+        [data-theme="terminal"] .btn-main {
+            background: transparent;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            box-shadow: none;
+            text-transform: uppercase;
+        }
+
+        [data-theme="terminal"] .btn-main:hover {
+            background: #00ff00;
+            color: #000;
+        }
+
+        /* Dashboard */
+        .dashboard {
+            background-color: var(--bg-card);
+            padding: 1rem;
+            /* Reduced padding */
+            border-radius: var(--border-radius);
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            transition: opacity 0.3s;
+        }
+
+        [data-theme="terminal"] .dashboard {
+            border: 1px solid #00ff00;
+            box-shadow: none;
+            background: #000;
+        }
+
+        .dash-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            gap: 0.5rem;
+        }
+
+        .dash-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .dash-col.left {
+            align-items: flex-start;
+            text-align: left;
+        }
+
+        .dash-col.center {
+            align-items: center;
+            text-align: center;
+            flex: 0 0 auto;
+            min-width: 6rem;
+        }
+
+        .dash-col.right {
+            align-items: flex-end;
+            text-align: right;
+        }
+
+        .dash-val {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        /* Reduced font size */
+        .dash-label {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+        }
+
+        .battery-ring-container {
+            position: relative;
+            width: 6rem;
+            /* Fixed smaller width */
+            height: 6rem;
+            /* Fixed smaller height */
+            margin: 0.5rem auto;
+        }
+
+        .battery-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.25rem;
+            /* Reduced font size */
+            font-weight: bold;
+            display: flex;
+            align-items: baseline;
+        }
+
+        .battery-unit {
+            font-size: 0.75rem;
+            margin-left: 1px;
+        }
+
+        [data-theme="terminal"] .dash-label {
+            color: #008800;
+        }
+
+        [data-theme="terminal"] .dash-val {
+            text-shadow: 0 0 5px #00ff00;
+        }
+
+        /* Controls */
+        .control-row {
+            display: flex;
+            gap: 1rem;
+            width: 100%;
+            margin-bottom: 2rem;
+        }
+
+        .control-tile {
+            flex: 1;
+            background-color: var(--bg-card);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+            color: var(--text-muted);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .control-tile.active {
+            background-color: var(--btn-green);
+            color: white;
+        }
+
+        [data-theme="terminal"] .control-tile {
+            background: transparent;
+            border: 1px solid #008800;
+            color: #008800;
+            box-shadow: none;
+        }
+
+        [data-theme="terminal"] .control-tile.active {
+            background: #00ff00;
+            color: #000;
+            border-color: #00ff00;
+            box-shadow: 0 0 10px #00ff00;
+        }
+
+        /* Log */
+        .log-container {
+            margin-top: 2rem;
+            width: 100%;
+        }
+
+        .log-box {
+            background-color: var(--bg-log);
+            color: var(--text-green);
+            font-family: monospace;
+            font-size: 0.75rem;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            height: 8rem;
+            overflow-y: auto;
+            border: 1px solid #374151;
+        }
+
+        [data-theme="terminal"] .log-box {
+            border: 1px solid #00ff00;
+            color: #00ff00;
+            border-radius: 0;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: auto;
+            padding: 2rem 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        [data-theme="terminal"] select {
+            background: #000;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            border-radius: 0;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        /* Psychedelic Image Overlay */
+        #psyImage {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 90%;
+            max-height: 90%;
+            z-index: 9999;
+            pointer-events: none;
+            display: none;
+            border: 5px solid #fff;
+            box-shadow: 0 0 50px #fff;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Watching Eyes for Psychedelic Theme -->
+    <div class="psy-eye-container">
+        <div class="psy-eye">
+            <div class="psy-pupil"></div>
+            <div class="psy-glint"></div>
+        </div>
+        <div class="psy-eye">
+            <div class="psy-pupil"></div>
+            <div class="psy-glint"></div>
+        </div>
+    </div>
+
+    <!-- Terminal Elements -->
+    <div class="terminal-window-bar">
+        <span>[ FOSSIBOT CONTROL ]</span>
+        <span style="display:flex; gap:0.5rem;">
+            <span style="border:1px solid #000; width:12px; height:12px; display:inline-block;"></span>
+            <span style="border:1px solid #000; width:12px; height:12px; display:inline-block;"></span>
+        </span>
+    </div>
+
+    <div class="header">
+        <button id="btn-light" class="header-icon-btn" onclick="toggle('light')">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+        </button>
+
+        <div style="text-align: right;">
+            <h1 class="title">Fossibot F2400</h1>
+            <div class="status" style="justify-content: flex-end;">
+                <span id="statusDot" class="status-dot status-disconnected"></span>
+                <span id="statusText">Disconnected</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="btn-group">
+            <button id="connectBtn" class="btn-main btn-connect">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M7 7l10 10-5 5V2l5 5L7 17" />
+                </svg>
+                Connect
+            </button>
+            <button id="disconnectBtn" class="btn-main btn-disconnect hidden">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+                Disconnect
+            </button>
+        </div>
+
+        <div id="dashboard" class="dashboard disabled">
+            <div class="dash-row">
+                <div class="dash-col left">
+                    <div class="dash-label">Input</div>
+                    <div class="dash-val text-green"><span id="inputWatts">--</span> <span
+                            style="font-size:0.75rem;">W</span></div>
+                </div>
+
+                <div class="dash-col center">
+                    <div class="dash-sub" style="margin-bottom: 0.25rem;">Sys: <span id="sysWatts">--</span>W</div>
+                    <div class="battery-ring-container">
+                        <svg width="100%" height="100%" viewBox="0 0 36 36" style="transform: rotate(-90deg);">
+                            <path class="ring-bg"
+                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                fill="none" stroke="currentColor" stroke-width="3" />
+                            <path id="batteryRing" class="ring-val text-blue" stroke-dasharray="0, 100"
+                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                fill="none" stroke="currentColor" stroke-width="3" />
+                        </svg>
+                        <div class="battery-text"><span id="batteryPercent">--</span><span class="battery-unit">%</span>
+                        </div>
+                    </div>
+                    <div class="dash-sub" style="margin-top: 0.25rem;">
+                        <div><span id="remainingHours">--</span> hrs</div>
+                        <div><span id="remainingKwh">--</span> kWh</div>
+                    </div>
+                </div>
+
+                <div class="dash-col right">
+                    <div class="dash-label">Output</div>
+                    <div class="dash-val text-blue"><span id="outputWatts">--</span> <span
+                            style="font-size:0.75rem;">W</span></div>
+                    <div class="dash-sub">Tot: <span id="totalWatts">--</span>W</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="controls" class="control-row disabled">
+            <div id="btn-usb" class="control-tile" onclick="toggle('usb')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                </svg>
+                <span>USB</span>
+            </div>
+            <div id="btn-ac" class="control-tile" onclick="toggle('ac')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2v20M2 12h20"></path>
+                </svg>
+                <span>AC</span>
+            </div>
+            <div id="btn-dc" class="control-tile" onclick="toggle('dc')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="6" width="20" height="12" rx="2" ry="2"></rect>
+                    <line x1="6" y1="12" x2="6" y2="12"></line>
+                    <line x1="18" y1="12" x2="18" y2="12"></line>
+                </svg>
+                <span>DC</span>
+            </div>
+        </div>
+
+        <div class="log-container">
+            <div class="log-title">Activity Log</div>
+            <div id="log" class="log-box"></div>
+        </div>
+
+        <div class="terminal-prompt">
+            <span>guest@fossibot:~$</span>
+            <input type="text" id="termInput" class="terminal-input" autocomplete="off" spellcheck="false"
+                onkeydown="handleTerminalCommand(event)">
+        </div>
+    </div>
+
+    <div id="scanner" class="hidden"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 200; padding: 2rem; display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; box-sizing: border-box;">
+        <div style="display: flex; justify-content: space-between; align-items: center; color: white;">
+            <h2 style="margin: 0;">Register Scanner</h2>
+            <button onclick="toggleScanner()"
+                style="background: none; border: none; color: white; font-size: 1.5rem;">&times;</button>
+        </div>
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <input id="scanStart" type="number" placeholder="Start Reg" value="0"
+                style="flex: 1; min-width: 100px; padding: 0.5rem; border-radius: 0.5rem; border: none;">
+            <input id="scanCount" type="number" placeholder="Count" value="100"
+                style="flex: 1; min-width: 100px; padding: 0.5rem; border-radius: 0.5rem; border: none;">
+            <button onclick="scanRegisters()"
+                style="flex: 1; min-width: 100px; padding: 0.5rem 1rem; background: var(--btn-blue); color: white; border: none; border-radius: 0.5rem;">Scan</button>
+        </div>
+        <div id="scanResults" class="log-box" style="flex: 1; background: #111;"></div>
+    </div>
+
+    <div class="footer">
+        <select id="themeSelect" onchange="setTheme(this.value)"
+            style="background: var(--bg-card); color: var(--text-main); border: 1px solid var(--text-muted); padding: 0.5rem; border-radius: 0.5rem;">
+            <option value="default">Cyberpunk</option>
+            <option value="terminal">Terminal</option>
+            <option value="minimal">Minimal</option>
+            <option value="industrial">Industrial</option>
+            <option value="rainbow">Rainbow</option>
+            <option value="psychedelic">Psychedelic</option>
+            <option value="retro">Retro</option>
+            <option value="ocean">Ocean</option>
+            <option value="high-contrast">High Contrast</option>
+            <option value="pipboy">Pipboy</option>
+        </select>
+        <button onclick="toggleScanner()"
+            style="background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 0.5rem;"
+            title="Open Scanner">🔬</button>
+    </div>
+
+    <!-- Psychedelic Image Overlay -->
+    <img id="psyImage" src="" alt="Psychedelic Vision">
+
+    <!-- Melt Filter SVG -->
+    <svg style="display: none;">
+        <defs>
+            <filter id="meltFilter">
+                <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="3" result="warp" />
+                <feDisplacementMap id="meltMap" xChannelSelector="R" yChannelSelector="G" scale="0" in="SourceGraphic"
+                    in2="warp" />
+            </filter>
+        </defs>
+    </svg>
+
+    <script>
+        const SERVICE_UUID = '0000a002-0000-1000-8000-00805f9b34fb';
+        const WRITE_UUID = '0000c304-0000-1000-8000-00805f9b34fb';
+        const NOTIFY_UUID = '0000c305-0000-1000-8000-00805f9b34fb';
+
+        let device, server, service, writeChar, notifyChar, pollInterval;
+
+        const COMMANDS = {
+            usb_on: [17, 24, 1], usb_off: [17, 24, 0],
+            dc_on: [17, 25, 1], dc_off: [17, 25, 0],
+            ac_on: [17, 26, 1], ac_off: [17, 26, 0],
+            light_on: [17, 27, 1], light_off: [17, 27, 0]
+        };
+
+        const btns = {
+            usb: document.getElementById('btn-usb'),
+            ac: document.getElementById('btn-ac'),
+            dc: document.getElementById('btn-dc'),
+            light: document.getElementById('btn-light')
+        };
+        const connectBtn = document.getElementById('connectBtn');
+        const disconnectBtn = document.getElementById('disconnectBtn');
+
+        // Psychedelic Images
+        const psyImages = [
+            'img/psy_frog_1764538696814.png',
+            'img/psy_ferret_1764538724368.png',
+            'img/psy_weather_station_1764538710257.png',
+            'img/buddhaman.jpg',
+            'img/catsbigdog.png',
+            'img/psy_cat_camel_1764619217955.png',
+            'img/psy_sausage_pig_1764619233117.png',
+            'img/psy_rolling_plant_1764619247046.png',
+            'img/psy_jumping_fish_1764619261198.png'
+        ];
+
+        // Chaos Level for Melt Effect
+        let chaosLevel = 0;
+        let meltMap = document.getElementById('meltMap');
+
+        function updateMelt() {
+            if (document.body.getAttribute('data-theme') === 'psychedelic') {
+                // Decay chaos
+                chaosLevel = Math.max(0, chaosLevel - 0.5);
+
+                // Update SVG filter
+                if (meltMap) {
+                    meltMap.scale.baseVal = chaosLevel;
+                }
+            } else {
+                chaosLevel = 0;
+                if (meltMap) meltMap.scale.baseVal = 0;
+            }
+            requestAnimationFrame(updateMelt);
+        }
+        requestAnimationFrame(updateMelt);
+
+        function flashPsyImage() {
+            if (document.body.getAttribute('data-theme') !== 'psychedelic') return;
+
+            // Increase Chaos
+            chaosLevel = Math.min(200, chaosLevel + 40);
+
+            const imgEl = document.getElementById('psyImage');
+            const randomImg = psyImages[Math.floor(Math.random() * psyImages.length)];
+
+            imgEl.src = randomImg;
+            imgEl.style.display = 'block';
+
+            setTimeout(() => {
+                imgEl.style.display = 'none';
+            }, 300);
+        }
+
+        // Eye Tracking Logic
+        document.addEventListener('mousemove', (e) => {
+            if (document.body.getAttribute('data-theme') !== 'psychedelic') return;
+
+            const eyes = document.querySelectorAll('.psy-eye');
+            eyes.forEach(eye => {
+                const rect = eye.getBoundingClientRect();
+                const x = (rect.left + rect.width / 2);
+                const y = (rect.top + rect.height / 2);
+
+                const rad = Math.atan2(e.pageX - x, e.pageY - y);
+                const rot = (rad * (180 / Math.PI) * -1) + 180;
+
+                const pupil = eye.querySelector('.psy-pupil');
+
+                // Limit movement within the eye
+                const dist = Math.min(20, Math.hypot(e.pageX - x, e.pageY - y) / 10);
+
+                // Simple rotation for now, can be improved for realistic tracking
+                pupil.style.transform = `translate(-50%, -50%) rotate(${rot}deg) translate(0, -${dist}px)`;
+            });
+        });
+
+        function log(msg) {
+            const line = document.createElement('div');
+            line.textContent = `> ${msg}`;
+            document.getElementById('log').appendChild(line);
+            document.getElementById('log').scrollTop = document.getElementById('log').scrollHeight;
+        }
+
+        function updateStatus(connected) {
+            document.getElementById('statusText').textContent = connected ? "Connected" : "Disconnected";
+            document.getElementById('statusDot').className = connected ? "status-dot status-connected" : "status-dot status-disconnected";
+
+            const controls = document.getElementById('controls');
+            const dashboard = document.getElementById('dashboard');
+
+            if (connected) {
+                controls.classList.remove('disabled');
+                dashboard.classList.remove('disabled');
+                connectBtn.classList.add('hidden');
+                disconnectBtn.classList.remove('hidden');
+            } else {
+                controls.classList.add('disabled');
+                dashboard.classList.add('disabled');
+                connectBtn.classList.remove('hidden');
+                disconnectBtn.classList.add('hidden');
+            }
+        }
+
+        function calculateChecksum(arr) {
+            let t = 0xffff;
+            for (let byte of arr) {
+                t ^= byte;
+                for (let i = 0; i < 8; i++) t = (t & 1) ? ((t >> 1) ^ 40961) : (t >> 1);
+            }
+            return t & 0xffff;
+        }
+
+        function generateCommandBytes(address, feature, value) {
+            const payload = [address, 6, (feature >> 8) & 0xff, feature & 0xff, (value >> 8) & 0xff, value & 0xff];
+            const checksum = calculateChecksum(payload);
+            return new Uint8Array([...payload, (checksum >> 8) & 0xff, checksum & 0xff]);
+        }
+
+        async function connect() {
+            try {
+                if (!device) {
+                    log("Requesting Bluetooth Device...");
+                    device = await navigator.bluetooth.requestDevice({
+                        filters: [{ namePrefix: 'POWER' }, { namePrefix: 'Fossibot' }],
+                        optionalServices: [SERVICE_UUID]
+                    });
+                    device.addEventListener('gattserverdisconnected', onDisconnected);
+                }
+
+                log("Connecting...");
+                server = await device.gatt.connect();
+                await new Promise(r => setTimeout(r, 500));
+
+                log("Getting Service...");
+                service = await server.getPrimaryService(SERVICE_UUID);
+
+                log("Getting Characteristics...");
+                writeChar = await service.getCharacteristic(WRITE_UUID);
+                notifyChar = await service.getCharacteristic(NOTIFY_UUID);
+
+                log("Enabling notifications on c305...");
+                notifyChar.addEventListener('characteristicvaluechanged', handleNotification);
+                await notifyChar.startNotifications();
+
+                log("Connected! Starting polling on c304...");
+                updateStatus(true);
+                startPolling();
+
+            } catch (error) {
+                log("Connection failed: " + error);
+                if (device && device.gatt.connected) device.gatt.disconnect();
+            }
+        }
+
+        function handleNotification(event) {
+            const value = event.target.value;
+            if (value && value.byteLength >= 6 && value.getUint8(0) === 0x11 && value.getUint8(1) === 0x04) {
+                const getReg = (idx) => {
+                    const offset = 6 + (idx * 2);
+                    return (offset + 1 < value.byteLength) ? value.getUint16(offset, false) : 0;
+                };
+
+                const battery = getReg(56) / 10.0;
+                const input = getReg(3);
+                const output = getReg(39);
+                const sysWatts = getReg(21);
+                const totalWatts = getReg(20);
+                const minutes = getReg(59);
+
+                const stateReg = getReg(41);
+                const usbState = (stateReg & 512) !== 0;
+                const dcState = (stateReg & 1024) !== 0;
+                const acState = (stateReg & 2048) !== 0;
+                const lightState = (stateReg & 4096) !== 0;
+
+                updateButtonState(btns.usb, usbState);
+                updateButtonState(btns.dc, dcState);
+                updateButtonState(btns.ac, acState);
+                updateButtonState(btns.light, lightState);
+
+                document.getElementById('inputWatts').textContent = input;
+                document.getElementById('outputWatts').textContent = output;
+                document.getElementById('sysWatts').textContent = sysWatts;
+                document.getElementById('totalWatts').textContent = totalWatts;
+                document.getElementById('batteryPercent').textContent = Math.floor(battery);
+
+                const kwh = (battery / 100) * 2.048;
+                document.getElementById('remainingKwh').textContent = kwh.toFixed(2);
+
+                document.getElementById('remainingHours').textContent = minutes > 0 ? `${Math.floor(minutes / 60)}h ${minutes % 60}m` : "--";
+
+                document.getElementById('batteryRing').setAttribute('stroke-dasharray', `${battery}, 100`);
+                document.getElementById('batteryRing').style.color = battery < 20 ? "#ef4444" : "#60a5fa";
+            }
+        }
+
+        function startPolling() {
+            sendReadRequest();
+            pollInterval = setInterval(sendReadRequest, 2000);
+        }
+
+        function stopPolling() {
+            if (pollInterval) {
+                clearInterval(pollInterval);
+                pollInterval = null;
+            }
+        }
+
+        async function sendReadRequest() {
+            if (!writeChar) return;
+            const payload = [0x11, 0x04, 0x00, 0x00, 0x00, 0x50];
+            const checksum = calculateChecksum(payload);
+            const cmd = new Uint8Array([...payload, (checksum >> 8) & 0xff, checksum & 0xff]);
+            try {
+                await writeChar.writeValue(cmd);
+            } catch (e) {
+                log("Write error: " + e.message);
+            }
+        }
+
+        function updateButtonState(btn, isOn) {
+            if (isOn) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        }
+
+        function toggle(type) {
+            // Flash image if psychedelic theme
+            flashPsyImage();
+
+            const btn = btns[type];
+            if (!btn || btn.classList.contains('disabled')) return;
+            const isCurrentlyOn = btn.classList.contains('active');
+            const cmd = `${type}_${isCurrentlyOn ? 'off' : 'on'}`;
+            sendCommand(cmd);
+        }
+
+        async function sendCommand(cmdName) {
+            if (!writeChar) {
+                log("Not connected!");
+                return;
+            }
+            const [addr, reg, val] = COMMANDS[cmdName];
+            const data = generateCommandBytes(addr, reg, val);
+            try {
+                log(`Sending ${cmdName}...`);
+                await writeChar.writeValue(data);
+                log("Command sent");
+                await new Promise(r => setTimeout(r, 200));
+                await sendReadRequest();
+            } catch (error) {
+                log("Send failed: " + error);
+            }
+        }
+
+        function onDisconnected() {
+            log("Disconnected");
+            stopPolling();
+            updateStatus(false);
+        }
+
+        function disconnect() {
+            if (device && device.gatt.connected) {
+                device.gatt.disconnect();
+            } else {
+                onDisconnected();
+            }
+        }
+
+        connectBtn.addEventListener('click', connect);
+        disconnectBtn.addEventListener('click', disconnect);
+
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then(reg => console.log('SW registered'))
+                    .catch(err => console.log('SW failed', err));
+            });
+        }
+
+        function toggleScanner() {
+            const el = document.getElementById('scanner');
+            el.classList.toggle('hidden');
+        }
+
+        async function scanRegisters() {
+            if (!writeChar) {
+                alert("Not connected!");
+                return;
+            }
+            const start = parseInt(document.getElementById('scanStart').value);
+            const count = parseInt(document.getElementById('scanCount').value);
+            const resultsDiv = document.getElementById('scanResults');
+            resultsDiv.innerHTML = '<div class="text-yellow-400">Scanning...</div>';
+
+            stopPolling();
+
+            for (let i = 0; i < count; i++) {
+                const reg = start + i;
+                const payload = [0x11, 0x04, (reg >> 8) & 0xff, reg & 0xff, 0x00, 0x01];
+                const checksum = calculateChecksum(payload);
+                const cmd = new Uint8Array([...payload, (checksum >> 8) & 0xff, checksum & 0xff]);
+                try {
+                    await writeChar.writeValue(cmd);
+                    await new Promise(r => setTimeout(r, 150));
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+
+            startPolling();
+            resultsDiv.innerHTML += '<div class="text-green-400 mt-2">Done! Check Log for values.</div>';
+        }
+
+        function setTheme(theme) {
+            document.body.setAttribute('data-theme', theme);
+            localStorage.setItem('fossibot-theme', theme);
+
+            // Auto-focus terminal input if switching to terminal theme
+            if (theme === 'terminal') {
+                setTimeout(() => document.getElementById('termInput').focus(), 100);
+            }
+        }
+
+        const savedTheme = localStorage.getItem('fossibot-theme') || 'default';
+        setTheme(savedTheme);
+        document.getElementById('themeSelect').value = savedTheme;
+
+        // Interactive Terminal Logic
+        function handleTerminalCommand(e) {
+            if (e.key === 'Enter') {
+                const input = e.target;
+                const rawCmd = input.value.trim();
+                if (!rawCmd) return;
+
+                // Echo command to log
+                log(`guest@fossibot:~$ ${rawCmd}`);
+                input.value = '';
+
+                // Parse command
+                const parts = rawCmd.toLowerCase().split(' ');
+                const cmd = parts[0];
+                const arg1 = parts[1];
+
+                if (cmd === 'help') {
+                    log("SYSTEM COMMANDS:");
+                    log("  connect      - Connect to device");
+                    log("  disconnect   - Disconnect device");
+                    log("  status       - Show connection status");
+                    log("  stats        - Show power/battery stats");
+                    log("  scan         - Open register scanner");
+                    log("  install/save - Install App to device");
+                    log("  clear / cls  - Clear terminal");
+                    log("  theme [name] - Switch theme (e.g. theme pipboy)");
+                    log("");
+                    log("CONTROL COMMANDS:");
+                    log("  usb [on/off]   - Control USB power");
+                    log("  ac [on/off]    - Control AC power");
+                    log("  dc [on/off]    - Control DC power");
+                    log("  light [on/off] - Control Light");
+                }
+                else if (cmd === 'clear' || cmd === 'cls') {
+                    document.getElementById('log').innerHTML = '';
+                }
+                else if (cmd === 'connect') {
+                    connect();
+                }
+                else if (cmd === 'disconnect') {
+                    disconnect();
+                }
+                else if (cmd === 'scan') {
+                    toggleScanner();
+                }
+                else if (cmd === 'status') {
+                    if (!writeChar) log("Status: Disconnected");
+                    else log("Status: Connected");
+                }
+                else if (cmd === 'stats' || cmd === 'info') {
+                    const bat = document.getElementById('batteryPercent').textContent;
+                    const inW = document.getElementById('inputWatts').textContent;
+                    const outW = document.getElementById('outputWatts').textContent;
+                    const rem = document.getElementById('remainingHours').textContent;
+                    log(`Battery: ${bat}% | Input: ${inW}W | Output: ${outW}W`);
+                    log(`Time Left: ${rem}`);
+                }
+                else if (cmd === 'theme') {
+                    if (arg1) {
+                        const select = document.getElementById('themeSelect');
+                        let found = false;
+                        for (let i = 0; i < select.options.length; i++) {
+                            if (select.options[i].value === arg1) {
+                                select.value = arg1;
+                                setTheme(arg1);
+                                log(`Theme set to: ${arg1}`);
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found) log(`Theme '${arg1}' not found.`);
+                    } else {
+                        log("Current theme: " + document.body.getAttribute('data-theme'));
+                    }
+                }
+                else {
+                    // Handle "usbon", "usb on", "usb_on"
+                    let type = cmd;
+                    let state = arg1;
+
+                    // Handle condensed "usbon" style
+                    if (['usbon', 'usboff', 'acon', 'acoff', 'dcon', 'dcoff', 'lighton', 'lightoff'].includes(cmd)) {
+                        type = cmd.replace(/(on|off)$/, '');
+                        state = cmd.endsWith('on') ? 'on' : 'off';
+                    }
+
+                    if (['usb', 'ac', 'dc', 'light'].includes(type) && ['on', 'off'].includes(state)) {
+                        sendCommand(`${type}_${state}`);
+                    } else {
+                        log(`Command not found: ${rawCmd}. Type 'help' for list.`);
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>
