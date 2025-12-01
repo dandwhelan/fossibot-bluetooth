@@ -686,56 +686,40 @@
         </div>
     </div>
 
-    <!-- Terminal Elements -->
-    <div class="terminal-window-bar">
-        <span>[ FOSSIBOT CONTROL ]</span>
-        <span style="display:flex; gap:0.5rem;">
-            <span style="border:1px solid #000; width:12px; height:12px; display:inline-block;"></span>
-            <span style="border:1px solid #000; width:12px; height:12px; display:inline-block;"></span>
-        </span>
-    </div>
-
-    <div class="header">
-        <button id="btn-light" class="header-icon-btn" onclick="toggle('light')">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="5"></circle>
-                <line x1="12" y1="1" x2="12" y2="3"></line>
-                <line x1="12" y1="21" x2="12" y2="23"></line>
-                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                <line x1="1" y1="12" x2="3" y2="12"></line>
-                <line x1="21" y1="12" x2="23" y2="12"></line>
-                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-            </svg>
-        </button>
-
-        <div style="text-align: right;">
-
-            <div class="status" style="justify-content: flex-end;">
-                <span id="statusDot" class="status-dot status-disconnected"></span>
-                <span id="statusText">Disconnected</span>
-            </div>
-        </div>
-    </div>
-
     <div class="container">
-        <div class="btn-group">
-            <button id="connectBtn" class="btn-main btn-connect">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M7 7l10 10-5 5V2l5 5L7 17" />
-                </svg>
-                Connect
-            </button>
-            <button id="disconnectBtn" class="btn-main btn-disconnect hidden">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-                Disconnect
-            </button>
+        <!-- Terminal Elements -->
+        <div class="terminal-window-bar">
+            <span>[ FOSSIBOT CONTROL ]</span>
+            <span style="display:flex; gap:0.5rem;">
+                <button class="btn-main btn-connect" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">
+                    Connect
+                </button>
+                <button class="btn-main btn-disconnect hidden" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">
+                    Disconnect
+                </button>
+            </span>
+        </div>
+
+        <!-- Standard Header -->
+        <div class="header">
+            <h1 style="margin:0; font-size: 1.5rem;">Fossibot</h1>
+            <div class="btn-group" style="width: auto; margin: 0;">
+                <button class="btn-main btn-connect">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M7 7l10 10-5 5V2l5 5L7 17" />
+                    </svg>
+                    Connect
+                </button>
+                <button class="btn-main btn-disconnect hidden">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                    Disconnect
+                </button>
+            </div>
         </div>
 
         <div id="dashboard" class="dashboard disabled">
@@ -843,6 +827,9 @@
             <option value="high-contrast">High Contrast</option>
             <option value="pipboy">Pipboy</option>
         </select>
+        <button id="btn-light" onclick="toggle('light')"
+            style="background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 0.5rem;"
+            title="Toggle Light">💡</button>
         <button onclick="toggleScanner()"
             style="background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 0.5rem;"
             title="Open Scanner">🔬</button>
@@ -882,8 +869,10 @@
             dc: document.getElementById('btn-dc'),
             light: document.getElementById('btn-light')
         };
-        const connectBtn = document.getElementById('connectBtn');
-        const disconnectBtn = document.getElementById('disconnectBtn');
+
+        // Handle multiple connect/disconnect buttons
+        const connectBtns = document.querySelectorAll('.btn-connect');
+        const disconnectBtns = document.querySelectorAll('.btn-disconnect');
 
         // Psychedelic Images
         const psyImages = [
@@ -967,22 +956,19 @@
         }
 
         function updateStatus(connected) {
-            document.getElementById('statusText').textContent = connected ? "Connected" : "Disconnected";
-            document.getElementById('statusDot').className = connected ? "status-dot status-connected" : "status-dot status-disconnected";
-
             const controls = document.getElementById('controls');
             const dashboard = document.getElementById('dashboard');
 
             if (connected) {
                 controls.classList.remove('disabled');
                 dashboard.classList.remove('disabled');
-                connectBtn.classList.add('hidden');
-                disconnectBtn.classList.remove('hidden');
+                connectBtns.forEach(b => b.classList.add('hidden'));
+                disconnectBtns.forEach(b => b.classList.remove('hidden'));
             } else {
                 controls.classList.add('disabled');
                 dashboard.classList.add('disabled');
-                connectBtn.classList.remove('hidden');
-                disconnectBtn.classList.add('hidden');
+                connectBtns.forEach(b => b.classList.remove('hidden'));
+                disconnectBtns.forEach(b => b.classList.add('hidden'));
             }
         }
 
@@ -1154,8 +1140,8 @@
             }
         }
 
-        connectBtn.addEventListener('click', connect);
-        disconnectBtn.addEventListener('click', disconnect);
+        connectBtns.forEach(btn => btn.addEventListener('click', connect));
+        disconnectBtns.forEach(btn => btn.addEventListener('click', disconnect));
 
         // Service Worker Registration
         if ('serviceWorker' in navigator) {
@@ -1197,116 +1183,56 @@
             }
 
             startPolling();
-            resultsDiv.innerHTML += '<div class="text-green-400 mt-2">Done! Check Log for values.</div>';
         }
 
-        function setTheme(theme) {
-            document.body.setAttribute('data-theme', theme);
-            localStorage.setItem('fossibot-theme', theme);
+        // Terminal Command Handling
+        function handleTerminalCommand(event) {
+            if (event.key === 'Enter') {
+                const input = event.target.value.trim();
+                event.target.value = '';
+                log(`guest@fossibot:~$ ${input}`);
 
-            // Auto-focus terminal input if switching to terminal theme
-            if (theme === 'terminal') {
-                setTimeout(() => document.getElementById('termInput').focus(), 100);
-            }
-        }
-
-        const savedTheme = localStorage.getItem('fossibot-theme') || 'default';
-        setTheme(savedTheme);
-        document.getElementById('themeSelect').value = savedTheme;
-
-        // Interactive Terminal Logic
-        function handleTerminalCommand(e) {
-            if (e.key === 'Enter') {
-                const input = e.target;
-                const rawCmd = input.value.trim();
-                if (!rawCmd) return;
-
-                // Echo command to log
-                log(`guest@fossibot:~$ ${rawCmd}`);
-                input.value = '';
-
-                // Parse command
-                const parts = rawCmd.toLowerCase().split(' ');
-                const cmd = parts[0];
-                const arg1 = parts[1];
-
-                if (cmd === 'help') {
-                    log("SYSTEM COMMANDS:");
-                    log("  connect      - Connect to device");
-                    log("  disconnect   - Disconnect device");
-                    log("  status       - Show connection status");
-                    log("  stats        - Show power/battery stats");
-                    log("  scan         - Open register scanner");
-                    log("  install/save - Install App to device");
-                    log("  clear / cls  - Clear terminal");
-                    log("  theme [name] - Switch theme (e.g. theme pipboy)");
-                    log("");
-                    log("CONTROL COMMANDS:");
-                    log("  usb [on/off]   - Control USB power");
-                    log("  ac [on/off]    - Control AC power");
-                    log("  dc [on/off]    - Control DC power");
-                    log("  light [on/off] - Control Light");
-                }
-                else if (cmd === 'clear' || cmd === 'cls') {
+                if (input === 'help') {
+                    log("Available commands: help, clear, connect, disconnect, usb on/off, ac on/off, dc on/off, light on/off, theme [name]");
+                } else if (input === 'clear') {
                     document.getElementById('log').innerHTML = '';
-                }
-                else if (cmd === 'connect') {
+                } else if (input === 'connect') {
                     connect();
-                }
-                else if (cmd === 'disconnect') {
+                } else if (input === 'disconnect') {
                     disconnect();
-                }
-                else if (cmd === 'scan') {
-                    toggleScanner();
-                }
-                else if (cmd === 'status') {
-                    if (!writeChar) log("Status: Disconnected");
-                    else log("Status: Connected");
-                }
-                else if (cmd === 'stats' || cmd === 'info') {
-                    const bat = document.getElementById('batteryPercent').textContent;
-                    const inW = document.getElementById('inputWatts').textContent;
-                    const outW = document.getElementById('outputWatts').textContent;
-                    const rem = document.getElementById('remainingHours').textContent;
-                    log(`Battery: ${bat}% | Input: ${inW}W | Output: ${outW}W`);
-                    log(`Time Left: ${rem}`);
-                }
-                else if (cmd === 'theme') {
-                    if (arg1) {
-                        const select = document.getElementById('themeSelect');
-                        let found = false;
-                        for (let i = 0; i < select.options.length; i++) {
-                            if (select.options[i].value === arg1) {
-                                select.value = arg1;
-                                setTheme(arg1);
-                                log(`Theme set to: ${arg1}`);
-                                found = true;
-                                break;
-                            }
+                } else if (input.startsWith('theme ')) {
+                    const themeName = input.split(' ')[1];
+                    setTheme(themeName);
+                } else if (['usb on', 'usb off', 'ac on', 'ac off', 'dc on', 'dc off', 'light on', 'light off'].includes(input)) {
+                    const [type, state] = input.split(' ');
+                    const btn = btns[type];
+                    if (btn && !btn.classList.contains('disabled')) {
+                        const isCurrentlyOn = btn.classList.contains('active');
+                        if ((state === 'on' && !isCurrentlyOn) || (state === 'off' && isCurrentlyOn)) {
+                            toggle(type);
+                        } else {
+                            log(`${type} is already ${state}`);
                         }
-                        if (!found) log(`Theme '${arg1}' not found.`);
                     } else {
-                        log("Current theme: " + document.body.getAttribute('data-theme'));
+                        log("Cannot execute command. Check connection.");
                     }
-                }
-                else {
-                    // Handle "usbon", "usb on", "usb_on"
-                    let type = cmd;
-                    let state = arg1;
-
-                    // Handle condensed "usbon" style
-                    if (['usbon', 'usboff', 'acon', 'acoff', 'dcon', 'dcoff', 'lighton', 'lightoff'].includes(cmd)) {
-                        type = cmd.replace(/(on|off)$/, '');
-                        state = cmd.endsWith('on') ? 'on' : 'off';
-                    }
-
-                    if (['usb', 'ac', 'dc', 'light'].includes(type) && ['on', 'off'].includes(state)) {
-                        sendCommand(`${type}_${state}`);
-                    } else {
-                        log(`Command not found: ${rawCmd}. Type 'help' for list.`);
-                    }
+                } else {
+                    log(`Command not found: ${input}`);
                 }
             }
+        }
+
+        // Theme Handling
+        function setTheme(themeName) {
+            document.body.setAttribute('data-theme', themeName);
+            document.getElementById('themeSelect').value = themeName;
+            localStorage.setItem('fossibot-theme', themeName);
+        }
+
+        // Load saved theme
+        const savedTheme = localStorage.getItem('fossibot-theme');
+        if (savedTheme) {
+            setTheme(savedTheme);
         }
     </script>
 </body>
