@@ -1,5 +1,7 @@
 # Fossibot F2400 Control PWA
 
+**🚀 Live App: [https://dandwhelan.github.io/fossibot-bluetooth/](https://dandwhelan.github.io/fossibot-bluetooth/)**
+
 A Progressive Web App (PWA) for controlling and monitoring the Fossibot F2400 Portable Power Station via Bluetooth. This application runs entirely in the browser (Chrome/Edge/Android) using the Web Bluetooth API, allowing for offline control without the need for official cloud-based apps.
 
 ## Features
