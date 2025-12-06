@@ -855,6 +855,8 @@
         const NOTIFY_UUID = '0000c305-0000-1000-8000-00805f9b34fb';
 
         let device, server, service, writeChar, notifyChar, pollInterval;
+        // Manual override for light state because device feedback is unreliable
+        let manualLightOverride = null;
 
         const COMMANDS = {
             usb_on: [17, 24, 1], usb_off: [17, 24, 0],
@@ -1014,6 +1016,8 @@
                 await notifyChar.startNotifications();
 
                 log("Connected! Starting polling on c304...");
+                // Reset override on connect
+                manualLightOverride = null;
                 updateStatus(true);
                 startPolling();
 
@@ -1042,7 +1046,14 @@
                 const usbState = (stateReg & 512) !== 0;
                 const dcState = (stateReg & 1024) !== 0;
                 const acState = (stateReg & 2048) !== 0;
-                const lightState = (stateReg & 4096) !== 0;
+
+                // Use override if available, otherwise fallback to Register 41 Bit 12
+                let lightState;
+                if (manualLightOverride !== null) {
+                    lightState = manualLightOverride;
+                } else {
+                    lightState = (stateReg & 4096) !== 0;
+                }
 
                 updateButtonState(btns.usb, usbState);
                 updateButtonState(btns.dc, dcState);
@@ -1103,7 +1114,28 @@
 
             const btn = btns[type];
             if (!btn || btn.classList.contains('disabled')) return;
-            const isCurrentlyOn = btn.classList.contains('active');
+
+            let isCurrentlyOn = btn.classList.contains('active');
+
+            // Special handling for light to fix state detection
+            if (type === 'light') {
+                if (manualLightOverride !== null) {
+                    isCurrentlyOn = manualLightOverride;
+                }
+                // Toggle the state
+                const newState = !isCurrentlyOn;
+                manualLightOverride = newState;
+                log(`Light manual override: ${newState ? 'ON' : 'OFF'}`);
+
+                // Optimistically update UI
+                updateButtonState(btn, newState);
+
+                // Send command
+                const cmd = `light_${newState ? 'on' : 'off'}`;
+                sendCommand(cmd);
+                return;
+            }
+
             const cmd = `${type}_${isCurrentlyOn ? 'off' : 'on'}`;
             sendCommand(cmd);
         }
@@ -1129,6 +1161,7 @@
         function onDisconnected() {
             log("Disconnected");
             stopPolling();
+            manualLightOverride = null; // Reset override
             updateStatus(false);
         }
 
