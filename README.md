@@ -10,10 +10,10 @@ A Progressive Web App (PWA) for controlling and monitoring the Fossibot F2400 Po
 -   **Remote Control:** Toggle USB, AC, DC, and Light outputs wirelessly.
 -   **PWA Support:** Installable on Android, Windows, and macOS for an app-like experience. Works offline.
 -   **Multiple Themes:**
-    -   **Cyberpunk (Default):** Dark mode with neon accents.
+    -   **Cyberpunk:** Dark mode with neon accents.
     -   **Terminal:** Retro command-line interface with typing support.
     -   **Psychedelic:** Trippy visuals with melting effects and watching eyes.
-    -   **Pipboy:** Fallout-inspired green monochrome.
+    -   **Pipboy: (Default)** Fallout-inspired green monochrome.
     -   **Minimal/Industrial:** Clean and functional designs.
 -   **Labs (Experimental):**
     -   **Control Hub:** Toggle Key Sound, Set Screen Timeout, and Cycle LED Modes.
