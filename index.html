@@ -1142,6 +1142,20 @@
         </div>
     </div>
 
+    <!-- Install Modal -->
+    <div id="installModal" class="modal-overlay" style="z-index: 3000;">
+        <div class="modal-content" style="text-align: center;">
+            <div class="modal-title">Install Application</div>
+            <p style="margin: 1rem 0; color: #ccc;">Install the Fossibot App for the best experience (Fullscreen,
+                Offline access).</p>
+            <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 1.5rem;">
+                <button class="btn-main" onclick="installApp()"
+                    style="background: var(--btn-green); color: black; font-weight: bold;">INSTALL</button>
+                <button class="btn-main" onclick="closeInstallModal()" style="background: #333;">LATER</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Debug Console / Simulator -->
     <div id="debugConsole" class="debug-console">
         <div
@@ -1737,29 +1751,41 @@
             console.log("PWA: beforeinstallprompt fired");
             e.preventDefault();
             deferredPrompt = e;
+
+            // Show subtle buttons
             const btnUI = document.getElementById('btn-install-ui');
             const btnTerm = document.getElementById('btn-install-term');
             if (btnUI) btnUI.classList.remove('hidden');
             if (btnTerm) btnTerm.classList.remove('hidden');
+
+            // Also show the visible "popup" asking to install
+            // Check if user has dismissed it before to avoid annoyance
+            if (!localStorage.getItem('fossibot-install-dismissed')) {
+                document.getElementById('installModal').style.display = 'flex';
+            }
         });
 
         window.addEventListener('appinstalled', () => {
             console.log("PWA: App installed");
             deferredPrompt = null;
+            closeInstallModal();
         });
 
         async function installApp() {
+            closeInstallModal();
             if (!deferredPrompt) return;
-            // Show the prompt
             deferredPrompt.prompt();
-            // Wait for the user to respond to the prompt
             const { outcome } = await deferredPrompt.userChoice;
             console.log(`User response to the install prompt: ${outcome}`);
-            // We've used the prompt, so clear it
             deferredPrompt = null;
-            // Hide the button
             installBtnUi.classList.add('hidden');
             installBtnTerm.classList.add('hidden');
+        }
+
+        function closeInstallModal() {
+            document.getElementById('installModal').style.display = 'none';
+            // Remember dismissal for this session/device
+            localStorage.setItem('fossibot-install-dismissed', 'true');
         }
 
         // Settings Logic
