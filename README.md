@@ -15,6 +15,9 @@ A Progressive Web App (PWA) for controlling and monitoring the Fossibot F2400 Po
     -   **Psychedelic:** Trippy visuals with melting effects and watching eyes.
     -   **Pipboy:** Fallout-inspired green monochrome.
     -   **Minimal/Industrial:** Clean and functional designs.
+-   **Labs (Experimental):**
+    -   **Control Hub:** Toggle Key Sound, Set Screen Timeout, and Cycle LED Modes.
+    -   **Simulator Mode:** Fully functional debug simulator with an **Appliance Runtime Calculator**. Test battery life estimates with appliances like Fridge, TV, and Induction Hob.
 -   **Register Scanner:** Built-in tool to scan and reverse-engineer Bluetooth registers.
 
 ## Installation & Usage
@@ -52,6 +55,10 @@ A Progressive Web App (PWA) for controlling and monitoring the Fossibot F2400 Po
 -   **v22:** Added "Screen Melt" chaos effect to Psychedelic theme.
 -   **v21:** Implemented "Watching Eyes" interactive background.
 -   **v20:** Organized image assets into `img/` directory.
+
+## Supported Models
+- Fossibot F2400 (Tested)
+- Fossibot F3600 Pro (Beta Support)
 
 ## License
 

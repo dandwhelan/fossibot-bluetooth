@@ -363,6 +363,7 @@
         .container {
             width: 100%;
             max-width: 28rem;
+            transition: max-width 0.3s;
         }
 
         /* Standard Header */
@@ -670,6 +671,204 @@
             border: 5px solid #fff;
             box-shadow: 0 0 50px #fff;
         }
+
+        /* Info Button & Modal */
+        .info-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            width: 1.5rem;
+            height: 1.5rem;
+            border-radius: 50%;
+            border: 1px solid var(--text-muted);
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 5;
+            transition: all 0.2s;
+        }
+
+        .info-btn:hover {
+            background: var(--text-muted);
+            color: var(--bg-card);
+        }
+
+        [data-theme="terminal"] .info-btn {
+            border-color: #00ff00;
+            color: #00ff00;
+        }
+
+        [data-theme="terminal"] .info-btn:hover {
+            background: #00ff00;
+            color: #000;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 10000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+
+        .modal-content {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            max-width: 90%;
+            width: 400px;
+            color: var(--text-main);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+
+        [data-theme="terminal"] .modal-content {
+            background: #000;
+            border: 1px solid #00ff00;
+            border-radius: 0;
+            color: #00ff00;
+            box-shadow: none;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1.5rem;
+        }
+
+        [data-theme="terminal"] .modal-close {
+            color: #00ff00;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            color: var(--text-blue);
+        }
+
+        [data-theme="terminal"] .modal-title {
+            color: #00ff00;
+            text-transform: uppercase;
+            border-bottom: 1px dashed #00ff00;
+            padding-bottom: 0.5rem;
+        }
+
+        .install-prompt-container {
+            width: 100%;
+            display: none;
+            justify-content: center;
+            padding: 0.5rem 0;
+        }
+
+        .btn-install {
+            background: var(--btn-green);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: var(--border-radius);
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        [data-theme="terminal"] .btn-install {
+            background: transparent;
+            border: 1px solid #00ff00;
+            color: #00ff00;
+            border-radius: 0;
+            text-transform: uppercase;
+        }
+
+        [data-theme="terminal"] .btn-install:hover {
+            background: #00ff00;
+            color: #000;
+        }
+
+        /* Settings Modal Specifics */
+        .settings-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .settings-label {
+            color: var(--text-main);
+            font-size: 0.9rem;
+        }
+
+        [data-theme="terminal"] .settings-label {
+            color: #00ff00;
+        }
+
+        .settings-input {
+            background: var(--bg-body);
+            border: 1px solid var(--text-muted);
+            color: var(--text-main);
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            width: 100px;
+            text-align: right;
+        }
+
+        [data-theme="terminal"] .settings-input {
+            background: #000;
+            border: 1px solid #00ff00;
+            color: #00ff00;
+            border-radius: 0;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        /* Extension Battery Badges */
+        .ext-battery-info {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        [data-theme="terminal"] .ext-battery-info {
+            color: #008800;
+        }
+
+        .debug-console {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 400px;
+            background: rgba(0, 0, 0, 0.9);
+            color: #0f0;
+            font-family: monospace;
+            z-index: 20000;
+            display: none;
+            border-top: 2px solid #fff;
+            padding: 1rem;
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
     </style>
 </head>
 
@@ -694,6 +893,10 @@
                 <button class="btn-main btn-connect" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">
                     Connect
                 </button>
+                <button id="btn-install-term" class="btn-main hidden" onclick="installApp()"
+                    style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">
+                    INSTALL
+                </button>
                 <button class="btn-main btn-disconnect hidden" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">
                     Disconnect
                 </button>
@@ -710,6 +913,16 @@
                         <path d="M7 7l10 10-5 5V2l5 5L7 17" />
                     </svg>
                     Connect
+                </button>
+                <button id="btn-install-ui" class="btn-main hidden" onclick="installApp()"
+                    style="background-color: var(--btn-green);">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Install App
                 </button>
                 <button class="btn-main btn-disconnect hidden">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -748,6 +961,7 @@
                         <div><span id="remainingHours">--</span> hrs</div>
                         <div><span id="remainingKwh">--</span> kWh</div>
                     </div>
+                    <div id="extBatteries" class="ext-battery-info"></div>
                 </div>
 
                 <div class="dash-col right">
@@ -760,20 +974,23 @@
         </div>
 
         <div id="controls" class="control-row disabled">
-            <div id="btn-usb" class="control-tile" onclick="toggle('usb')">
+            <div id="btn-usb" class="control-tile" onclick="toggle('usb')" style="position: relative;">
+                <div class="info-btn" onclick="showInfo(event, 'USB')">?</div>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
                     <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
                 </svg>
                 <span>USB</span>
             </div>
-            <div id="btn-ac" class="control-tile" onclick="toggle('ac')">
+            <div id="btn-ac" class="control-tile" onclick="toggle('ac')" style="position: relative;">
+                <div class="info-btn" onclick="showInfo(event, 'AC')">?</div>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 2v20M2 12h20"></path>
                 </svg>
                 <span>AC</span>
             </div>
-            <div id="btn-dc" class="control-tile" onclick="toggle('dc')">
+            <div id="btn-dc" class="control-tile" onclick="toggle('dc')" style="position: relative;">
+                <div class="info-btn" onclick="showInfo(event, 'DC')">?</div>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="2" y="6" width="20" height="12" rx="2" ry="2"></rect>
                     <line x1="6" y1="12" x2="6" y2="12"></line>
@@ -830,6 +1047,12 @@
         <button id="btn-light" onclick="toggle('light')"
             style="background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 0.5rem;"
             title="Toggle Light">💡</button>
+        <button onclick="openSettings()"
+            style="background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 0.5rem;"
+            title="Settings">⚙️</button>
+        <button onclick="openLabs()"
+            style="background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 0.5rem;"
+            title="Experimental Labs">🧪</button>
         <button onclick="toggleScanner()"
             style="background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 0.5rem;"
             title="Open Scanner">🔬</button>
@@ -849,6 +1072,126 @@
         </defs>
     </svg>
 
+    <!-- Info Modal -->
+    <div id="infoModal" class="modal-overlay" onclick="closeInfo(event)">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeInfo(event, true)">&times;</button>
+            <div id="modalTitle" class="modal-title">Title</div>
+            <div id="modalText">Description goes here.</div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal-overlay" onclick="closeSettings(event)">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeSettings(event, true)">&times;</button>
+            <div class="modal-title">Settings</div>
+
+            <div class="settings-row">
+                <span class="settings-label">Main Battery (Wh)</span>
+                <input id="settingMainCap" type="number" class="settings-input" value="2048">
+            </div>
+
+            <div class="settings-row">
+                <span class="settings-label">Expansion Battery (Wh)</span>
+                <input id="settingExpCap" type="number" class="settings-input" value="3840">
+            </div>
+
+            <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end;">
+                <button onclick="saveSettings()" class="btn-main btn-connect"
+                    style="flex: 0 0 auto; padding: 0.5rem 1.5rem;">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Labs Modal -->
+    <div id="labsModal" class="modal-overlay" onclick="closeLabs(event)">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeLabs(event, true)">&times;</button>
+            <div class="modal-title" style="color: var(--text-green);">🧪 Experimental Labs</div>
+
+            <div class="settings-row">
+                <span class="settings-label">Key Sound (Reg 56)</span>
+                <button id="lab-sound-btn" class="btn-main" onclick="toggleLabSound()"
+                    style="padding: 0.5rem; width: auto; font-size: 0.8rem;">OFF</button>
+            </div>
+
+            <div class="settings-row">
+                <span class="settings-label">Screen Timeout (Reg 62)</span>
+                <select id="lab-timeout-select" class="settings-input" onchange="setLabTimeout(this.value)"
+                    style="width: 140px;">
+                    <option value="0">Never</option>
+                    <option value="1">1 Min</option>
+                    <option value="5">5 Min</option>
+                    <option value="30">30 Min</option>
+                    <option value="60">1 Hour</option>
+                </select>
+            </div>
+
+            <div class="settings-row">
+                <span class="settings-label">LED Mode (Reg 27)</span>
+                <button class="btn-main" onclick="cycleLabLed()"
+                    style="padding: 0.5rem; width: auto; font-size: 0.8rem;">Cycle</button>
+            </div>
+
+            <div class="settings-row">
+                <span class="settings-label">Simulate:</span>
+                <button onclick="activateDebug()" class="btn-main"
+                    style="padding: 0.25rem 0.5rem; font-size:0.75rem;">Debug Mode</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Debug Console / Simulator -->
+    <div id="debugConsole" class="debug-console">
+        <div
+            style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #0f0; padding-bottom: 0.5rem; margin-bottom: 0.5rem;">
+            <strong>🔧 SIMULATOR MODE</strong>
+            <button onclick="closeDebug()"
+                style="background: none; border: 1px solid #0f0; color: #0f0; cursor: pointer; padding: 0.25rem 0.5rem;">✕
+                Close</button>
+        </div>
+
+        <!-- Custom Simulation Controls -->
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-bottom: 1rem;">
+            <div>
+                <label style="font-size: 0.7rem;">Battery %</label>
+                <input type="number" id="sim-battery" value="50" min="0" max="100" onchange="updateSimulation()"
+                    style="width: 100%; padding: 0.25rem; background: #111; color: #0f0; border: 1px solid #0f0;">
+            </div>
+            <div>
+                <label style="font-size: 0.7rem;">Input W</label>
+                <input type="number" id="sim-input" value="0" min="0" onchange="updateSimulation()"
+                    style="width: 100%; padding: 0.25rem; background: #111; color: #0f0; border: 1px solid #0f0;">
+            </div>
+            <div>
+                <label style="font-size: 0.7rem;">Output W</label>
+                <input type="number" id="sim-output" value="0" min="0" onchange="updateSimulation()"
+                    style="width: 100%; padding: 0.25rem; background: #111; color: #0f0; border: 1px solid #0f0;">
+            </div>
+            <div>
+                <label style="font-size: 0.7rem;">System W</label>
+                <input type="number" id="sim-sys" value="0" min="0" onchange="updateSimulation()"
+                    style="width: 100%; padding: 0.25rem; background: #111; color: #0f0; border: 1px solid #0f0;">
+            </div>
+        </div>
+
+        <!-- Appliance Calculator -->
+        <div style="border-top: 1px dashed #0f0; padding-top: 0.5rem;">
+            <strong style="font-size: 0.8rem;">⚡ Appliance Runtime Calculator</strong>
+            <div id="appliance-list"
+                style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.25rem; margin-top: 0.5rem; font-size: 0.75rem;">
+                <!-- Appliances will be rendered by JS -->
+            </div>
+            <div style="margin-top: 0.5rem; padding: 0.5rem; background: #001100; border: 1px solid #0f0;">
+                <span>Total Load: <strong id="calc-total-watts">0</strong>W</span> |
+                <span>Runtime: <strong id="calc-runtime">--</strong></span>
+            </div>
+        </div>
+
+        <div id="debugLog" style="margin-top: 0.5rem; font-size: 0.7rem; color: #080;"></div>
+    </div>
+
     <script>
         const SERVICE_UUID = '0000a002-0000-1000-8000-00805f9b34fb';
         const WRITE_UUID = '0000c304-0000-1000-8000-00805f9b34fb';
@@ -857,6 +1200,32 @@
         let device, server, service, writeChar, notifyChar, pollInterval;
         // Manual override for light state because device feedback is unreliable
         let manualLightOverride = null;
+
+        // Settings
+        let settings = {
+            mainCap: 2048,
+            expCap: 3840
+        };
+
+        // Initialize Settings from LocalStorage
+        const savedSettings = localStorage.getItem('fossibot-settings');
+        if (savedSettings) {
+            settings = JSON.parse(savedSettings);
+        }
+
+        // Initialize Theme
+        const savedTheme = localStorage.getItem('fossibot-theme');
+        if (savedTheme) {
+            setTheme(savedTheme);
+            document.getElementById('themeSelect').value = savedTheme;
+        } else {
+            // Default to Pipboy
+            setTheme('pipboy');
+            document.getElementById('themeSelect').value = 'pipboy';
+        }
+
+        // Debug Mode
+        let isDebug = false;
 
         const COMMANDS = {
             usb_on: [17, 24, 1], usb_off: [17, 24, 0],
@@ -998,6 +1367,24 @@
                         optionalServices: [SERVICE_UUID]
                     });
                     device.addEventListener('gattserverdisconnected', onDisconnected);
+
+                    // Auto-Detect Capacity from Name
+                    if (device.name) {
+                        const name = device.name.toUpperCase();
+                        let detected = null;
+                        if (name.includes('F3600')) {
+                            detected = 3840;
+                            log(`Detected F3600. Auto-setting Capacity to ${detected}Wh.`);
+                        } else if (name.includes('F2400')) {
+                            detected = 2048;
+                            log(`Detected F2400. Auto-setting Capacity to ${detected}Wh.`);
+                        }
+
+                        if (detected) {
+                            settings.mainCap = detected;
+                            localStorage.setItem('fossibot-settings', JSON.stringify(settings));
+                        }
+                    }
                 }
 
                 log("Connecting...");
@@ -1035,10 +1422,13 @@
                     return (offset + 1 < value.byteLength) ? value.getUint16(offset, false) : 0;
                 };
 
-                const battery = getReg(56) / 10.0;
+                const battery = getReg(56) / 10.0; // Main Battery SOC
+                const s1Raw = getReg(53); // S1 SOC Raw
+                const s2Raw = getReg(55); // S2 SOC Raw
+
                 const input = getReg(3);
                 const output = getReg(39);
-                const sysWatts = getReg(21);
+                const sysWatts = getReg(21); // Reverted to 21 per user request
                 const totalWatts = getReg(20);
                 const minutes = getReg(59);
 
@@ -1046,6 +1436,36 @@
                 const usbState = (stateReg & 512) !== 0;
                 const dcState = (stateReg & 1024) !== 0;
                 const acState = (stateReg & 2048) !== 0;
+
+                // Battery Extension Logic
+                // S1/S2: 0 = missing, otherwise 10-1010. Pct = (val - 10) / 10
+                let s1Pct = 0;
+                let s2Pct = 0;
+                let hasS1 = false;
+                let hasS2 = false;
+
+                if (s1Raw > 0) {
+                    s1Pct = Math.max(0, (s1Raw - 10) / 10.0);
+                    hasS1 = true;
+                }
+                if (s2Raw > 0) {
+                    s2Pct = Math.max(0, (s2Raw - 10) / 10.0);
+                    hasS2 = true;
+                }
+
+                // Total Energy Calculation
+                const mainWh = (battery / 100) * settings.mainCap;
+                const s1Wh = hasS1 ? (s1Pct / 100) * settings.expCap : 0;
+                const s2Wh = hasS2 ? (s2Pct / 100) * settings.expCap : 0;
+                const totalWh = mainWh + s1Wh + s2Wh;
+                const totalKwh = totalWh / 1000;
+
+                // Update UI for Extensions
+                const extContainer = document.getElementById('extBatteries');
+                let extText = [];
+                if (hasS1) extText.push(`Ext1: ${s1Pct.toFixed(1)}%`);
+                if (hasS2) extText.push(`Ext2: ${s2Pct.toFixed(1)}%`);
+                extContainer.textContent = extText.join(' | ');
 
                 // Use override if available, otherwise fallback to Register 41 Bit 12
                 let lightState;
@@ -1066,13 +1486,25 @@
                 document.getElementById('totalWatts').textContent = totalWatts;
                 document.getElementById('batteryPercent').textContent = Math.floor(battery);
 
-                const kwh = (battery / 100) * 2.048;
-                document.getElementById('remainingKwh').textContent = kwh.toFixed(2);
+                document.getElementById('remainingKwh').textContent = totalKwh.toFixed(2);
 
                 document.getElementById('remainingHours').textContent = minutes > 0 ? `${Math.floor(minutes / 60)}h ${minutes % 60}m` : "--";
 
                 document.getElementById('batteryRing').setAttribute('stroke-dasharray', `${battery}, 100`);
                 document.getElementById('batteryRing').style.color = battery < 20 ? "#ef4444" : "#60a5fa";
+
+                // Labs Updates
+                updateLabsUI(getReg);
+            }
+        }
+
+        function updateLabsUI(getReg) {
+            // Sound Reg 56: Check bit? Or value? Assume 0=Off, 1=On for now.
+            // Actually doc says "Key Sound" is Reg 56. 
+            // We can read it if supported.
+            if (document.getElementById('labsModal').style.display === 'flex') {
+                // Try to read settings if possible. 
+                // For now, we rely on local state or assumed values.
             }
         }
 
@@ -1226,13 +1658,20 @@
                 log(`guest@fossibot:~$ ${input}`);
 
                 if (input === 'help') {
-                    log("Available commands: help, clear, connect, disconnect, usb on/off, ac on/off, dc on/off, light on/off, theme [name]");
+                    log("Available commands: help, clear, connect, disconnect, usb on/off, ac on/off, dc on/off, light on/off, theme [name], debug on/off");
                 } else if (input === 'clear') {
                     document.getElementById('log').innerHTML = '';
                 } else if (input === 'connect') {
                     connect();
                 } else if (input === 'disconnect') {
                     disconnect();
+                } else if (input === 'debug on') {
+                    activateDebug();
+                    log("Debug mode ON");
+                } else if (input === 'debug off') {
+                    document.getElementById('debugConsole').style.display = 'none';
+                    isDebug = false;
+                    log("Debug mode OFF");
                 } else if (input.startsWith('theme ')) {
                     const themeName = input.split(' ')[1];
                     setTheme(themeName);
@@ -1262,11 +1701,323 @@
             localStorage.setItem('fossibot-theme', themeName);
         }
 
-        // Load saved theme
-        const savedTheme = localStorage.getItem('fossibot-theme');
-        if (savedTheme) {
-            setTheme(savedTheme);
+        // Info Modal Logic
+        const INFO_TEXTS = {
+            'DC': "DC Powers 12v appliances like Fridge, Lights, Water Pump.",
+            'AC': "AC are for big appliances like Induction Hob or any other domestic appliance using a proper house plug.",
+            'USB': "USB will enable the USB ports only on the Fossi. If you have AC Plug sockets with USB connections it doesn't control this. It's separate."
+        };
+
+        function showInfo(e, type) {
+            e.preventDefault();
+            e.stopPropagation(); // Prevent toggling the button
+            console.log("Opening Info for:", type);
+            const text = INFO_TEXTS[type];
+            if (text) {
+                document.getElementById('modalTitle').textContent = type + ' Info';
+                document.getElementById('modalText').textContent = text;
+                document.getElementById('infoModal').style.display = 'flex';
+            } else {
+                console.error("No info text for", type);
+            }
         }
+
+        function closeInfo(e, force) {
+            if (force || e.target.classList.contains('modal-overlay')) {
+                document.getElementById('infoModal').style.display = 'none';
+            }
+        }
+
+        // PWA Install Prompt
+        let deferredPrompt;
+        const installBtnUi = document.getElementById('btn-install-ui');
+        const installBtnTerm = document.getElementById('btn-install-term');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log("PWA: beforeinstallprompt fired");
+            e.preventDefault();
+            deferredPrompt = e;
+            const btnUI = document.getElementById('btn-install-ui');
+            const btnTerm = document.getElementById('btn-install-term');
+            if (btnUI) btnUI.classList.remove('hidden');
+            if (btnTerm) btnTerm.classList.remove('hidden');
+        });
+
+        window.addEventListener('appinstalled', () => {
+            console.log("PWA: App installed");
+            deferredPrompt = null;
+        });
+
+        async function installApp() {
+            if (!deferredPrompt) return;
+            // Show the prompt
+            deferredPrompt.prompt();
+            // Wait for the user to respond to the prompt
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User response to the install prompt: ${outcome}`);
+            // We've used the prompt, so clear it
+            deferredPrompt = null;
+            // Hide the button
+            installBtnUi.classList.add('hidden');
+            installBtnTerm.classList.add('hidden');
+        }
+
+        // Settings Logic
+        function openSettings() {
+            document.getElementById('settingMainCap').value = settings.mainCap;
+            document.getElementById('settingExpCap').value = settings.expCap;
+            document.getElementById('settingsModal').style.display = 'flex';
+        }
+
+        function closeSettings(e, force) {
+            if (force || e.target.classList.contains('modal-overlay')) {
+                document.getElementById('settingsModal').style.display = 'none';
+            }
+        }
+
+        function saveSettings() {
+            const main = parseInt(document.getElementById('settingMainCap').value);
+            const exp = parseInt(document.getElementById('settingExpCap').value);
+
+            if (isNaN(main) || isNaN(exp)) {
+                alert("Please enter valid numbers");
+                return;
+            }
+
+            settings.mainCap = main;
+            settings.expCap = exp;
+
+            localStorage.setItem('fossibot-settings', JSON.stringify(settings));
+            document.getElementById('settingsModal').style.display = 'none';
+            alert("Settings Saved");
+        }
+
+        // Debug Simulation
+        let mockRegs = new Uint8Array(200); // Simulate register space
+
+        function activateDebug() {
+            isDebug = true;
+            document.getElementById('debugConsole').style.display = 'block';
+            updateStatus(true);
+            // Init minimal useful regs
+            mockRegs[41 * 2 + 7] = 0x11; // Header safe
+            mockRegs[41 * 2 + 6] = 0x04;
+
+            // Start simulation loop if not real connection
+            if (!device) {
+                setInterval(() => {
+                    if (!isDebug) return;
+                    const event = { target: { value: createMockPacket() } };
+                    handleNotification(event);
+                }, 2000);
+            }
+        }
+
+        // Mock Detect for Testing
+        function mockDetect(name) {
+            log(`Simulating connection to: ${name}`);
+            const upper = name.toUpperCase();
+            if (upper.includes('F3600')) {
+                settings.mainCap = 3840;
+                log("Auto-detected F3600 -> 3840Wh");
+            } else if (upper.includes('F2400')) {
+                settings.mainCap = 2048;
+                log("Auto-detected F2400 -> 2048Wh");
+            }
+            localStorage.setItem('fossibot-settings', JSON.stringify(settings));
+        }
+
+        function mockSimulate(reg, val) {
+            // Write to our mock register array
+            // Value is 16 bit, so split into 2 bytes
+            mockRegs[6 + reg * 2] = (val >> 8) & 0xff;
+            mockRegs[6 + reg * 2 + 1] = val & 0xff;
+
+            // Trigger immediate update
+            const event = { target: { value: createMockPacket() } };
+            handleNotification(event);
+            document.getElementById('debugLog').textContent = `Set Reg ${reg} to ${val}`;
+        }
+
+        // Labs Logic
+        function openLabs() {
+            document.getElementById('labsModal').style.display = 'flex';
+        }
+
+        function closeLabs(e, force) {
+            if (force || e.target.classList.contains('modal-overlay')) {
+                document.getElementById('labsModal').style.display = 'none';
+            }
+        }
+
+        async function toggleLabSound() {
+            // Reg 56: Sound. 0=Off, 1=On? 
+            const btn = document.getElementById('lab-sound-btn');
+            const isOff = btn.textContent === 'OFF';
+            const val = isOff ? 1 : 0;
+
+            if (device && writeChar) {
+                const cmd = generateCommandBytes(56, 0x00, val);
+                try {
+                    await writeChar.writeValue(cmd);
+                    log(`Labs: Set Sound (Reg 56) to ${val}`);
+                    btn.textContent = val ? 'ON' : 'OFF';
+                    btn.style.background = val ? 'var(--btn-green)' : '';
+                } catch (e) { log("Labs Error: " + e); }
+            } else {
+                log(`Labs (Sim): Set Sound to ${val}`);
+                btn.textContent = val ? 'ON' : 'OFF';
+            }
+        }
+
+        async function setLabTimeout(mins) {
+            const val = parseInt(mins);
+            if (device && writeChar) {
+                const cmd = generateCommandBytes(62, 0x00, val);
+                try {
+                    await writeChar.writeValue(cmd);
+                    log(`Labs: Set Screen Timeout (Reg 62) to ${val} min`);
+                } catch (e) { log("Labs Error: " + e); }
+            } else {
+                log(`Labs (Sim): Set Screen Timeout to ${val} min`);
+            }
+        }
+
+        async function cycleLabLed() {
+            // Reg 27: LED Mode. 0=Off, 1=Light, 2=Flash, 3=SOS
+            if (!window.labLedState) window.labLedState = 0;
+            window.labLedState = (window.labLedState + 1) % 4;
+
+            if (device && writeChar) {
+                const cmd = generateCommandBytes(27, 0x00, window.labLedState);
+                try {
+                    await writeChar.writeValue(cmd);
+                    log(`Labs: Set LED Mode (Reg 27) to ${window.labLedState}`);
+                } catch (e) { log("Labs Error: " + e); }
+            } else {
+                log(`Labs (Sim): Set LED Mode to ${window.labLedState}`);
+            }
+        }
+
+        function createMockPacket() {
+            // Construct a packet that looks like the real device notification
+            // Header is 0x11, 0x04
+            mockRegs[0] = 0x11;
+            mockRegs[1] = 0x04;
+            return {
+                byteLength: mockRegs.length,
+                getUint8: (idx) => mockRegs[idx],
+                getUint16: (idx) => (mockRegs[idx] << 8) | mockRegs[idx + 1]
+            };
+        }
+
+        // Close Debug Console
+        function closeDebug() {
+            document.getElementById('debugConsole').style.display = 'none';
+            isDebug = false;
+            log("Simulator closed");
+        }
+
+        // Appliance Calculator
+        const APPLIANCES = [
+            { name: 'Induction Hob', watts: 800, enabled: false },
+            { name: 'TV', watts: 100, enabled: false },
+            { name: 'LED Lights', watts: 10, enabled: false },
+            { name: 'Water Pump', watts: 40, enabled: false },
+            { name: '12V Fridge', watts: 90, enabled: false },
+            { name: 'Air Fryer', watts: 1500, enabled: false },
+            { name: 'Electric Heater', watts: 400, enabled: false },
+            { name: 'Phone Charger', watts: 15, enabled: false }
+        ];
+
+        function renderAppliances() {
+            const container = document.getElementById('appliance-list');
+            if (!container) return;
+            container.innerHTML = APPLIANCES.map((app, i) => `
+                <div style="display: flex; align-items: center; gap: 0.25rem;">
+                    <input type="checkbox" id="app-${i}" ${app.enabled ? 'checked' : ''} onchange="toggleAppliance(${i})">
+                    <label for="app-${i}" style="flex: 1;">${app.name}</label>
+                    <input type="number" value="${app.watts}" min="0" style="width: 50px; padding: 0.1rem; background: #111; color: #0f0; border: 1px solid #0f0; font-size: 0.7rem;" onchange="updateApplianceWatts(${i}, this.value)">W
+                </div>
+            `).join('');
+        }
+
+        function toggleAppliance(index) {
+            APPLIANCES[index].enabled = !APPLIANCES[index].enabled;
+            calculateRuntime();
+        }
+
+        function updateApplianceWatts(index, value) {
+            APPLIANCES[index].watts = parseInt(value) || 0;
+            calculateRuntime();
+        }
+
+        function calculateRuntime() {
+            const totalWatts = APPLIANCES.filter(a => a.enabled).reduce((sum, a) => sum + a.watts, 0);
+            document.getElementById('calc-total-watts').textContent = totalWatts;
+
+            if (totalWatts > 0) {
+                const batteryWh = settings.mainCap; // Use configured capacity
+                const batteryPercent = parseInt(document.getElementById('sim-battery')?.value || 100);
+                const availableWh = (batteryPercent / 100) * batteryWh * 0.85; // 85% efficiency
+                const hours = availableWh / totalWatts;
+                const h = Math.floor(hours);
+                const m = Math.round((hours - h) * 60);
+                document.getElementById('calc-runtime').textContent = `${h}h ${m}m`;
+            } else {
+                document.getElementById('calc-runtime').textContent = '--';
+            }
+        }
+
+        function updateSimulation() {
+            if (!isDebug) return;
+
+            const battery = parseInt(document.getElementById('sim-battery').value) || 0;
+            const input = parseInt(document.getElementById('sim-input').value) || 0;
+            const output = parseInt(document.getElementById('sim-output').value) || 0;
+            const sys = parseInt(document.getElementById('sim-sys').value) || 0;
+
+            // Calculate total watts and remaining minutes
+            const totalWatts = output + sys;
+            let minutes = 0;
+            if (totalWatts > 0) {
+                const availableWh = (battery / 100) * settings.mainCap * 0.85;
+                minutes = Math.round((availableWh / totalWatts) * 60);
+            }
+
+            // Update mock registers
+            mockRegs[6 + 56 * 2] = (battery * 10 >> 8) & 0xff;
+            mockRegs[6 + 56 * 2 + 1] = (battery * 10) & 0xff;
+            mockRegs[6 + 3 * 2] = (input >> 8) & 0xff;
+            mockRegs[6 + 3 * 2 + 1] = input & 0xff;
+            mockRegs[6 + 39 * 2] = (output >> 8) & 0xff;
+            mockRegs[6 + 39 * 2 + 1] = output & 0xff;
+            mockRegs[6 + 21 * 2] = (sys >> 8) & 0xff;
+            mockRegs[6 + 21 * 2 + 1] = sys & 0xff;
+            // Register 20: Total Watts
+            mockRegs[6 + 20 * 2] = (totalWatts >> 8) & 0xff;
+            mockRegs[6 + 20 * 2 + 1] = totalWatts & 0xff;
+            // Register 59: Minutes remaining
+            mockRegs[6 + 59 * 2] = (minutes >> 8) & 0xff;
+            mockRegs[6 + 59 * 2 + 1] = minutes & 0xff;
+
+            // Trigger UI update
+            const event = { target: { value: createMockPacket() } };
+            handleNotification(event);
+
+            calculateRuntime();
+        }
+
+        // Render appliances on load
+        document.addEventListener('DOMContentLoaded', () => {
+            renderAppliances();
+
+            // Ensure Pipboy is default theme
+            const savedTheme = localStorage.getItem('fossibot-theme');
+            if (!savedTheme) {
+                setTheme('pipboy');
+            }
+        });
     </script>
 </body>
 
