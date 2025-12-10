@@ -2,64 +2,104 @@
 
 **🚀 Live App: [https://dandwhelan.github.io/fossibot-bluetooth/](https://dandwhelan.github.io/fossibot-bluetooth/)**
 
-A Progressive Web App (PWA) for controlling and monitoring the Fossibot F2400 Portable Power Station via Bluetooth. This application runs entirely in the browser (Chrome/Edge/Android) using the Web Bluetooth API, allowing for offline control without the need for official cloud-based apps.
+A robust Progressive Web App (PWA) for monitoring and controlling Fossibot Portable Power Stations (F2400, F3600 Pro) via Bluetooth. Designed for privacy and offline capability, it runs entirely client-side using the Web Bluetooth API.
 
-## Features
+![App Icon](icon-512.png)
 
--   **Real-time Monitoring:** View Input/Output wattage, battery percentage, remaining time, and energy stats.
--   **Remote Control:** Toggle USB, AC, DC, and Light outputs wirelessly.
--   **PWA Support:** Installable on Android, Windows, and macOS for an app-like experience. Works offline.
+## ✨ Features
+
+-   **Live Telemetry:** Real-time monitoring of Input/Output wattage, battery SOC, remaining runtime, and temperatures.
+-   **Wireless Control:** Toggle AC, DC, USB, and LED Light outputs remotely.
+-   **Appliance Runtime Calculator:** Simulate various loads (TV, Fridge, Induction Hob) to estimate battery duration.
+-   **Labs (Experimental):** Advanced controls for:
+    -   **Key Sound** (Toggle beep feedback) *[Verification Needed]*
+    -   **Screen Timeout** (Set auto-dim timer)
+    -   **System Auto-Off** (Set standby timer)
+    -   **LED Modes** (Cycle Light/Flash/SOS)
 -   **Multiple Themes:**
-    -   **Cyberpunk:** Dark mode with neon accents.
-    -   **Terminal:** Retro command-line interface with typing support.
-    -   **Psychedelic:** Trippy visuals with melting effects and watching eyes.
-    -   **Pipboy: (Default)** Fallout-inspired green monochrome.
-    -   **Minimal/Industrial:** Clean and functional designs.
--   **Labs (Experimental):**
-    -   **Control Hub:** Toggle Key Sound, Set Screen Timeout, and Cycle LED Modes.
-    -   **Simulator Mode:** Fully functional debug simulator with an **Appliance Runtime Calculator**. Test battery life estimates with appliances like Fridge, TV, and Induction Hob.
--   **Register Scanner:** Built-in tool to scan and reverse-engineer Bluetooth registers.
+    -   🖥️ **Terminal:** Retro CLI with typing effects.
+    -   ☢️ **Pipboy:** Fallout-inspired green monochrome (Default).
+    -   👁️ **Psychedelic:** Trippy visuals with interactive backgrounds.
+    -   🏭 **Industrial:** Clean, high-contrast dashboard.
+-   **PWA Ready:** Installable on Android, IOS, Windows, and macOS. Works 100% offline.
 
-## Installation & Usage
+---
 
-### Web (Chrome/Edge)
-1.  Navigate to the hosted URL (e.g., GitHub Pages).
-2.  Click the **Connect** button.
-3.  Select your Fossibot device from the Bluetooth pairing list.
-4.  Once connected, the dashboard will update with live data.
+## 🛠️ Developer Guide
 
-### Android (PWA)
-1.  Open the site in Chrome for Android.
-2.  Tap the "Install App" prompt at the bottom or go to Chrome Menu -> "Install app".
-3.  Launch the app from your home screen.
-4.  Note: Ensure Bluetooth and Location services are enabled for Web Bluetooth to work.
+This section details the reverse-engineered Bluetooth protocol for Fossibot devices.
 
-## Technical Details
+### Bluetooth Service & Characteristics
 
--   **Stack:** HTML5, Vanilla CSS, Vanilla JavaScript. No frameworks or build steps required.
--   **Bluetooth:** Uses the Web Bluetooth API (`navigator.bluetooth`) to communicate with the Fossibot's GATT server.
--   **Service Worker:** Caches all assets for offline functionality (`service-worker.js`).
--   **Manifest:** Compliant `manifest.json` for PWA installation.
+| Service / Char | UUID | Description |
+| :--- | :--- | :--- |
+| **Service** | `0000a002-0000-1000-8000-00805f9b34fb` | Main Control Service |
+| **Write Char** | `0000c304-0000-1000-8000-00805f9b34fb` | Send commands (Toggle switches, settings) |
+| **Notify Char** | `0000c305-0000-1000-8000-00805f9b34fb` | Receive status updates (Telemetry) |
 
-## Project Structure
+### Protocol Structure
 
--   `index.html`: Main application logic and UI.
--   `service-worker.js`: Handles offline caching and updates.
--   `manifest.json`: App metadata for PWA installation.
--   `img/`: Contains assets for the Psychedelic theme.
--   `README.md`: Project documentation.
+Communication uses a custom 16-bit register-based protocol. Packets are typically 6-8 bytes.
 
-## Recent Updates
+**Packet Format (Hex):**
+`11 04 AA BB CC DD EE FF`
+- `11 04`: Header / Preamble
+- `AA BB`: Register Address (High/Low Byte)
+- `CC DD`: Value / Payload
+- `EE FF`: **CRC Checksum** (Custom implementation)
 
--   **v23:** UI Refinements (Removed title, resized icons).
--   **v22:** Added "Screen Melt" chaos effect to Psychedelic theme.
--   **v21:** Implemented "Watching Eyes" interactive background.
--   **v20:** Organized image assets into `img/` directory.
+**Checksum Algorithm (JavaScript):**
+```javascript
+function calculateChecksum(arr) {
+    let t = 0xffff; // Initial value
+    for (let byte of arr) {
+        t ^= byte;
+        for (let i = 0; i < 8; i++) t = (t & 1) ? ((t >> 1) ^ 40961) : (t >> 1);
+    }
+    return t & 0xffff;
+}
+```
 
-## Supported Models
-- Fossibot F2400 (Tested)
-- Fossibot F3600 Pro (Beta Support)
+### Register Map
+
+| Register | R/W | Description | Values / Notes |
+| :--- | :--- | :--- | :--- |
+| **1** | R/W | **Switch State** | Bitmask: USB(1), AC(2), DC(4), Light(8) |
+| **3** | R | **Input Watts** | Total charging power (W) |
+| **20** | R | **Total Output** | Sum of all output (W) |
+| **21** | R | **System Watts** | System consumption/overhead (W) |
+| **39** | R | **Output Watts** | Total load power (W) |
+| **4** | R/W | **Light Mode** | 0=Off, 1=On, 2=Flash, 3=SOS |
+| **27** | W | **LED Mode** | Cycle LED states (Alt control) |
+| **56** | R/W? | **Main Battery / Key Sound** | **Conflict:** Reads as Battery %, Writes as Key Sound (0/1). *Use with caution.* |
+| **53** | R | **Ext Battery 1** | Raw value. `(Val - 10) / 10 = %` |
+| **55** | R | **Ext Battery 2** | Raw value. `(Val - 10) / 10 = %` |
+| **59** | R | **Remaining Time** | Remianing runtime in minutes |
+| **62** | W | **Screen Timeout** | Minutes (0=Never, 1, 5, 30, 60) |
+| **68** | W | **System Auto-Off** | Minutes (0=Never, 5, 10, 30, 60, 240, 480) |
+
+---
+
+## 📦 Installation
+
+### Web / Desktop
+1.  Visit the [Live App](https://dandwhelan.github.io/fossibot-bluetooth/).
+2.  Click **Connect** and pair your device.
+3.  (Optional) Click the install icon in your address bar to install as a desktop app.
+
+### Android
+1.  Open the site in Chrome.
+2.  Wait for the **"Install Application"** prompt, or select **Install app** from the Chrome menu.
+3.  Ensure "Bluetooth Scanning" and "Location" permissions are granted to Chrome.
+
+---
+
+## 🤝 Contributing
+
+Have a different model? Found a new register?
+1.  Open the **Scanner Tool** (Microscope 🔬 icon).
+2.  Scan a range of registers while toggling features on your device.
+3.  Open an issue or PR with your findings!
 
 ## License
-
-MIT License. Feel free to fork and modify for your own power stations!
+MIT License. Created by [Dan Whelan](https://github.com/dandwhelan).

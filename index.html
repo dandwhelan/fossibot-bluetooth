@@ -1131,6 +1131,20 @@
             </div>
 
             <div class="settings-row">
+                <span class="settings-label">System Auto-Off (Reg 68)</span>
+                <select id="lab-standby-select" class="settings-input" onchange="setLabStandby(this.value)"
+                    style="width: 140px;">
+                    <option value="0">Never</option>
+                    <option value="5">5 Min</option>
+                    <option value="10">10 Min</option>
+                    <option value="30">30 Min</option>
+                    <option value="60">1 Hour</option>
+                    <option value="240">4 Hours</option>
+                    <option value="480">8 Hours</option>
+                </select>
+            </div>
+
+            <div class="settings-row">
                 <span class="settings-label">LED Mode (Reg 27)</span>
                 <button class="btn-main" onclick="cycleLabLed()"
                     style="padding: 0.5rem; width: auto; font-size: 0.8rem;">Cycle</button>
@@ -1515,12 +1529,23 @@
         }
 
         function updateLabsUI(getReg) {
-            // Sound Reg 56: Check bit? Or value? Assume 0=Off, 1=On for now.
-            // Actually doc says "Key Sound" is Reg 56. 
-            // We can read it if supported.
-            if (document.getElementById('labsModal').style.display === 'flex') {
-                // Try to read settings if possible. 
-                // For now, we rely on local state or assumed values.
+            // Reg 56: Sound ?
+            const soundVal = getReg(56);
+            // Wait, 56 is being used for battery in handleNotification...
+            // Assuming the simple toggle logic holds for now, UI is decoupled.
+
+            // Reg 62: Screen Timeout (min)
+            const timeoutVal = getReg(62);
+            const tSelect = document.getElementById('lab-timeout-select');
+            if (tSelect && document.activeElement !== tSelect) {
+                tSelect.value = timeoutVal;
+            }
+
+            // Reg 68: System Standby (min)
+            const standbyVal = getReg(68);
+            const sSelect = document.getElementById('lab-standby-select');
+            if (sSelect && document.activeElement !== sSelect) {
+                sSelect.value = standbyVal;
             }
         }
 
@@ -1924,6 +1949,19 @@
                 } catch (e) { log("Labs Error: " + e); }
             } else {
                 log(`Labs (Sim): Set LED Mode to ${window.labLedState}`);
+            }
+        }
+
+        async function setLabStandby(mins) {
+            const val = parseInt(mins);
+            if (device && writeChar) {
+                const cmd = generateCommandBytes(68, 0x00, val);
+                try {
+                    await writeChar.writeValue(cmd);
+                    log(`Labs: Set System Auto-Off (Reg 68) to ${val} min`);
+                } catch (e) { log("Labs Error: " + e); }
+            } else {
+                log(`Labs (Sim): Set System Auto-Off to ${val} min`);
             }
         }
 
