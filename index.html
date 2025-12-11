@@ -1240,14 +1240,6 @@
                     </svg>
                     <span>DC</span>
                 </div>
-                <div id="btn-light" class="control-tile" onclick="toggle('light')" style="position: relative;">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path
-                            d="M9 18h6M10 22h4M12 2a7 7 0 0 0-7 7c0 2 1 3.5 2 5s2 3 2 4h6c0-1 1-2.5 2-4s2-3 2-5a7 7 0 0 0-7-7z">
-                        </path>
-                    </svg>
-                    <span>Light</span>
-                </div>
             </div>
 
             <div class="log-container">
@@ -1284,6 +1276,17 @@
                             <input type="checkbox" id="set-ac-silent" onchange="toggleSetting('ac_silent')">
                             <span class="slider"></span>
                         </label>
+                    </div>
+                </div>
+
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <span class="setting-title">LED Light</span>
+                        <span class="setting-desc">Toggle device light</span>
+                    </div>
+                    <div class="setting-control">
+                        <button class="btn-main" onclick="toggle('light')"
+                            style="width: auto; padding: 0.5rem 1rem;">Toggle</button>
                     </div>
                 </div>
 
@@ -2496,6 +2499,11 @@
                 }
                 log(`(Sim) Set Reg ${reg} to ${val}`);
             }
+        }
+
+        function setTheme(themeName) {
+            document.documentElement.setAttribute('data-theme', themeName);
+            localStorage.setItem('fossibot-theme', themeName);
         }
 
         function toggleSetting(name) {
