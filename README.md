@@ -62,21 +62,39 @@ function calculateChecksum(arr) {
 
 ### Register Map
 
-| Register | R/W | Description | Values / Notes |
-| :--- | :--- | :--- | :--- |
-| **1** | R/W | **Switch State** | Bitmask: USB(1), AC(2), DC(4), Light(8) |
-| **3** | R | **Input Watts** | Total charging power (W) |
-| **20** | R | **Total Output** | Sum of all output (W) |
-| **21** | R | **System Watts** | System consumption/overhead (W) |
-| **39** | R | **Output Watts** | Total load power (W) |
-| **4** | R/W | **Light Mode** | 0=Off, 1=On, 2=Flash, 3=SOS |
-| **27** | W | **LED Mode** | Cycle LED states (Alt control) |
-| **56** | R/W? | **Main Battery / Key Sound** | **Conflict:** Reads as Battery %, Writes as Key Sound (0/1). *Use with caution.* |
-| **53** | R | **Ext Battery 1** | Raw value. `(Val - 10) / 10 = %` |
-| **55** | R | **Ext Battery 2** | Raw value. `(Val - 10) / 10 = %` |
-| **59** | R | **Remaining Time** | Remianing runtime in minutes |
-| **62** | W | **Screen Timeout** | Minutes (0=Never, 1, 5, 30, 60) |
-| **68** | W | **System Auto-Off** | Minutes (0=Never, 5, 10, 30, 60, 240, 480) |
+> **Note:** Data sourced from community findings and [schauveau/sydpower-mqtt](https://github.com/schauveau/sydpower-mqtt/blob/main/MQTT-MODBUS.md). Values generally need specific scaling (e.g., usually 1/10 or 1/100).
+
+#### Monitoring Registers (Read)
+| Register | Description | Notes |
+| :--- | :--- | :--- |
+| **2, 3, 6**| **Input Watts** | Reg 6 appears to be Total (AC+DC). Reg 30/31 are USB idle? |
+| **18** | **AC Out Volt** | `Val / 10 = V` |
+| **19** | **AC Out Freq** | `Val / 10 = Hz` |
+| **20** | **Total Output**| Sum of all outputs (W) |
+| **22** | **AC In Freq** | `Val / 100 = Hz` (e.g., 4988 = 49.88Hz) |
+| **30-31**| **USB A Power** | `Val / 10 = W`. Reg 30/31 linked? |
+| **34** | **USB C1 Power**| 100W Port. `Val / 10 = W` |
+| **35-37**| **USB C Power** | 20W Ports. `Val / 10 = W` |
+| **39** | **Total Output**| `Val = W` (AC+DC+USB) |
+| **42** | **Mask 1** | USB Active (0x03d8) / DC Active (0xe000) |
+| **48** | **Mask 2** | AC Charging (0x8000) / Idle? (0x4000) |
+| **56** | **Main SOC** | `Val / 10 = %` (0-1000 range) |
+| **58** | **Time to Full**| Minutes (0 if discharging) |
+| **59** | **Time to Empty**| Minutes |
+
+#### Control Registers (Write)
+| Register | Description | Values / Notes |
+| :--- | :--- | :--- |
+| **13** | **AC Charge Rate**| Read Only? 1-5 (300W-1100W) |
+| **24** | **USB Only** | 0=Off, 1=On |
+| **25** | **DC Only** | 0=Off, 1=On |
+| **26** | **AC Only** | 0=Off, 1=On |
+| **27** | **LED Light** | 0=Off, 1=On, 2=Flash, 3=SOS |
+| **57** | **AC Booking** | Mins to disable AC charging (Timer) |
+| **60** | **Screen Timeout**| Minutes (1, 3, 5, 10, 30) |
+| **61** | **AC Standby** | Minutes |
+| **62** | **DC Standby** | Minutes |
+| **67** | **AC Charge Enable**| 1100=On, 10=Off |
 
 ---
 
