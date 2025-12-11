@@ -836,6 +836,45 @@
             font-family: 'Courier New', Courier, monospace;
         }
 
+        /* Diagnostic Flash Animations */
+        @keyframes flash-green {
+            0% {
+                color: #0f0;
+                font-weight: bold;
+                transform: scale(1.1);
+            }
+
+            100% {
+                color: inherit;
+                font-weight: normal;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes flash-yellow {
+            0% {
+                color: #ff0;
+                font-weight: bold;
+                transform: scale(1.1);
+            }
+
+            100% {
+                color: inherit;
+                font-weight: normal;
+                transform: scale(1);
+            }
+        }
+
+        .flash-up {
+            animation: flash-green 1.5s ease-out;
+            display: inline-block;
+        }
+
+        .flash-down {
+            animation: flash-yellow 1.5s ease-out;
+            display: inline-block;
+        }
+
         .hidden {
             display: none !important;
         }
@@ -1435,7 +1474,8 @@
                 <button onclick="renderDiagnostics()"
                     style="background: var(--btn-blue); color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem; margin-right: 0.5rem;">Refresh</button>
                 <label style="font-size: 0.8rem;">
-                    <input type="checkbox" id="diag-auto-refresh" onchange="toggleDiagAutoRefresh(this.checked)"> Auto
+                    <input type="checkbox" id="diag-auto-refresh" checked
+                        onchange="toggleDiagAutoRefresh(this.checked)"> Auto
                 </label>
             </div>
         </div>
@@ -1794,7 +1834,7 @@
                     };
 
                     // Populate Global Registers
-                    for (let i = 0; i < 80; i++) {
+                    for (let i = 0; i < 90; i++) {
                         registers[i] = getRegLocal(i);
                     }
                     // For compatibility with existing code using local vars (if any needed below, though most use global getReg now? No, local vars used below)
@@ -2377,6 +2417,8 @@
             69: 'Fan Level?'
         };
 
+        let lastDiagValues = {};
+
         function renderDiagnostics() {
             const div = document.getElementById('full-diag-list');
             if (!div) return;
@@ -2384,8 +2426,8 @@
             let html = '<table style="width:100%; border-collapse:collapse; font-size: 0.8rem;">';
             html += '<tr><th style="text-align:left; border-bottom:1px solid #444;">Reg</th><th style="text-align:left; border-bottom:1px solid #444;">Name</th><th style="text-align:right; border-bottom:1px solid #444;">Value</th></tr>';
 
-            // List 0-80
-            for (let i = 0; i <= 80; i++) {
+            // List 0-90
+            for (let i = 0; i <= 90; i++) {
                 const name = KNOWN_REGS[i] || '-';
                 const val = registers[i];
                 const valStr = (val !== undefined) ? val : '?';
@@ -2394,10 +2436,24 @@
                 const color = (valStr !== '?' && valStr > 0) ? '#fff' : '#666';
                 const rowColor = (i % 2 === 0) ? 'rgba(255,255,255,0.05)' : 'transparent';
 
+                // Diff Logic
+                let valClass = '';
+                if (val !== undefined) {
+                    const last = lastDiagValues[i];
+                    if (last !== undefined && val !== last) {
+                        if (val > last) valClass = 'flash-up';
+                        else if (val < last) valClass = 'flash-down';
+                    }
+                    lastDiagValues[i] = val;
+                }
+
                 html += `<tr style="background:${rowColor}; color:${color}">
                     <td style="padding:0.25rem;">${i}</td>
                     <td style="padding:0.25rem; color:#aaa;">${name}</td>
-                    <td style="padding:0.25rem; text-align:right;">${valStr} <span style="font-size:0.7rem; color:#444;">${hexStr}</span></td>
+                    <td style="padding:0.25rem; text-align:right;">
+                        <span class="${valClass}">${valStr}</span> 
+                        <span style="font-size:0.7rem; color:#444;">${hexStr}</span>
+                    </td>
                  </tr>`;
             }
             html += '</table>';
@@ -2407,7 +2463,10 @@
         let diagAutoRefreshInterval = null;
         function toggleDiagAutoRefresh(enabled) {
             if (enabled) {
-                diagAutoRefreshInterval = setInterval(renderDiagnostics, 2000);
+                if (!diagAutoRefreshInterval) {
+                    renderDiagnostics(); // Immediate update
+                    diagAutoRefreshInterval = setInterval(renderDiagnostics, 2000);
+                }
             } else {
                 if (diagAutoRefreshInterval) {
                     clearInterval(diagAutoRefreshInterval);
@@ -2415,6 +2474,13 @@
                 }
             }
         }
+
+        // Initialize Auto Refresh if checked
+        setTimeout(() => {
+            const chk = document.getElementById('diag-auto-refresh');
+            if (chk && chk.checked) toggleDiagAutoRefresh(true);
+        }, 1000);
+
         async function setRegister(reg, val) {
             const cmd = generateCommandBytes(17, reg, val); // Address 17
             if (device && writeChar) {

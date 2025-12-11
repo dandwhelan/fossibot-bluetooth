@@ -8,20 +8,25 @@ A robust Progressive Web App (PWA) for monitoring and controlling Fossibot Porta
 
 ## ✨ Features
 
--   **Live Telemetry:** Real-time monitoring of Input/Output wattage, battery SOC, remaining runtime, and temperatures.
+-   **Live Telemetry:** Real-time monitoring of Input/Output wattage, battery SOC, remaining runtime, voltage, and frequency.
 -   **Wireless Control:** Toggle AC, DC, USB, and LED Light outputs remotely.
+-   **Diagnostics Mode:** 
+    -   **"Stock Ticker" Feed:** Watch registers update in real-time with visual flash indicators (Green = Up, Yellow = Down).
+    -   **Full Register Access:** View raw data for registers 0-90.
+    -   **Auto-Refresh:** Continuous data stream for debugging.
+-   **Advanced Settings:**
+    -   **AC Charging Enable:** Toggle AC charging on/off (Verified).
+    -   **Silent Charging:** Enable quiet mode (Reg 57).
+    -   **Standby Timers:** Set separate timeout values for System, AC, DC, and Screen.
+    -   **Battery Protection:** Set Discharge Limits (Reg 66).
+    -   **Booking Charge:** Schedule charging start/stop times.
 -   **Appliance Runtime Calculator:** Simulate various loads (TV, Fridge, Induction Hob) to estimate battery duration.
--   **Labs (Experimental):** Advanced controls for:
-    -   **Key Sound** (Toggle beep feedback) *[Verification Needed]*
-    -   **Screen Timeout** (Set auto-dim timer)
-    -   **System Auto-Off** (Set standby timer)
-    -   **LED Modes** (Cycle Light/Flash/SOS)
 -   **Multiple Themes:**
     -   🖥️ **Terminal:** Retro CLI with typing effects.
     -   ☢️ **Pipboy:** Fallout-inspired green monochrome (Default).
-    -   👁️ **Psychedelic:** Trippy visuals with interactive backgrounds.
+    -   🌈 **Rainbow:** High-contrast, colorful styling.
+    -   � **Acid Mode:** Psychedelic visual effects.
     -   🏭 **Industrial:** Clean, high-contrast dashboard.
--   **PWA Ready:** Installable on Android, IOS, Windows, and macOS. Works 100% offline.
 
 ---
 
@@ -48,52 +53,46 @@ Communication uses a custom 16-bit register-based protocol. Packets are typicall
 - `CC DD`: Value / Payload
 - `EE FF`: **CRC Checksum** (Custom implementation)
 
-**Checksum Algorithm (JavaScript):**
-```javascript
-function calculateChecksum(arr) {
-    let t = 0xffff; // Initial value
-    for (let byte of arr) {
-        t ^= byte;
-        for (let i = 0; i < 8; i++) t = (t & 1) ? ((t >> 1) ^ 40961) : (t >> 1);
-    }
-    return t & 0xffff;
-}
-```
+### Register Map (Analysis 0-90)
 
-### Register Map
-
-> **Note:** Data sourced from community findings and [schauveau/sydpower-mqtt](https://github.com/schauveau/sydpower-mqtt/blob/main/MQTT-MODBUS.md). Values generally need specific scaling (e.g., usually 1/10 or 1/100).
+> **Note:** Data sourced from community findings and live analysis. Values generally need specific scaling (e.g., usually 1/10 or 1/100).
 
 #### Monitoring Registers (Read)
 | Register | Description | Notes |
 | :--- | :--- | :--- |
-| **2, 3, 6**| **Input Watts** | Reg 6 appears to be Total (AC+DC). Reg 30/31 are USB idle? |
+| **2** | **Input Watts (Type A?)** | Unknown source |
+| **3** | **Input Watts (AC?)** | Often matches Reg 6 |
+| **6** | **Total Input Watts** | AC + DC Input |
 | **18** | **AC Out Volt** | `Val / 10 = V` |
 | **19** | **AC Out Freq** | `Val / 10 = Hz` |
 | **20** | **Total Output**| Sum of all outputs (W) |
-| **22** | **AC In Freq** | `Val / 100 = Hz` (e.g., 4988 = 49.88Hz) |
-| **30-31**| **USB A Power** | `Val / 10 = W`. Reg 30/31 linked? |
+| **22** | **AC In Freq** | `Val / 100 = Hz` |
+| **30-31**| **USB A Power** | `Val / 10 = W` |
 | **34** | **USB C1 Power**| 100W Port. `Val / 10 = W` |
 | **35-37**| **USB C Power** | 20W Ports. `Val / 10 = W` |
-| **39** | **Total Output**| `Val = W` (AC+DC+USB) |
-| **42** | **Mask 1** | USB Active (0x03d8) / DC Active (0xe000) |
-| **48** | **Mask 2** | AC Charging (0x8000) / Idle? (0x4000) |
+| **39** | **Total Output (All)**| `Val = W` |
+| **42** | **State Flags (USB/DC)**| Status bits |
+| **48** | **Charge Flags** | Status bits |
+| **53/55** | **Ext Battery SOC** | External Battery Status |
 | **56** | **Main SOC** | `Val / 10 = %` (0-1000 range) |
-| **58** | **Time to Full**| Minutes (0 if discharging) |
+| **58** | **Time to Full**| Minutes |
 | **59** | **Time to Empty**| Minutes |
 
 #### Control Registers (Write)
 | Register | Description | Values / Notes |
 | :--- | :--- | :--- |
-| **13** | **AC Charge Rate**| Read Only? 1-5 (300W-1100W) |
-| **24** | **USB Only** | 0=Off, 1=On |
-| **25** | **DC Only** | 0=Off, 1=On |
-| **26** | **AC Only** | 0=Off, 1=On |
+| **13** | **AC Charge Power**| 1-5 (Levels: 300W-1100W) |
+| **24** | **USB Toggle** | 0=Off, 1=On |
+| **25** | **DC Toggle** | 0=Off, 1=On |
+| **26** | **AC Toggle** | 0=Off, 1=On |
 | **27** | **LED Light** | 0=Off, 1=On, 2=Flash, 3=SOS |
-| **57** | **AC Booking** | Mins to disable AC charging (Timer) |
-| **60** | **Screen Timeout**| Minutes (1, 3, 5, 10, 30) |
+| **57** | **Silent Charging**| 1=On, 0=Off (Reg 57 might also be booking?) |
+| **60** | **Screen Timeout**| Minutes (1, 3, 5, 10, 30, 0=Never) |
 | **61** | **AC Standby** | Minutes |
 | **62** | **DC Standby** | Minutes |
+| **63** | **Booking Charge** | Start/End time logic |
+| **64** | **System Power Off**| 1=Off |
+| **66** | **Discharge Limit**| % Limit (High/Low bytes?) |
 | **67** | **AC Charge Enable**| 1100=On, 10=Off |
 
 ---
@@ -115,9 +114,10 @@ function calculateChecksum(arr) {
 ## 🤝 Contributing
 
 Have a different model? Found a new register?
-1.  Open the **Scanner Tool** (Microscope 🔬 icon).
-2.  Scan a range of registers while toggling features on your device.
-3.  Open an issue or PR with your findings!
+1.  Open the **Diagnostics Mode** (Microscope/Pulse icon).
+2.  Watch the register feed while toggling buttons on your device.
+3.  Look for the **Green Flash** to identify the register that changed!
+4.  Open an issue or PR with your findings!
 
 ## License
 MIT License. Created by [Dan Whelan](https://github.com/dandwhelan).
