@@ -2630,27 +2630,31 @@
                     13: 'AC Charge Rate (1-5)',
                     14: 'AC Charge Max Limit (W)',
                     16: 'Frequency Setting (Hz/10)',
-                    20: 'DC Max Current (A)',
+                    20: 'Total Output / DC Max (A)',
                     24: 'USB Enabled',
-                    25: 'DC Enabled',
-                    26: 'AC Enabled',
-                    27: 'Light Enabled',
+                    25: 'DC Enabled (12V)',
+                    26: 'AC Enabled (Inverter)',
+                    27: 'Light Mode (0-3)',
                     32: 'Firmware Version?',
-                    59: 'Screen Timeout',
+                    57: 'Silent Charging (0/1)',
+                    59: 'Screen Timeout (mins)',
                     60: 'AC Standby (mins)',
                     61: 'DC Standby (mins)',
                     62: 'USB Standby (Seconds)',
                     66: 'Discharge Lower Limit (%/10)',
                     67: 'AC Upper Limit EPS (%/10)',
-                    68: 'Machine Shutdown (mins)'
+                    68: 'Machine Shutdown (mins)',
+                    80: 'CRC Checksum'
                 };
 
                 for (let i = 0; i <= 82; i++) {
                     const val = settingsRegisters[i];
-                    if (val !== undefined && val > 0) {
+                    // Show if defined, even if 0. Use SETTINGS_REGS for naming.
+                    if (val !== undefined) {
                         const name = SETTINGS_REGS[i] || '-';
                         const rowColor = (i % 2 === 0) ? 'rgba(255,255,255,0.05)' : 'transparent';
-                        html += `<tr style="background:${rowColor}; color:#fff">
+                        const color = (val > 0) ? '#fff' : '#888';
+                        html += `<tr style="background:${rowColor}; color:${color}">
                             <td style="padding:0.25rem;">${i}</td>
                             <td style="padding:0.25rem; color:#aaa;">${name}</td>
                             <td style="padding:0.25rem; text-align:right;">${val} <span style="font-size:0.7rem; color:#444;">0x${val.toString(16)}</span></td>
