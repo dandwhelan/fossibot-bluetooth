@@ -13,4 +13,4 @@
     - Recent Updates (Psychedelic theme, optimizations)
 
 ## 3. Deployment
-- **Commit & Push:** Stage all changes and push to the `main` branch on GitHub.
+- [x] **Commit & Push:** Stage all changes and push to the `main` branch on GitHub.

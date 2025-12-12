@@ -2024,9 +2024,15 @@
 
                     document.getElementById('inputWatts').textContent = input;
                     document.getElementById('outputWatts').textContent = output;
-                    // sysWatts from Reg 21 is unreliable, showing '--' if > 500W
-                    document.getElementById('sysWatts').textContent = (sysWatts > 0 && sysWatts < 500) ? sysWatts : '--';
-                    document.getElementById('totalWatts').textContent = totalWatts;
+
+                    // Calculate System Watts (Reg 21 is ~768 which implies ~76W idle if scaled /10)
+                    const calcSysWatts = (sysWatts > 0) ? (sysWatts / 10).toFixed(1) : 0;
+                    document.getElementById('sysWatts').textContent = calcSysWatts;
+
+                    // Total Watts = Output + System Override
+                    // Providing a more accurate total load on the battery
+                    const combinedTotal = totalWatts + parseFloat(calcSysWatts);
+                    document.getElementById('totalWatts').textContent = Math.round(combinedTotal);
                     document.getElementById('batteryPercent').textContent = Math.floor(battery);
 
                     document.getElementById('remainingKwh').textContent = totalKwh.toFixed(2);
@@ -2500,7 +2506,7 @@
             18: { name: 'AC Out Voltage', format: 'volt' },
             19: { name: 'AC Out Frequency', format: 'freq01' },
             20: { name: 'Total Output', format: 'watt' },
-            21: { name: 'System Draw', format: 'sys_watt' },  // Voltage × estimated amps = watts
+            21: { name: 'System Draw (~1A)', format: 'sys_watt' },
             22: { name: 'AC In Frequency', format: 'freq001' },
             24: { name: 'USB Toggle', format: 'toggle' },
             25: { name: 'DC Toggle', format: 'toggle' },
@@ -2524,10 +2530,10 @@
             56: { name: 'Main SOC', format: 'percent01' },
             57: { name: 'AC Silent', format: 'toggle' },
             58: { name: 'Time to Full', format: 'time' },
-            59: { name: 'Time Remaining', format: 'time' },
-            60: { name: 'Screen Timeout', format: 'mins' },
-            61: { name: 'AC Standby', format: 'mins' },
-            62: { name: 'DC Standby', format: 'mins' },
+            59: { name: 'Screen Timer (Counter)', format: 'time' },
+            60: { name: 'AC Timer (Counter)', format: 'mins' },
+            61: { name: 'DC Timer (Counter)', format: 'mins' },
+            62: { name: 'USB Timer (Counter)', format: 'raw' },
             66: { name: 'Discharge Limit', format: 'percent01' },
             67: { name: 'Unknown (67)', format: 'raw' },
             68: { name: 'Unknown (68)', format: 'raw' },
@@ -2633,7 +2639,7 @@
                     59: 'Screen Timeout',
                     60: 'AC Standby (mins)',
                     61: 'DC Standby (mins)',
-                    62: 'Unknown (NOT USB Standby)',
+                    62: 'USB Standby (Seconds)',
                     66: 'Discharge Lower Limit (%/10)',
                     67: 'AC Upper Limit EPS (%/10)',
                     68: 'Machine Shutdown (mins)'
