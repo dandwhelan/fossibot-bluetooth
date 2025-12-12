@@ -524,7 +524,9 @@
             border: 1px solid var(--text-muted);
             padding: 0.5rem;
             border-radius: 0.5rem;
-            width: 100px;
+            width: 140px;
+            /* Standardized Width */
+            box-sizing: border-box;
         }
 
         [data-theme="terminal"] .setting-select,
@@ -1296,7 +1298,7 @@
                         <span class="setting-desc">Shutdown Device</span>
                     </div>
                     <div class="setting-control">
-                        <button class="btn-main" style="background: var(--btn-red); width: auto; padding: 0.5rem 1rem;"
+                        <button class="btn-main" style="background: var(--btn-red); width: 140px; padding: 0.5rem;"
                             onclick="toggleSetting('power_off')">OFF</button>
                     </div>
                 </div>
@@ -1350,14 +1352,14 @@
                         <span class="setting-title">Screen Timeout</span>
                         <span class="setting-desc"><span id="status-screen-timeout" class="text-blue"></span></span>
                     </div>
+                    <select class="setting-select" id="set-screen-timeout" onchange="changeSelect('screen_timeout')">
+                        <option value="180">3 min</option>
+                        <option value="300">5 min</option>
+                        <option value="600">10 min</option>
+                        <option value="1800">30 min</option>
+                        <option value="0">Never</option>
+                    </select>
                 </div>
-                <select class="setting-select" id="set-screen-timeout" onchange="changeSelect('screen_timeout')">
-                    <option value="180">3 min</option>
-                    <option value="300">5 min</option>
-                    <option value="600">10 min</option>
-                    <option value="1800">30 min</option>
-                    <option value="0">Never</option>
-                </select>
             </div>
             <div class="setting-row" style="flex-direction: column; align-items: stretch;">
                 <div class="setting-info">
@@ -1369,7 +1371,7 @@
                         onchange="updateBookingFromTime()">
                     <span>or</span>
                     <input type="number" class="setting-input" id="set-booking-charge" value="0" min="0"
-                        style="width: 80px;" onchange="changeInput('booking_charge')">
+                        onchange="changeInput('booking_charge')">
                     <span>mins</span>
                 </div>
             </div>
@@ -1379,11 +1381,11 @@
                     <span class="setting-desc"><span id="status-sys-standby" class="text-blue"></span></span>
                 </div>
                 <select class="setting-select" id="set-sys-standby" onchange="changeSelect('sys_standby')">
-                    <option value="30">30 min</option>
-                    <option value="10">10 min</option>
                     <option value="5">5 min</option>
-                    <option value="3">3 min</option>
-                    <option value="0">Never</option>
+                    <option value="10">10 min</option>
+                    <option value="30">30 min</option>
+                    <option value="480">480 min (8h)</option>
+                    <!-- <option value="0">Never</option> -->
                 </select>
             </div>
             <div class="setting-row">
@@ -1392,9 +1394,9 @@
                     <span class="setting-desc"><span id="status-ac-standby" class="text-blue"></span></span>
                 </div>
                 <select class="setting-select" id="set-ac-standby" onchange="changeSelect('ac_standby')">
-                    <option value="840">24 hr</option>
                     <option value="480">8 hr</option>
                     <option value="960">16 hr</option>
+                    <option value="1440">24 hr</option>
                     <option value="0">Never</option>
                 </select>
             </div>
@@ -1404,23 +1406,43 @@
                     <span class="setting-desc"><span id="status-dc-standby" class="text-blue"></span></span>
                 </div>
                 <select class="setting-select" id="set-dc-standby" onchange="changeSelect('dc_standby')">
-                    <option value="840">24 hr</option>
                     <option value="480">8 hr</option>
                     <option value="960">16 hr</option>
+                    <option value="1440">24 hr</option>
+                    <option value="0">Never</option>
+                </select>
+            </div>
+            <div class="setting-row">
+                <div class="setting-info">
+                    <span class="setting-title">USB Standby</span>
+                    <span class="setting-desc"><span id="status-usb-standby" class="text-blue"></span></span>
+                </div>
+                <select class="setting-select" id="set-usb-standby" onchange="changeSelect('usb_standby')">
+                    <option value="5">5 min</option>
+                    <option value="10">10 min</option>
+                    <option value="30">30 min</option>
+                    <option value="60">1 hr</option>
+                    <option value="120">2 hr</option>
+                    <option value="480">8 hr</option>
+                    <option value="600">10 hr</option>
                     <option value="0">Never</option>
                 </select>
             </div>
 
             <div class="setting-group">
                 <div class="setting-header">Theme</div>
-                <div class="theme-grid">
-                    <button class="theme-btn" data-theme="terminal" onclick="setTheme('terminal')">🖥️ Terminal</button>
-                    <button class="theme-btn" data-theme="pipboy" onclick="setTheme('pipboy')">☢️ Pipboy</button>
-                    <button class="theme-btn" data-theme="rainbow" onclick="setTheme('rainbow')">🌈 Rainbow</button>
-                    <button class="theme-btn" data-theme="psychedelic" onclick="setTheme('psychedelic')">😵
-                        Acid</button>
-                    <button class="theme-btn" data-theme="industrial" onclick="setTheme('industrial')">🏭
-                        Industrial</button>
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <span class="setting-title">App Theme</span>
+                        <span class="setting-desc">Visual Style</span>
+                    </div>
+                    <select class="setting-select" id="theme-select" onchange="setTheme(this.value)">
+                        <option value="pipboy">☢️ Pipboy (Default)</option>
+                        <option value="terminal">🖥️ Terminal</option>
+                        <option value="industrial">🏭 Industrial</option>
+                        <option value="rainbow">🌈 Rainbow</option>
+                        <option value="psychedelic">😵 Acid Mode</option>
+                    </select>
                 </div>
             </div>
         </div>
@@ -1484,14 +1506,28 @@
     </div>
 
     <div id="view-diagnostics" class="view-section">
-        <div class="header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="header"
+            style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
             <h1>Diagnostics</h1>
-            <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                <button class="btn-connect" onclick="connect()"
+                    style="background: var(--btn-blue); color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">Connect</button>
+                <button class="btn-disconnect hidden" onclick="disconnect()"
+                    style="background: var(--btn-red); color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">Disconnect</button>
                 <button onclick="renderDiagnostics()"
-                    style="background: var(--btn-blue); color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem; margin-right: 0.5rem;">Refresh</button>
-                <label style="font-size: 0.8rem;">
-                    <input type="checkbox" id="diag-auto-refresh" checked
-                        onchange="toggleDiagAutoRefresh(this.checked)"> Auto
+                    style="background: var(--btn-green); color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">Refresh</button>
+                <button onclick="sendSettingsRequest()"
+                    style="background: #9333ea; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">📋
+                    Settings</button>
+                <label style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.25rem;">
+                    <input type="checkbox" id="diag-auto-refresh" onchange="toggleDiagAutoRefresh(this.checked)"> Auto
+                    <select id="diag-refresh-interval" onchange="updateDiagRefreshInterval()"
+                        style="padding: 0.1rem; font-size: 0.7rem;">
+                        <option value="1000">1s</option>
+                        <option value="2000" selected>2s</option>
+                        <option value="5000">5s</option>
+                        <option value="10000">10s</option>
+                    </select>
                 </label>
             </div>
         </div>
@@ -1634,10 +1670,59 @@
 
         // Global Registers Storage
         const registers = {};
+        const settingsRegisters = {};  // 0x1103 settings payload
 
         // Global accessor for registers
         function getReg(idx) {
             return registers[idx] || 0;
+        }
+
+        // Sync Settings UI STATUS LABELS (not dropdowns) with captured SETTINGS (0x1103) values
+        function syncSettingsUI() {
+            // Reg 13: AC Charge Rate (1-5) -> show as watts
+            const chargeRate = settingsRegisters[13] || 0;
+            const chargeRateWatts = [0, 300, 500, 700, 900, 1100][chargeRate] || 0;
+            const chargeRateEl = document.getElementById('status-charge-rate');
+            if (chargeRateEl) chargeRateEl.textContent = chargeRateWatts + 'W';
+
+            // Reg 59: Screen Timeout (index or minutes - scaling unclear)
+            const screenTimeout = settingsRegisters[59] || 0;
+            const screenTimeoutStatus = document.getElementById('status-screen-timeout');
+            if (screenTimeoutStatus) screenTimeoutStatus.textContent = screenTimeout > 0 ? screenTimeout + ' min' : 'Never';
+
+            // Reg 60: AC Standby (mins)
+            const acStandby = settingsRegisters[60] || 0;
+            const acStandbyStatus = document.getElementById('status-ac-standby');
+            if (acStandbyStatus) acStandbyStatus.textContent = acStandby > 0 ? (acStandby / 60) + 'h' : 'Never';
+
+            // Reg 61: DC Standby (mins)
+            const dcStandby = settingsRegisters[61] || 0;
+            const dcStandbyStatus = document.getElementById('status-dc-standby');
+            if (dcStandbyStatus) dcStandbyStatus.textContent = dcStandby > 0 ? (dcStandby / 60) + 'h' : 'Never';
+
+            // Reg 62: Unknown (NOT USB Standby - shows 600 when USB set to 5 mins)
+            // Skipping for now until we determine what this actually is
+
+            // Reg 66: Discharge Lower Limit (÷10 = %)
+            const dischargeLimitRaw = settingsRegisters[66] || 0;
+            const dischargeLimit = dischargeLimitRaw / 10;
+            const dischargeLimitLabel = document.getElementById('val-discharge-limit');
+            if (dischargeLimitLabel) dischargeLimitLabel.textContent = dischargeLimit.toFixed(0) + '%';
+            const dischargeLimitEl = document.getElementById('set-discharge-limit');
+            if (dischargeLimitEl) dischargeLimitEl.value = dischargeLimitRaw;
+
+            // Reg 67: AC Upper Limit EPS (÷10 = %)
+            const acUpperLimitRaw = settingsRegisters[67] || 0;
+            const acUpperLimit = acUpperLimitRaw / 10;
+            const acUpperStatus = document.getElementById('status-ac-upper-limit');
+            if (acUpperStatus) acUpperStatus.textContent = acUpperLimit.toFixed(0) + '%';
+
+            // Reg 68: Machine Shutdown (mins)
+            const machineShutdown = settingsRegisters[68] || 0;
+            const sysStandbyStatus = document.getElementById('status-sys-standby');
+            if (sysStandbyStatus) sysStandbyStatus.textContent = machineShutdown > 0 ? (machineShutdown / 60) + 'h' : 'Never';
+
+            console.log('Settings synced:', { chargeRate, screenTimeout, acStandby, dcStandby, machineShutdown });
         }
 
         const COMMANDS = {
@@ -1821,6 +1906,10 @@
                 updateStatus(true);
                 startPolling();
 
+                // Request settings (0x1103) once on connect
+                await new Promise(r => setTimeout(r, 500));  // Wait for first status
+                await sendSettingsRequest();
+
             } catch (error) {
                 log("Connection failed: " + error);
                 if (device && device.gatt.connected) device.gatt.disconnect();
@@ -1843,6 +1932,21 @@
                 // We will trust the length 168 mostly? Or maybe the header changed?
                 // Let's attempt to parse even if header is different for now, or just log it.
                 // Keeping strict check but logging will tell us why it fails.
+
+                // Handle 0x1103 SETTINGS payload
+                if (value && value.byteLength >= 6 && value.getUint8(0) === 0x11 && value.getUint8(1) === 0x03) {
+                    log('Received 0x1103 Settings packet!');
+                    for (let i = 0; i < 82; i++) {
+                        const offset = 6 + (i * 2);
+                        if (offset + 1 < value.byteLength) {
+                            settingsRegisters[i] = value.getUint16(offset, false);
+                        }
+                    }
+                    // Sync UI dropdowns with received settings
+                    syncSettingsUI();
+                }
+
+                // Handle 0x1104 STATUS payload
                 if (value && value.byteLength >= 6 && value.getUint8(0) === 0x11 && value.getUint8(1) === 0x04) {
                     const getRegLocal = (idx) => {
                         const offset = 6 + (idx * 2);
@@ -1978,29 +2082,8 @@
                 updateSliderLabel('discharge_limit', disLim);
             }
 
-            // Reg 60: Screen Timeout (Minutes)
-            const screenTo = getReg(60);
-            updateSelect('set-screen-timeout', screenTo);
-            const screenStatus = document.getElementById('status-screen-timeout');
-            if (screenStatus) screenStatus.textContent = `[${screenTo}m]`;
-
-            // Reg 59: System Standby
-            const sysSby = getReg(59);
-            updateSelect('set-sys-standby', sysSby);
-            const sysStatus = document.getElementById('status-sys-standby');
-            if (sysStatus) sysStatus.textContent = sysSby > 0 ? `[Reg59: ${sysSby}]` : '[Off]';
-
-            // Reg 61: AC Standby
-            const reg61 = getReg(61);
-            updateSelect('set-ac-standby', reg61);
-            const acStatus = document.getElementById('status-ac-standby');
-            if (acStatus) acStatus.textContent = reg61 > 0 ? `[Reg61: ${reg61}]` : '[Off]';
-
-            // Reg 62: DC Standby
-            const reg62 = getReg(62);
-            updateSelect('set-dc-standby', reg62);
-            const dcStatus = document.getElementById('status-dc-standby');
-            if (dcStatus) dcStatus.textContent = reg62 > 0 ? `[Reg62: ${reg62}]` : '[Off]';
+            // TIMERS NOW COME FROM SETTINGS REGISTERS (0x1103) via syncSettingsUI()
+            // Do NOT update from STATUS (0x1104) registers here as they have different meanings
 
             // Temps & Fans Update
             const valACFreq = getReg(16); // 500 -> 50.0 Hz
@@ -2060,6 +2143,20 @@
                 await writeChar.writeValue(cmd);
             } catch (e) {
                 log("Write error: " + e.message);
+            }
+        }
+
+        async function sendSettingsRequest() {
+            if (!writeChar) return;
+            // Request 0x1103 settings payload (same structure as status but function code 0x03)
+            const payload = [0x11, 0x03, 0x00, 0x00, 0x00, 0x50];
+            const checksum = calculateChecksum(payload);
+            const cmd = new Uint8Array([...payload, (checksum >> 8) & 0xff, checksum & 0xff]);
+            try {
+                log("Requesting settings (0x1103)...");
+                await writeChar.writeValue(cmd);
+            } catch (e) {
+                log("Settings request error: " + e.message);
             }
         }
 
@@ -2393,45 +2490,81 @@
             if (viewId === 'diagnostics') renderDiagnostics();
         }
 
+        // Register definitions with format info for human-readable display
         const KNOWN_REGS = {
-            2: 'Input Watts?',
-            3: 'Input Watts (AC?)',
-            6: 'Input Watts (AC+DC)',
-            13: 'AC Charge Rate (1-5)',
-            16: 'Inv Temp?', // User previously thought this was freq, but 18/19/22 are V/Hz
-            18: 'AC Out Volt (x0.1 V)',
-            19: 'AC Out Freq (x0.1 Hz)',
-            20: 'Total Output W',
-            21: 'System W?',
-            22: 'AC In Freq (x0.01 Hz)',
-            24: 'USB Toggle',
-            25: 'DC Toggle',
-            26: 'AC Toggle',
-            27: 'Light Toggle (Mode)',
-            30: 'USB1 Out (x0.1 W)',
-            31: 'USB2 Out (x0.1 W)',
-            34: 'USB-C1 Out (x0.1 W)',
-            35: 'USB-C2 Out (x0.1 W)',
-            36: 'USB-C3 Out (x0.1 W)',
-            37: 'USB-C4 Out (x0.1 W)',
-            39: 'Total Output (W)',
-            41: 'State Flags',
-            42: 'State Flags (USB/DC)',
-            48: 'Charge Flags',
-            53: 'Ext1 SOC',
-            55: 'Ext2 SOC',
-            56: 'Main SOC (x0.1 %)',
-            57: 'AC Charge Booking (min)',
-            58: 'Time to Full (min)',
-            59: 'Remaining Time (min)',
-            60: 'Screen Timeout',
-            61: 'AC Standby',
-            62: 'DC Standby',
-            66: 'Discharge Limit?',
-            67: 'AC Charge Ctrl',
-            68: 'AC Charge Speed?',
-            69: 'Fan Level?'
+            2: { name: 'Charge Level', format: 'charge_level' },  // 1=300W,2=500W,3=700W,4=900W,5=1100W
+            3: { name: 'Input Watts (AC)', format: 'watt' },
+            6: { name: 'Input Watts (Total)', format: 'watt' },
+            13: { name: 'AC Charge Rate', format: 'level' },
+            16: { name: 'Unknown (16)', format: 'raw' },
+            18: { name: 'AC Out Voltage', format: 'volt' },
+            19: { name: 'AC Out Frequency', format: 'freq01' },
+            20: { name: 'Total Output', format: 'watt' },
+            21: { name: 'System Draw', format: 'sys_watt' },  // Voltage × estimated amps = watts
+            22: { name: 'AC In Frequency', format: 'freq001' },
+            24: { name: 'USB Toggle', format: 'toggle' },
+            25: { name: 'DC Toggle', format: 'toggle' },
+            26: { name: 'AC Toggle', format: 'toggle' },
+            27: { name: 'Light Mode', format: 'light' },
+            30: { name: 'USB1 Out', format: 'watt01' },
+            31: { name: 'USB2 Out', format: 'watt01' },
+            34: { name: 'USB-C1 Out', format: 'watt01' },
+            35: { name: 'USB-C2 Out', format: 'watt01' },
+            36: { name: 'USB-C3 Out', format: 'watt01' },
+            37: { name: 'USB-C4 Out', format: 'watt01' },
+            39: { name: 'Total Output', format: 'watt' },
+            41: { name: 'State Flags', format: 'flags' },
+            42: { name: 'State Flags 2', format: 'flags' },
+            47: { name: 'Flags (47)', format: 'flags' },
+            48: { name: 'Flags (48)', format: 'flags' },
+            52: { name: 'Unknown (180)', format: 'raw' },  // Static value
+            53: { name: 'Ext1 SOC', format: 'ext_soc' },
+            54: { name: 'Unknown (374)', format: 'raw' },  // Static value
+            55: { name: 'Ext2 SOC', format: 'ext_soc' },
+            56: { name: 'Main SOC', format: 'percent01' },
+            57: { name: 'AC Silent', format: 'toggle' },
+            58: { name: 'Time to Full', format: 'time' },
+            59: { name: 'Time Remaining', format: 'time' },
+            60: { name: 'Screen Timeout', format: 'mins' },
+            61: { name: 'AC Standby', format: 'mins' },
+            62: { name: 'DC Standby', format: 'mins' },
+            66: { name: 'Discharge Limit', format: 'percent01' },
+            67: { name: 'Unknown (67)', format: 'raw' },
+            68: { name: 'Unknown (68)', format: 'raw' },
+            69: { name: 'Fan Level', format: 'level' },
+            80: { name: 'CRC Checksum', format: 'flags' }
         };
+
+        // Format register value to human-readable string
+        function formatRegisterData(regIdx, val) {
+            if (val === undefined) return '';
+            const reg = KNOWN_REGS[regIdx];
+            if (!reg || !reg.format) return '';
+
+            switch (reg.format) {
+                case 'volt': return (val / 10).toFixed(1) + 'V';
+                case 'freq01': return (val / 10).toFixed(1) + 'Hz';
+                case 'freq001': return (val / 100).toFixed(2) + 'Hz';
+                case 'watt': return val + 'W';
+                case 'watt01': return (val / 10).toFixed(1) + 'W';
+                case 'sys_watt':  // Voltage ÷10 × estimated amps (assume 1A)
+                    const voltage = val / 10;
+                    const estWatts = voltage * 1;  // Assume 1A draw
+                    return estWatts.toFixed(1) + 'W';
+                case 'percent01': return (val / 10).toFixed(1) + '%';
+                case 'ext_soc': return val > 0 ? ((val - 10) / 10).toFixed(1) + '%' : 'N/A';
+                case 'toggle': return val ? 'ON' : 'OFF';
+                case 'light': return ['OFF', 'ON', 'FLASH', 'SOS'][val] || val;
+                case 'level': return 'Level ' + val;
+                case 'charge_level':
+                    const watts = [0, 300, 500, 700, 900, 1100][val] || val * 200;
+                    return 'Lvl ' + val + ' (' + watts + 'W)';
+                case 'time': return val > 0 ? Math.floor(val / 60) + 'h ' + (val % 60) + 'm' : '--';
+                case 'mins': return val > 0 ? val + ' min' : 'Never';
+                case 'flags': return '0x' + val.toString(16).toUpperCase();
+                default: return '';
+            }
+        }
 
         let lastDiagValues = {};
 
@@ -2440,14 +2573,16 @@
             if (!div) return;
 
             let html = '<table style="width:100%; border-collapse:collapse; font-size: 0.8rem;">';
-            html += '<tr><th style="text-align:left; border-bottom:1px solid #444;">Reg</th><th style="text-align:left; border-bottom:1px solid #444;">Name</th><th style="text-align:right; border-bottom:1px solid #444;">Value</th></tr>';
+            html += '<tr><th style="text-align:left; border-bottom:1px solid #444;">Reg</th><th style="text-align:left; border-bottom:1px solid #444;">Name</th><th style="text-align:right; border-bottom:1px solid #444;">Data</th><th style="text-align:right; border-bottom:1px solid #444;">Raw</th></tr>';
 
             // List 0-90
             for (let i = 0; i <= 90; i++) {
-                const name = KNOWN_REGS[i] || '-';
+                const regInfo = KNOWN_REGS[i];
+                const name = regInfo ? regInfo.name : '-';
                 const val = registers[i];
                 const valStr = (val !== undefined) ? val : '?';
                 const hexStr = (val !== undefined) ? `0x${val.toString(16)}` : '';
+                const dataStr = formatRegisterData(i, val);
 
                 const color = (valStr !== '?' && valStr > 0) ? '#fff' : '#666';
                 const rowColor = (i % 2 === 0) ? 'rgba(255,255,255,0.05)' : 'transparent';
@@ -2466,6 +2601,9 @@
                 html += `<tr style="background:${rowColor}; color:${color}">
                     <td style="padding:0.25rem;">${i}</td>
                     <td style="padding:0.25rem; color:#aaa;">${name}</td>
+                    <td style="padding:0.25rem; text-align:right; color:var(--text-green); font-weight:bold;">
+                        <span class="${valClass}">${dataStr}</span>
+                    </td>
                     <td style="padding:0.25rem; text-align:right;">
                         <span class="${valClass}">${valStr}</span> 
                         <span style="font-size:0.7rem; color:#444;">${hexStr}</span>
@@ -2473,21 +2611,93 @@
                  </tr>`;
             }
             html += '</table>';
+
+            // Settings Section (0x1103 payload)
+            const hasSettings = Object.keys(settingsRegisters).length > 0;
+            if (hasSettings) {
+                html += '<h3 style="margin-top: 2rem; color: var(--text-blue);">📋 Settings (0x1103) - Captured on Connect</h3>';
+                html += '<table style="width:100%; border-collapse:collapse; font-size: 0.8rem; margin-top: 0.5rem;">';
+                html += '<tr><th style="text-align:left; border-bottom:1px solid #444;">Reg</th><th style="text-align:left; border-bottom:1px solid #444;">Name</th><th style="text-align:right; border-bottom:1px solid #444;">Value</th></tr>';
+
+                // Settings register definitions (0x1103 payload) - Confirmed via testing
+                const SETTINGS_REGS = {
+                    13: 'AC Charge Rate (1-5)',
+                    14: 'AC Charge Max Limit (W)',
+                    16: 'Frequency Setting (Hz/10)',
+                    20: 'DC Max Current (A)',
+                    24: 'USB Enabled',
+                    25: 'DC Enabled',
+                    26: 'AC Enabled',
+                    27: 'Light Enabled',
+                    32: 'Firmware Version?',
+                    59: 'Screen Timeout',
+                    60: 'AC Standby (mins)',
+                    61: 'DC Standby (mins)',
+                    62: 'Unknown (NOT USB Standby)',
+                    66: 'Discharge Lower Limit (%/10)',
+                    67: 'AC Upper Limit EPS (%/10)',
+                    68: 'Machine Shutdown (mins)'
+                };
+
+                for (let i = 0; i <= 82; i++) {
+                    const val = settingsRegisters[i];
+                    if (val !== undefined && val > 0) {
+                        const name = SETTINGS_REGS[i] || '-';
+                        const rowColor = (i % 2 === 0) ? 'rgba(255,255,255,0.05)' : 'transparent';
+                        html += `<tr style="background:${rowColor}; color:#fff">
+                            <td style="padding:0.25rem;">${i}</td>
+                            <td style="padding:0.25rem; color:#aaa;">${name}</td>
+                            <td style="padding:0.25rem; text-align:right;">${val} <span style="font-size:0.7rem; color:#444;">0x${val.toString(16)}</span></td>
+                         </tr>`;
+                    }
+                }
+                html += '</table>';
+            } else {
+                html += '<p style="margin-top: 2rem; color: #666; font-style: italic;">Settings not yet received. Reconnect to capture 0x1103 packet.</p>';
+            }
+
             div.innerHTML = html;
         }
 
         let diagAutoRefreshInterval = null;
+        let diagRefreshMs = 2000;  // Default 2 seconds
+        let lastSettingsRequestTime = 0;
+        const SETTINGS_REFRESH_INTERVAL = 60000;  // Request settings once per minute
+
+        // Combined refresh that updates display and occasionally requests settings
+        async function diagFullRefresh() {
+            renderDiagnostics();
+
+            // Only request settings once per minute (not every refresh)
+            const now = Date.now();
+            if (writeChar && (now - lastSettingsRequestTime) >= SETTINGS_REFRESH_INTERVAL) {
+                lastSettingsRequestTime = now;
+                await sendSettingsRequest();
+            }
+        }
+
         function toggleDiagAutoRefresh(enabled) {
             if (enabled) {
                 if (!diagAutoRefreshInterval) {
-                    renderDiagnostics(); // Immediate update
-                    diagAutoRefreshInterval = setInterval(renderDiagnostics, 2000);
+                    diagFullRefresh(); // Immediate update
+                    diagAutoRefreshInterval = setInterval(diagFullRefresh, diagRefreshMs);
                 }
             } else {
                 if (diagAutoRefreshInterval) {
                     clearInterval(diagAutoRefreshInterval);
                     diagAutoRefreshInterval = null;
                 }
+            }
+        }
+
+        function updateDiagRefreshInterval() {
+            const sel = document.getElementById('diag-refresh-interval');
+            diagRefreshMs = parseInt(sel.value) || 2000;
+
+            // Restart interval if running
+            if (diagAutoRefreshInterval) {
+                clearInterval(diagAutoRefreshInterval);
+                diagAutoRefreshInterval = setInterval(diagFullRefresh, diagRefreshMs);
             }
         }
 
@@ -2517,6 +2727,9 @@
         function setTheme(themeName) {
             document.documentElement.setAttribute('data-theme', themeName);
             localStorage.setItem('fossibot-theme', themeName);
+            // Sync Dropdown
+            const sel = document.getElementById('theme-select');
+            if (sel) sel.value = themeName;
         }
 
         function toggleSetting(name) {
@@ -2558,11 +2771,18 @@
             const el = document.getElementById('set-' + name.replace('_', '-'));
             const val = parseInt(el.value);
             const map = {
-                'screen_timeout': 60, 'sys_standby': 59,
+                'screen_timeout': 60,
+                // 'sys_standby': 59, // Reg 59 might be remaining time? User dump says 14329.
                 'ac_standby': 61, 'dc_standby': 62,
                 'eps_limit': 67
             };
             if (map[name]) setRegister(map[name], val);
+            // USB Unknown currently
+            if (name === 'sys_standby') {
+                // Temp: Try Reg 59 anyway? Or just log
+                // setRegister(59, val); 
+                console.log("System Standby set to " + val + " (Reg Unknown/Conflict)");
+            }
         }
 
         function changeInput(name) {
