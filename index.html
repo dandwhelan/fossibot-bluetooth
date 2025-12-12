@@ -74,6 +74,70 @@
             --btn-green: #00ff00;
         }
 
+        [data-theme="cyberpunk"] {
+            --bg-body: #0a0014;
+            --bg-card: #1a0a2e;
+            --bg-log: #05000a;
+            --text-main: #ff00ff;
+            --text-muted: #8b5cf6;
+            --text-green: #00ffff;
+            --text-blue: #ff00ff;
+            --text-red: #ff0055;
+            --btn-blue: #ff00ff;
+            --btn-blue-hover: #cc00cc;
+            --btn-red: #ff0055;
+            --btn-red-hover: #cc0044;
+            --btn-green: #00ffff;
+        }
+
+        [data-theme="ocean"] {
+            --bg-body: #0c1929;
+            --bg-card: #1e3a5f;
+            --bg-log: #051525;
+            --text-main: #e0f2fe;
+            --text-muted: #7dd3fc;
+            --text-green: #2dd4bf;
+            --text-blue: #38bdf8;
+            --text-red: #f472b6;
+            --btn-blue: #0284c7;
+            --btn-blue-hover: #0369a1;
+            --btn-red: #db2777;
+            --btn-red-hover: #be185d;
+            --btn-green: #14b8a6;
+        }
+
+        [data-theme="sunset"] {
+            --bg-body: #1c0a00;
+            --bg-card: #3d1500;
+            --bg-log: #0d0500;
+            --text-main: #fef3c7;
+            --text-muted: #fdba74;
+            --text-green: #fbbf24;
+            --text-blue: #fb923c;
+            --text-red: #ef4444;
+            --btn-blue: #ea580c;
+            --btn-blue-hover: #c2410c;
+            --btn-red: #dc2626;
+            --btn-red-hover: #b91c1c;
+            --btn-green: #d97706;
+        }
+
+        [data-theme="matrix"] {
+            --bg-body: #000000;
+            --bg-card: #001100;
+            --bg-log: #000500;
+            --text-main: #00ff00;
+            --text-muted: #008800;
+            --text-green: #00ff00;
+            --text-blue: #00cc00;
+            --text-red: #ff0000;
+            --btn-blue: #006600;
+            --btn-blue-hover: #004400;
+            --btn-red: #880000;
+            --btn-red-hover: #660000;
+            --btn-green: #00aa00;
+        }
+
         /* PSYCHEDELIC THEME (ACID MODE) */
         [data-theme="psychedelic"] {
             --bg-body: #ff00ff;
@@ -1363,7 +1427,7 @@
             </div>
             <div class="setting-row" style="flex-direction: column; align-items: stretch;">
                 <div class="setting-info">
-                    <span class="setting-title">Booking Charge</span>
+                    <span class="setting-title">Schedule Charge</span>
                     <span class="setting-desc">Start charging at time (or enter minutes)</span>
                 </div>
                 <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; align-items: center;">
@@ -1440,6 +1504,10 @@
                         <option value="pipboy">☢️ Pipboy (Default)</option>
                         <option value="terminal">🖥️ Terminal</option>
                         <option value="industrial">🏭 Industrial</option>
+                        <option value="cyberpunk">🌃 Cyberpunk</option>
+                        <option value="ocean">🌊 Ocean</option>
+                        <option value="sunset">🌅 Sunset</option>
+                        <option value="matrix">💊 Matrix</option>
                         <option value="rainbow">🌈 Rainbow</option>
                         <option value="psychedelic">😵 Acid Mode</option>
                     </select>
@@ -1451,25 +1519,18 @@
     <div id="view-simulation" class="view-section">
         <div class="header">
             <h1>Simulation</h1>
+            <p style="color: var(--text-muted); font-size: 0.8rem;">🚧 Coming Soon - Appliance power simulator</p>
         </div>
         <div class="setting-group">
-            <div class="setting-header">Tools</div>
             <div class="setting-row">
                 <div class="setting-info">
-                    <span class="setting-title">Register Scanner</span>
-                </div>
-                <button onclick="toggleScanner()" class="btn-main" style="width: auto; padding: 0.5rem;">Open
-                    Scanner</button>
-            </div>
-            <div class="setting-row">
-                <div class="setting-info">
-                    <span class="setting-title">Simulate Connection</span>
+                    <span class="setting-title">Simulation State</span>
+                    <span class="setting-desc">Test dashboard without device</span>
                 </div>
                 <button onclick="activateDebug()" class="btn-main"
                     style="width: auto; padding: 0.5rem; background: var(--btn-green);">Start Sim</button>
             </div>
         </div>
-
         <div id="sim-controls" style="width:100%; display:none; padding:1rem;">
             <div
                 style="background: rgba(0,0,0,0.5); padding: 1rem; margin-bottom: 1rem; border: 1px solid var(--text-muted);">
@@ -1519,6 +1580,9 @@
                 <button onclick="sendSettingsRequest()"
                     style="background: #9333ea; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">📋
                     Settings</button>
+                <label style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.25rem;">
+                    <input type="checkbox" id="diag-hide-zero" onchange="renderDiagnostics()"> Hide 0s
+                </label>
                 <label style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.25rem;">
                     <input type="checkbox" id="diag-auto-refresh" onchange="toggleDiagAutoRefresh(this.checked)"> Auto
                     <select id="diag-refresh-interval" onchange="updateDiagRefreshInterval()"
@@ -1661,8 +1725,8 @@
         if (savedTheme) {
             setTheme(savedTheme);
         } else {
-            // Default to Pipboy
-            setTheme('pipboy');
+            // Default to Industrial
+            setTheme('industrial');
         }
 
         // Debug Mode
@@ -2030,7 +2094,6 @@
                     document.getElementById('sysWatts').textContent = calcSysWatts;
 
                     // Total Watts = Output + System Override
-                    // Providing a more accurate total load on the battery
                     const combinedTotal = totalWatts + parseFloat(calcSysWatts);
                     document.getElementById('totalWatts').textContent = Math.round(combinedTotal);
                     document.getElementById('batteryPercent').textContent = Math.floor(battery);
@@ -2042,12 +2105,86 @@
                     document.getElementById('batteryRing').setAttribute('stroke-dasharray', `${battery}, 100`);
                     document.getElementById('batteryRing').style.color = battery < 20 ? "#ef4444" : "#60a5fa";
 
-                    // Labs Updates
                     // Labs Updates -> Settings Updates
-                    updateSettingsUI(getReg);
+                    updateSettingsUI(getRegLocal);
                 }
             } catch (err) {
                 console.error("Error in handleNotification:", err);
+            }
+        }
+
+        // Simulation State (Global)
+        const simAppliances = {};
+
+        function toggleSimAppliance(name, watts, type = 'output') {
+            const btn = document.querySelector(`button[onclick="toggleSimAppliance('${name}', ${watts}, '${type}')"]`) ||
+                document.querySelector(`button[onclick="toggleSimAppliance('${name}', ${watts})"]`);
+
+            if (simAppliances[name]) {
+                delete simAppliances[name];
+                if (btn) btn.classList.remove('active');
+            } else {
+                simAppliances[name] = { watts, type };
+                if (btn) btn.classList.add('active');
+            }
+            updateSimulation();
+        }
+
+        // Updated Simulation Logic
+        function updateSimulation() {
+            // Calculate totals from appliances
+            let totalIn = 0;
+            let totalOut = 0;
+
+            Object.values(simAppliances).forEach(app => {
+                if (app.type === 'input') totalIn += app.watts;
+                else totalOut += app.watts;
+            });
+
+            // Update Inputs
+            const inEl = document.getElementById('sim-input');
+            if (inEl) inEl.value = totalIn;
+            const outEl = document.getElementById('sim-output');
+            if (outEl) outEl.value = totalOut;
+
+            if (!isDebug) return;
+
+            const batEl = document.getElementById('sim-battery');
+            const battery = batEl ? parseFloat(batEl.value) : 50;
+            const sysEl = document.getElementById('sim-sys');
+            const sys = sysEl ? parseFloat(sysEl.value) : 0;
+
+            // Mock Data Packet
+            const input = totalIn;
+            const output = totalOut;
+            const total = output + sys;
+
+            // Reg 3: Input Watts
+            registers[3] = input;
+            // Reg 39: Output Watts
+            registers[39] = output;
+            // Reg 20: Total Output
+            registers[20] = total;
+            // Reg 21: System Watts (scaled * 10)
+            registers[21] = sys * 10;
+            // Reg 56: Battery SOC (* 10)
+            registers[56] = battery * 10;
+            registers[22] = 4800 + (battery * 10); // Rough voltage sim
+
+            // Manually update the DOM elements for simulation
+            const elIn = document.getElementById('inputWatts'); if (elIn) elIn.textContent = input;
+            const elOut = document.getElementById('outputWatts'); if (elOut) elOut.textContent = output;
+            const elSys = document.getElementById('sysWatts'); if (elSys) elSys.textContent = sys;
+            const elTot = document.getElementById('totalWatts'); if (elTot) elTot.textContent = total;
+            const elBat = document.getElementById('batteryPercent'); if (elBat) elBat.textContent = Math.floor(battery);
+
+            const totalKwh = (battery / 100) * (settings.mainCap / 1000);
+            const elKwh = document.getElementById('remainingKwh'); if (elKwh) elKwh.textContent = totalKwh.toFixed(2);
+
+            const elRing = document.getElementById('batteryRing');
+            if (elRing) {
+                elRing.setAttribute('stroke-dasharray', `${battery}, 100`);
+                elRing.style.color = battery < 20 ? "#ef4444" : "#60a5fa";
             }
         }
 
@@ -2578,7 +2715,11 @@
             const div = document.getElementById('full-diag-list');
             if (!div) return;
 
-            let html = '<table style="width:100%; border-collapse:collapse; font-size: 0.8rem;">';
+            let html = '';
+
+            // 0x1104 Input Registers
+            html += '<h3 style="margin-top: 0; color: var(--text-green);">⚡ Input Registers (0x1104) - Real-time Status</h3>';
+            html += '<table style="width:100%; border-collapse:collapse; font-size: 0.8rem; margin-top: 0.5rem;">';
             html += '<tr><th style="text-align:left; border-bottom:1px solid #444;">Reg</th><th style="text-align:left; border-bottom:1px solid #444;">Name</th><th style="text-align:right; border-bottom:1px solid #444;">Data</th><th style="text-align:right; border-bottom:1px solid #444;">Raw</th></tr>';
 
             // List 0-90
@@ -2604,6 +2745,12 @@
                     lastDiagValues[i] = val;
                 }
 
+                const hideZero = document.getElementById('diag-hide-zero') && document.getElementById('diag-hide-zero').checked;
+
+                if (hideZero && (val === undefined || val === 0)) {
+                    continue;
+                }
+
                 html += `<tr style="background:${rowColor}; color:${color}">
                     <td style="padding:0.25rem;">${i}</td>
                     <td style="padding:0.25rem; color:#aaa;">${name}</td>
@@ -2621,7 +2768,7 @@
             // Settings Section (0x1103 payload)
             const hasSettings = Object.keys(settingsRegisters).length > 0;
             if (hasSettings) {
-                html += '<h3 style="margin-top: 2rem; color: var(--text-blue);">📋 Settings (0x1103) - Captured on Connect</h3>';
+                html += '<h3 style="margin-top: 2rem; color: var(--text-blue);">📋 Holding Registers (0x1103) - Settings</h3>';
                 html += '<table style="width:100%; border-collapse:collapse; font-size: 0.8rem; margin-top: 0.5rem;">';
                 html += '<tr><th style="text-align:left; border-bottom:1px solid #444;">Reg</th><th style="text-align:left; border-bottom:1px solid #444;">Name</th><th style="text-align:right; border-bottom:1px solid #444;">Value</th></tr>';
 
@@ -2636,6 +2783,7 @@
                     26: 'AC Enabled (Inverter)',
                     27: 'Light Mode (0-3)',
                     32: 'Firmware Version?',
+                    56: 'Key Sound (0/1)',
                     57: 'Silent Charging (0/1)',
                     59: 'Screen Timeout (mins)',
                     60: 'AC Standby (mins)',
@@ -2649,6 +2797,12 @@
 
                 for (let i = 0; i <= 82; i++) {
                     const val = settingsRegisters[i];
+
+                    const hideZero = document.getElementById('diag-hide-zero') && document.getElementById('diag-hide-zero').checked;
+                    if (hideZero && (val === undefined || val === 0)) {
+                        continue;
+                    }
+
                     // Show if defined, even if 0. Use SETTINGS_REGS for naming.
                     if (val !== undefined) {
                         const name = SETTINGS_REGS[i] || '-';

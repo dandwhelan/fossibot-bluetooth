@@ -1,65 +1,123 @@
 # Fossibot F2400 / F3600 Pro Control PWA
 
-Bypass the official cloud-dependent app and control your Fossibot power station directly via Bluetooth. Private, offline-first, and feature-rich.
+**Unlock the full potential of your Fossibot power station.**
+
+This Progressive Web App (PWA) allows you to control and monitor your Fossibot F2400, F3600 Pro, and similar power stations directly from your browser via Bluetooth Low Energy (BLE). It bypasses the need for the official cloud-dependent app, offering a private, offline-first, and feature-rich alternative.
 
 **🚀 [Launch Web App](https://dandwhelan.github.io/fossibot-bluetooth/)**
 
 ![App Preview](icon-512.png)
 
-## ✨ key Features
+## ✨ Comprehensive Features
 
-*   **🔒 Privacy First:** No cloud servers, no account required. Direct Bluetooth LE connection.
-*   **⚡ Real-time Telemetry:** Monitor Input/Output wattage, battery voltage, temperature, and frequency.
-*   **🛠️ Advanced Control:**
-    *   Toggle AC, DC, USB, and LED Light (SOS/Flash modes).
-    *   **Silent Charging:** Enable quiet mode for night charging.
-    *   **Standby Timers:** Precise control over AC, DC, Screen, and System timeouts.
-    *   **Battery Protection:** Set Discharge Limits and AC Charging Upper Limits (EPS).
-*   **🎨 Multiple Themes:**
-    *   ☢️ **Pipboy:** Fallout-inspired CRT aesthetic.
-    *   🖥️ **Terminal:** Retro command-line interface.
-    *   🌈 **Rainbow:** High-contrast, vibrant visualization.
-    *   🏭 **Industrial:** Clean, modern dashboard.
+### ⚡ Real-Time Telemetry & Monitoring
+*   **Live Power Flow:** Visualize real-time Input (Charging) and Output (Discharging) wattage with dynamic gauges.
+*   **Battery Status:** Precise Battery SOC (State of Charge) percentage, estimated remaining runtime (time-to-empty) or charge time (time-to-full).
+*   **System Health:** Monitor system voltage, frequency, and internal temperatures (fan levels).
+*   **Battery Extensions:** Support for monitoring external battery packs (Success/Extension batteries) with individual charge levels.
 
-## 📱 Installation
+### 🛠️ Advanced Control Dashboard
+*   **Power Toggle:** Remotely toggle AC Inverter, DC (12V) Output, and USB Ports.
+*   **LED Light Control:** Switch between Light modes: **Off**, **Low**, **High**, **SOS**, and **Flash**.
+*   **Silent Charging Mode:** Toggle "Silent Charging" to reduce fan noise max charging speed for overnight use.
 
-This is a **Progressive Web App (PWA)**. It works in Chrome (Android/Desktop), Edge, and Bluefy (iOS).
+### ⚙️ Power Management Settings
+*   **Charging Rate:** Adjust AC Charging power from **200W to 1100W+** (Verify supported limits for your specific model).
+*   **Discharge Limit:** Set a lower limit for battery discharge (e.g., stop discharging at 10%) to preserve battery health.
+*   **EPS / UPS Settings:** Configure Entry Power Supply (UPS mode) behavior and upper charge limits.
+*   **Standby Timers:** detailed control over auto-shutdown timers to save power:
+    *   **Screen Timeout:** 1 min, 5 min, Never.
+    *   **System Standby:** Auto-shutdown after inactivity.
+    *   **AC Standby:** Turn off inverter if no load detected.
+    *   **DC/USB Standby:** Turn off low-voltage ports if idle.
 
-### Android / Desktop (Chrome)
-1.  Visit the [App URL](https://dandwhelan.github.io/fossibot-bluetooth/).
-2.  Click **Connect** to pair your device.
-3.  **Install:** Click "Install App" in the address bar or menu to add it to your home screen.
+### 🔍 Advanced Diagnostics & Reverse Engineering
+*   **Raw Register Inspector:** View the raw data stream from the BMS (Battery Management System).
+*   **Input vs Holding Registers:** Clearly distinguished views for Read-Only Status registers (0x1104) vs Writable Settings registers (0x1103).
+*   **Visualization:** "Flash" indicators show exactly which data points are changing in real-time.
+*   **Hide Zeros:** Filter out unused registers to focus on active data.
 
-### iOS (iPhone/iPad)
-Apple unfortunately restricts Web Bluetooth. You must use a specialized browser:
-1.  Download **Bluefy** from the App Store.
-2.  Open the App URL in Bluefy.
+### 🎨 Customization & Themes
+Personalize your control panel with built-in themes:
+*   ☢️ **Pipboy:** Fallout-inspired retro CRT green.
+*   🏭 **Industrial:** Clean, high-contrast, professional amber/slate look. (Default)
+*   🌃 **Cyberpunk:** Neon magenta and cyan on dark purple.
+*   🌊 **Ocean:** Calming teal and deep blue tones.
+*   🌅 **Sunset:** Warm gradients of violet, orange, and gold.
+*   💊 **Matrix:** Classic scrolling code green-on-black aesthetic.
+*   🖥️ **Terminal:** Minimalist retro command prompt style.
+*   🌈 **Rainbow:** High-visibility vibrant colors.
 
-## 🔧 Technical Details & Protocol
+---
 
-This project is the result of reverse-engineering the Fossibot BLE protocol.
+## 📱 detailed Installation Guide
 
-**See [PROTOCOL.md](PROTOCOL.md) for full technical documentation, register maps, and packet structures.**
+This app uses **Web Bluetooth API**, which means it runs entirely in your browser but can talk to hardware devices.
 
-### Quick Protocol Overview
-*   **Service:** `0000fff0-0000-1000-8000-00805f9b34fb`
-*   **Data Types:**
-    *   `0x1104` (Status): Live telemetry (volts, watts).
-    *   `0x1103` (Settings): Saved configuration (timers, limits).
+### Platform Support
 
-### Known Registers
-*   **Reg 21:** System Voltage (~0.7V).
-*   **Reg 62:** USB Standby Timer (in Seconds).
-*   **Reg 66:** Discharge Limit (%).
-*   **Reg 68:** System Shutdown Timer (Minutes).
+| Platform | Browser | Status | Notes |
+| :--- | :--- | :--- | :--- |
+| **Android** | Chrome / Edge | ✅ Fully Supported | Best experience. Supports PWA install. |
+| **Windows / Mac / Linux** | Chrome / Edge | ✅ Fully Supported | Requires Bluetooth hardware on PC. |
+| **iOS / iPadOS** | **Bluefy** Browser | ⚠️ Restricted | Safari does NOT support Web Bluetooth. You must download [Bluefy](https://apps.apple.com/us/app/bluefy-web-ble-browser/id1492822055) from the App Store. |
 
-## 🤝 Contributing
+### How to Install (PWA)
+For the best experience (fullscreen, offline access), install the app:
 
-Found a new register or have a different model (F3600, F2400 Pro)?
-1.  Open **Diagnostics Mode** (Pulse icon).
-2.  Watch the raw register feed.
-3.  Toggle settings on your device and look for changes!
-4.  Submit a PR or Issue with your findings.
+1.  **Open the App:** Navigate to [dandwhelan.github.io/fossibot-bluetooth/](https://dandwhelan.github.io/fossibot-bluetooth/)
+2.  **Pair:** Click the blue **Connect** button top-right. Select your device (usually named "Fossibot..." or similar) from the list.
+3.  **Install:**
+    *   **Chrome (Desktop):** Click the "Install" icon in the address bar (right side).
+    *   **Chrome (Android):** Tap the menu (⋮) -> "Add to Home Screen" or "Install App".
+    *   **Bluefy (iOS):** Bookmark the page.
+
+---
+
+## 🔧 Technical Protocol Documentation
+
+For developers interested in the underlying communications or building their own integrations (Home Assistant, ESP32, etc.).
+
+### Bluetooth Service UUIDs
+*   **Main Service:** `0000fff0-0000-1000-8000-00805f9b34fb`
+*   **Write Characteristic:** `0000fff1...` (Send commands)
+*   **Notify Characteristic:** `0000fff2...` (Receive data)
+
+### Data Packets
+The device uses a Modbus-like protocol over BLE.
+
+#### 1. Status Packet (`0x1104`)
+Received automatically via Notify. Contains read-only telemetry.
+*   **Structure:** `[Header 2b] [Len 2b] [Data...] [CRC 2b]`
+*   **Key Registers:**
+    *   `Reg 20`: Total Output Watts
+    *   `Reg 21`: System Idle Load (~10W units)
+    *   `Reg 56`: Main Battery SOC (0-1000, scale 10)
+
+#### 2. Settings Packet (`0x1103`)
+Received upon request or when settings change. Contains read/write configuration.
+*   **Key Registers:**
+    *   `Reg 13`: Charge Power (1-5 level or Watts)
+    *   `Reg 56`: Key Sound Toggle (1=On, 0=Off)
+    *   `Reg 57`: Silent Charging (1=On, 0=Off)
+
+### Writing Commands
+Commands are sent to the Write Characteristic using a specific structure:
+`[Header 0x11] [Cmd 0x??] [Reg High] [Reg Low] [Val High] [Val Low] [CRC]`
+
+**See [PROTOCOL.md](PROTOCOL.md) for the complete reverse-engineered register map and packet structure details.**
+
+---
+
+## 🤝 Contributing & Development
+
+This project is open-source and depends on community investigation to map unknown registers for different models.
+
+1.  **Clone the Repo:** `git clone https://github.com/dandwhelan/fossibot-bluetooth.git`
+2.  **Run Locally:** Use a local server (e.g. VS Code Live Server) to serve `index.html` over HTTPS (or localhost). **Note:** Web Bluetooth requires a Secure Context (HTTPS or localhost).
+3.  **Investigate:** Use the built-in Diagnostics tab to find new registers.
+4.  **Submit PR:** Pull Requests are welcome!
 
 ## 📄 License
-MIT License. Open source and free to use.
+
+MIT License. Free for personal and commercial use.

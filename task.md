@@ -13,4 +13,6 @@
     - Recent Updates (Psychedelic theme, optimizations)
 
 ## 3. Deployment
-- [x] **Commit & Push:** Stage all changes and push to the `main` branch on GitHub.
+- [x] **Enhance Simulation:** Replace Scanner with Van Life Appliances (Kettle, Laptop, etc.).
+- [x] **Diagnostics UI:** Add "Hide 0 Values" toggle.
+- [x] **Commit & Push:** Stage all changes and push to the `main` branch.
