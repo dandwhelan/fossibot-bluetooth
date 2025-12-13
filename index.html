@@ -2814,11 +2814,11 @@ Example format:
             40: { name: 'Pack Config V? (x10)', format: 'volt' },
             41: { name: 'State Flags', format: 'flags' }, // Bit 9=USB, 10=DC, 11=AC
             42: { name: 'State Flags 2', format: 'flags' },
-            47: { name: 'Flags (47)', format: 'flags' },
-            48: { name: 'Flags (48)', format: 'flags' },
+            47: { name: 'Model/Cap Flags', format: 'flags' }, // P310=0x3000, F2400=0
+            48: { name: 'Model/Cap Flags 2', format: 'flags' }, // P310=0x4000, F2400=0
             52: { name: 'Unknown (180)', format: 'raw' },  // Static value
             53: { name: 'Ext1 SOC', format: 'ext_soc' },
-            54: { name: 'Capacity (0.1Ah)?', format: 'raw' }, // 374=37.4Ah (F2400), 762=76.2Ah (P310)
+            54: { name: 'Capacity (0.1Ah)', format: 'capacity' }, // CONFIRMED: 374=37.4Ah (F2400), 762=76.2Ah (P310)
             55: { name: 'Ext2 SOC', format: 'ext_soc' },
             56: { name: 'Main SOC', format: 'percent01' },
             57: { name: 'AC Silent', format: 'toggle' },
@@ -2827,9 +2827,9 @@ Example format:
             60: { name: 'AC Timer (Counter)', format: 'mins' },
             61: { name: 'DC Timer (Counter)', format: 'mins' },
             62: { name: 'USB Timer (Counter)', format: 'raw' },
-            66: { name: 'Discharge Limit', format: 'percent01' },
-            67: { name: 'Unknown (67)', format: 'raw' },
-            68: { name: 'Unknown (68)', format: 'raw' },
+            66: { name: 'Discharge Limit (%)', format: 'percent01' }, // CONFIRMED: Min SOC before shutdown
+            67: { name: 'Charge Limit (%)', format: 'percent01' }, // CONFIRMED: Max SOC for charging (P310=90%)
+            68: { name: 'Shutdown Timer?', format: 'raw' },
             69: { name: 'Fan Level', format: 'level' },
             80: { name: 'CRC Checksum', format: 'flags' }
         };
@@ -2885,6 +2885,7 @@ Example format:
                     return 'Lvl ' + val + ' (' + watts + 'W)';
                 case 'time': return val > 0 ? Math.floor(val / 60) + 'h ' + (val % 60) + 'm' : '--';
                 case 'mins': return val > 0 ? val + ' min' : 'Never';
+                case 'capacity': return (val / 10).toFixed(1) + 'Ah';
                 case 'flags': return '0x' + val.toString(16).toUpperCase();
                 default: return '';
             }
