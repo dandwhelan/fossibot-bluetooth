@@ -16,3 +16,8 @@
 - [x] **Enhance Simulation:** Replace Scanner with Van Life Appliances (Kettle, Laptop, etc.).
 - [x] **Diagnostics UI:** Add "Hide 0 Values" toggle.
 - [x] **Commit & Push:** Stage all changes and push to the `main` branch.
+
+## 4. Reverse Engineering Toolkit
+- [x] **Record Changes Tool:** Implement snapshot/compare feature for registers.
+- [x] **System Summary:** Add plain-text status summary and comparison logic.
+- [ ] **Bit Inspector:** UI to visualize individual bits of flag registers.

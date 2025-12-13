@@ -32,6 +32,9 @@ This Progressive Web App (PWA) allows you to control and monitor your Fossibot F
     *   **DC/USB Standby:** Turn off low-voltage ports if idle.
 
 ### 🔍 Advanced Diagnostics & Reverse Engineering
+*   **Change Recorder:** Capture a baseline and automatically detect register changes after performing physical actions on the device (reverse engineering helper).
+*   **System Summary:** Get a plain-English status report of the device state (Region, Voltage, Flags) or a detailed comparison summary between two devices.
+*   **Multi-Device Comparison:** Import JSON diagnostic files from other users to compare specifications, firmware settings, and calibration data side-by-side.
 *   **Raw Register Inspector:** View the raw data stream from the BMS (Battery Management System).
 *   **Input vs Holding Registers:** Clearly distinguished views for Read-Only Status registers (0x1104) vs Writable Settings registers (0x1103).
 *   **Visualization:** "Flash" indicators show exactly which data points are changing in real-time.
@@ -116,7 +119,7 @@ This project is open-source and depends on community investigation to map unknow
 1.  **Clone the Repo:** `git clone https://github.com/dandwhelan/fossibot-bluetooth.git`
 2.  **Run Locally:** Use a local server (e.g. VS Code Live Server) to serve `index.html` over HTTPS (or localhost). **Note:** Web Bluetooth requires a Secure Context (HTTPS or localhost).
 3.  **Investigate:** Use the built-in Diagnostics tab to find new registers.
-4.  **Submit PR:** Pull Requests are welcome!
+4.  **Submit PR:** Pull Requests are welcome! I've love people to find out what all the other settings and options do.
 
 ## 📄 License
 

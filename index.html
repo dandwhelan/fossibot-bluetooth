@@ -1110,6 +1110,91 @@
             color: #000;
         }
 
+        /* Toast Notifications */
+        .toast {
+            position: fixed;
+            bottom: 5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--btn-green);
+            color: #000;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            z-index: 20000;
+            animation: toast-in 0.3s ease, toast-out 0.3s ease 2.7s;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .toast.error {
+            background: var(--btn-red);
+            color: #fff;
+        }
+
+        @keyframes toast-in {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        @keyframes toast-out {
+            from {
+                opacity: 1;
+            }
+
+            to {
+                opacity: 0;
+            }
+        }
+
+        /* Compare Mode Styles */
+        .compare-header {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 0.5rem;
+            padding: 0.5rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 0.25rem;
+        }
+
+        .compare-device {
+            flex: 1;
+            text-align: center;
+            font-weight: bold;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+        }
+
+        .compare-device.current {
+            background: var(--btn-blue);
+            color: #fff;
+        }
+
+        .compare-device.imported {
+            background: var(--btn-green);
+            color: #000;
+        }
+
+        .diff-match {
+            color: #4ade80;
+        }
+
+        .diff-differ {
+            color: #ef4444;
+            font-weight: bold;
+        }
+
+        .diff-unique {
+            color: #facc15;
+            font-style: italic;
+        }
+
         /* Settings Modal Specifics */
         .settings-row {
             display: flex;
@@ -1580,6 +1665,18 @@
                 <button onclick="sendSettingsRequest()"
                     style="background: #9333ea; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">📋
                     Settings</button>
+                <button id="btn-record-changes" onclick="toggleChangeRecording()"
+                    style="background: #be123c; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem;"
+                    title="Record changes to identify registers">⏺️ Record</button>
+                <button onclick="copyDiagnostics()"
+                    style="background: #0891b2; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem;"
+                    title="Copy diagnostic data to clipboard">📋 Copy</button>
+                <button onclick="openImportModal()"
+                    style="background: #7c3aed; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem;"
+                    title="Import another user's diagnostic data">📥 Import</button>
+                <button id="btn-compare" onclick="toggleCompareMode()" class="hidden"
+                    style="background: #ea580c; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem;"
+                    title="Compare with imported data">🔍 Compare</button>
                 <label style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.25rem;">
                     <input type="checkbox" id="diag-hide-zero" onchange="renderDiagnostics()"> Hide 0s
                 </label>
@@ -1596,6 +1693,16 @@
             </div>
         </div>
         <div id="full-diag-list" style="padding:1rem; padding-bottom: 5rem; font-family: monospace;"></div>
+
+        <div id="system-summary"
+            style="margin: 1rem; margin-bottom: 6rem; padding: 1rem; background: rgba(0,0,0,0.3); border-radius: 0.5rem; border-left: 3px solid var(--text-blue); font-size: 0.9rem; line-height: 1.5; color: #eee;">
+            <div
+                style="font-weight: bold; color: var(--text-blue); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>ℹ️ System Summary</span>
+            </div>
+            <div id="system-summary-content" style="white-space: pre-wrap;">No active data. Connect to a device or
+                import a file to see analysis.</div>
+        </div>
     </div>
 
     <div id="scanner" class="hidden"
@@ -1690,7 +1797,55 @@
         </div>
     </div>
 
+    <!-- Import Diagnostics Modal -->
+    <div id="importDiagModal" class="modal-overlay" onclick="closeImportModal(event)">
+        <div class="modal-content" style="width: 90%; max-width: 500px;" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="closeImportModal(null, true)">&times;</button>
+            <div class="modal-title">📥 Import Diagnostic Data</div>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">
+                Paste JSON data from another user to compare their device registers with yours.
+            </p>
+            <textarea id="import-diag-data"
+                style="width: 100%; height: 200px; background: var(--bg-log); color: var(--text-main); border: 1px solid var(--text-muted); border-radius: 0.25rem; padding: 0.5rem; font-family: monospace; font-size: 0.75rem; resize: vertical;"
+                placeholder='Paste JSON diagnostic data here...
 
+Example format:
+{
+  "version": 1,
+  "device": "AFERIY P310",
+  "inputRegisters": { "56": 955, ... },
+  "settingsRegisters": { "13": 1, ... }
+}'></textarea>
+            <div style="display: flex; gap: 0.5rem; margin-top: 1rem; justify-content: flex-end;">
+                <button class="btn-main" onclick="closeImportModal(null, true)"
+                    style="background: #333; padding: 0.5rem 1rem;">Cancel</button>
+                <button class="btn-main" onclick="processDiagImport()"
+                    style="background: var(--btn-green); color: #000; padding: 0.5rem 1rem; font-weight: bold;">Import</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Changes Summary Modal -->
+    <div id="changesModal" class="modal-overlay" onclick="document.getElementById('changesModal').style.display='none'">
+        <div class="modal-content"
+            style="width: 90%; max-width: 600px; max-height: 80vh; display: flex; flex-direction: column;"
+            onclick="event.stopPropagation()">
+            <button class="modal-close"
+                onclick="document.getElementById('changesModal').style.display='none'">&times;</button>
+            <div class="modal-title">📉 Detected Changes</div>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">
+                The following registers changed values since you started recording:
+            </p>
+            <div id="changes-list-container"
+                style="flex: 1; overflow-y: auto; background: var(--bg-log); border: 1px solid var(--text-muted); border-radius: 0.25rem; padding: 0.5rem;">
+                <!-- content populated by JS -->
+            </div>
+            <div style="display: flex; gap: 0.5rem; margin-top: 1rem; justify-content: flex-end;">
+                <button class="btn-main" onclick="document.getElementById('changesModal').style.display='none'"
+                    style="background: #333; padding: 0.5rem 1rem;">Close</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         const SERVICE_UUID = '0000a002-0000-1000-8000-00805f9b34fb';
@@ -1733,8 +1888,8 @@
         let isDebug = false;
 
         // Global Registers Storage
-        const registers = {};
-        const settingsRegisters = {};  // 0x1103 settings payload
+        let registers = {};
+        let settingsRegisters = {};  // 0x1103 settings payload
 
         // Global accessor for registers
         function getReg(idx) {
@@ -2656,13 +2811,14 @@
             36: { name: 'USB-C3 Out', format: 'watt01' },
             37: { name: 'USB-C4 Out', format: 'watt01' },
             39: { name: 'Total Output', format: 'watt' },
-            41: { name: 'State Flags', format: 'flags' },
+            40: { name: 'Pack Config V? (x10)', format: 'volt' },
+            41: { name: 'State Flags', format: 'flags' }, // Bit 9=USB, 10=DC, 11=AC
             42: { name: 'State Flags 2', format: 'flags' },
             47: { name: 'Flags (47)', format: 'flags' },
             48: { name: 'Flags (48)', format: 'flags' },
             52: { name: 'Unknown (180)', format: 'raw' },  // Static value
             53: { name: 'Ext1 SOC', format: 'ext_soc' },
-            54: { name: 'Unknown (374)', format: 'raw' },  // Static value
+            54: { name: 'Capacity (0.1Ah)?', format: 'raw' }, // 374=37.4Ah (F2400), 762=76.2Ah (P310)
             55: { name: 'Ext2 SOC', format: 'ext_soc' },
             56: { name: 'Main SOC', format: 'percent01' },
             57: { name: 'AC Silent', format: 'toggle' },
@@ -2676,6 +2832,31 @@
             68: { name: 'Unknown (68)', format: 'raw' },
             69: { name: 'Fan Level', format: 'level' },
             80: { name: 'CRC Checksum', format: 'flags' }
+        };
+
+        // Settings Register Map (0x1103)
+        const SETTINGS_REGS = {
+            13: 'AC Charge Rate (1-5)',
+            14: 'AC Charge Max Limit (W)',
+            16: 'Frequency Setting (Hz/10)',
+            20: 'Total Output / DC Max (A)',
+            24: 'USB Enabled',
+            25: 'DC Enabled (12V)',
+            26: 'AC Enabled (Inverter)',
+            27: 'Light Mode (0-3)',
+            32: 'Firmware Version?',
+            40: 'Pack Voltage Calib 1',
+            41: 'Pack Voltage Calib 2',
+            56: 'Key Sound (0/1)',
+            57: 'Silent Charging (0/1)',
+            59: 'Screen Timeout (mins)',
+            60: 'AC Standby (mins)',
+            61: 'DC Standby (mins)',
+            62: 'USB Standby (Seconds)',
+            66: 'Discharge Lower Limit (%/10)',
+            67: 'AC Upper Limit EPS (%/10)',
+            68: 'Machine Shutdown (mins)',
+            80: 'CRC Checksum'
         };
 
         // Format register value to human-readable string
@@ -2716,14 +2897,46 @@
             if (!div) return;
 
             let html = '';
+            const hideZero = document.getElementById('diag-hide-zero') && document.getElementById('diag-hide-zero').checked;
+
+            // Compare mode header - shows all imported devices
+            const hasImports = importedDiagDataList.length > 0;
+            if (isCompareMode && hasImports) {
+                const currentDevice = device?.name || 'Current Device';
+                html += `<div class="compare-header">
+                            <div class="compare-device current">📱 ${currentDevice}</div>`;
+
+                // List all imported devices with remove buttons
+                importedDiagDataList.forEach((d, idx) => {
+                    html += `<div class="compare-device imported" style="font-size:0.75rem;">
+                                📥 ${d.device || 'Unknown'}
+                                <button onclick="removeImportedDevice(${idx})" 
+                                    style="background:none;border:none;color:#f00;cursor:pointer;margin-left:0.25rem;" title="Remove">✕</button>
+                            </div>`;
+                });
+
+                html += `<button onclick="clearImportedData()" 
+                                style="background: #333; color: #fff; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem; cursor: pointer;">
+                                Clear All
+                            </button>
+                        </div>`;
+            }
 
             // 0x1104 Input Registers
             html += '<h3 style="margin-top: 0; color: var(--text-green);">⚡ Input Registers (0x1104) - Real-time Status</h3>';
             html += '<table style="width:100%; border-collapse:collapse; font-size: 0.8rem; margin-top: 0.5rem;">';
-            html += '<tr><th style="text-align:left; border-bottom:1px solid #444;">Reg</th><th style="text-align:left; border-bottom:1px solid #444;">Name</th><th style="text-align:right; border-bottom:1px solid #444;">Data</th><th style="text-align:right; border-bottom:1px solid #444;">Raw</th></tr>';
+
+            // Table header - different for compare mode
+            if (isCompareMode && hasImports) {
+                // Build dynamic headers for each imported device
+                let importHeaders = importedDiagDataList.map(d => `<th style="text-align:right; border-bottom:1px solid #444; color:var(--btn-green); font-size:0.7rem;">${d.device || 'Imp'}</th>`).join('');
+                html += `<tr><th style="text-align:left; border-bottom:1px solid #444;">Reg</th><th style="text-align:left; border-bottom:1px solid #444;">Name</th><th style="text-align:right; border-bottom:1px solid #444; color:var(--btn-blue);">Current</th>${importHeaders}</tr>`;
+            } else {
+                html += '<tr><th style="text-align:left; border-bottom:1px solid #444;">Reg</th><th style="text-align:left; border-bottom:1px solid #444;">Name</th><th style="text-align:right; border-bottom:1px solid #444;">Data</th><th style="text-align:right; border-bottom:1px solid #444;">Raw</th></tr>';
+            }
 
             // List 0-90
-            for (let i = 0; i <= 90; i++) {
+            for (let i = 0; i <= 80; i++) {
                 const regInfo = KNOWN_REGS[i];
                 const name = regInfo ? regInfo.name : '-';
                 const val = registers[i];
@@ -2731,10 +2944,13 @@
                 const hexStr = (val !== undefined) ? `0x${val.toString(16)}` : '';
                 const dataStr = formatRegisterData(i, val);
 
+                // Get imported values from ALL devices for compare mode
+                const importedVals = importedDiagDataList.map(d => d.inputRegisters?.[i]);
+
                 const color = (valStr !== '?' && valStr > 0) ? '#fff' : '#666';
                 const rowColor = (i % 2 === 0) ? 'rgba(255,255,255,0.05)' : 'transparent';
 
-                // Diff Logic
+                // Diff Logic for flash animation
                 let valClass = '';
                 if (val !== undefined) {
                     const last = lastDiagValues[i];
@@ -2745,74 +2961,104 @@
                     lastDiagValues[i] = val;
                 }
 
-                const hideZero = document.getElementById('diag-hide-zero') && document.getElementById('diag-hide-zero').checked;
-
-                if (hideZero && (val === undefined || val === 0)) {
-                    continue;
+                // Hide zeros check (all values must be 0/undefined to skip)
+                if (hideZero) {
+                    const allZero = (val === undefined || val === 0) && importedVals.every(v => v === undefined || v === 0);
+                    if (allZero) continue;
                 }
 
-                html += `<tr style="background:${rowColor}; color:${color}">
-                    <td style="padding:0.25rem;">${i}</td>
-                    <td style="padding:0.25rem; color:#aaa;">${name}</td>
-                    <td style="padding:0.25rem; text-align:right; color:var(--text-green); font-weight:bold;">
-                        <span class="${valClass}">${dataStr}</span>
-                    </td>
-                    <td style="padding:0.25rem; text-align:right;">
-                        <span class="${valClass}">${valStr}</span> 
-                        <span style="font-size:0.7rem; color:#444;">${hexStr}</span>
-                    </td>
-                 </tr>`;
+                // Compare mode row - dynamically generate columns for all imported devices
+                if (isCompareMode && hasImports) {
+                    // Generate cells for each imported device
+                    let importedCells = importedVals.map(impVal => {
+                        const impStr = (impVal !== undefined) ? impVal : '-';
+                        const isDiff = (val !== undefined && impVal !== undefined && val !== impVal);
+                        const diffClass = isDiff ? 'diff-differ' : (impVal !== undefined ? 'diff-match' : '');
+                        return `<td style="padding:0.25rem; text-align:right;"><span class="${diffClass}">${impStr}</span></td>`;
+                    }).join('');
+
+                    html += `<tr style="background:${rowColor}; color:${color}">
+                                <td style="padding:0.25rem;">${i}</td>
+                                <td style="padding:0.25rem; color:#aaa;">${name}</td>
+                                <td style="padding:0.25rem; text-align:right;"><span class="${valClass}">${valStr}</span></td>
+                                ${importedCells}
+                            </tr>`;
+                } else {
+                    // Normal mode row
+                    html += `<tr style="background:${rowColor}; color:${color}">
+                                <td style="padding:0.25rem;">${i}</td>
+                                <td style="padding:0.25rem; color:#aaa;">${name}</td>
+                                <td style="padding:0.25rem; text-align:right; color:var(--text-green); font-weight:bold;">
+                                    <span class="${valClass}">${dataStr}</span>
+                                </td>
+                                <td style="padding:0.25rem; text-align:right;">
+                                    <span class="${valClass}">${valStr}</span> 
+                                    <span style="font-size:0.7rem; color:#444;">${hexStr}</span>
+                                </td>
+                            </tr>`;
+                }
             }
             html += '</table>';
 
             // Settings Section (0x1103 payload)
             const hasSettings = Object.keys(settingsRegisters).length > 0;
-            if (hasSettings) {
+            const hasImportedSettings = hasImports && importedDiagDataList.some(d => d.settingsRegisters && Object.keys(d.settingsRegisters).length > 0);
+
+            if (hasSettings || (isCompareMode && hasImportedSettings)) {
                 html += '<h3 style="margin-top: 2rem; color: var(--text-blue);">📋 Holding Registers (0x1103) - Settings</h3>';
                 html += '<table style="width:100%; border-collapse:collapse; font-size: 0.8rem; margin-top: 0.5rem;">';
-                html += '<tr><th style="text-align:left; border-bottom:1px solid #444;">Reg</th><th style="text-align:left; border-bottom:1px solid #444;">Name</th><th style="text-align:right; border-bottom:1px solid #444;">Value</th></tr>';
 
-                // Settings register definitions (0x1103 payload) - Confirmed via testing
-                const SETTINGS_REGS = {
-                    13: 'AC Charge Rate (1-5)',
-                    14: 'AC Charge Max Limit (W)',
-                    16: 'Frequency Setting (Hz/10)',
-                    20: 'Total Output / DC Max (A)',
-                    24: 'USB Enabled',
-                    25: 'DC Enabled (12V)',
-                    26: 'AC Enabled (Inverter)',
-                    27: 'Light Mode (0-3)',
-                    32: 'Firmware Version?',
-                    56: 'Key Sound (0/1)',
-                    57: 'Silent Charging (0/1)',
-                    59: 'Screen Timeout (mins)',
-                    60: 'AC Standby (mins)',
-                    61: 'DC Standby (mins)',
-                    62: 'USB Standby (Seconds)',
-                    66: 'Discharge Lower Limit (%/10)',
-                    67: 'AC Upper Limit EPS (%/10)',
-                    68: 'Machine Shutdown (mins)',
-                    80: 'CRC Checksum'
-                };
+                // Table header - different for compare mode
+                if (isCompareMode && hasImports) {
+                    let importHeaders = importedDiagDataList.map(d => `<th style="text-align:right; border-bottom:1px solid #444; color:var(--btn-green); font-size:0.7rem;">${d.device || 'Imp'}</th>`).join('');
+                    html += `<tr><th style="text-align:left; border-bottom:1px solid #444;">Reg</th><th style="text-align:left; border-bottom:1px solid #444;">Name</th><th style="text-align:right; border-bottom:1px solid #444; color:var(--btn-blue);">Current</th>${importHeaders}</tr>`;
+                } else {
+                    html += '<tr><th style="text-align:left; border-bottom:1px solid #444;">Reg</th><th style="text-align:left; border-bottom:1px solid #444;">Name</th><th style="text-align:right; border-bottom:1px solid #444;">Value</th></tr>';
+                }
 
-                for (let i = 0; i <= 82; i++) {
+
+                // Settings register definitions (0x1103 payload)
+                // Uses global SETTINGS_REGS
+
+                for (let i = 0; i <= 80; i++) {
                     const val = settingsRegisters[i];
+                    const importedVals = importedDiagDataList.map(d => d.settingsRegisters?.[i]);
 
-                    const hideZero = document.getElementById('diag-hide-zero') && document.getElementById('diag-hide-zero').checked;
-                    if (hideZero && (val === undefined || val === 0)) {
-                        continue;
+                    // Hide zeros check
+                    if (hideZero) {
+                        const allZero = (val === undefined || val === 0) && importedVals.every(v => v === undefined || v === 0);
+                        if (allZero) continue;
                     }
 
-                    // Show if defined, even if 0. Use SETTINGS_REGS for naming.
-                    if (val !== undefined) {
+                    // Show if defined in any dataset
+                    const anyImported = importedVals.some(v => v !== undefined);
+                    if (val !== undefined || (isCompareMode && anyImported)) {
                         const name = SETTINGS_REGS[i] || '-';
                         const rowColor = (i % 2 === 0) ? 'rgba(255,255,255,0.05)' : 'transparent';
-                        const color = (val > 0) ? '#fff' : '#888';
-                        html += `<tr style="background:${rowColor}; color:${color}">
-                            <td style="padding:0.25rem;">${i}</td>
-                            <td style="padding:0.25rem; color:#aaa;">${name}</td>
-                            <td style="padding:0.25rem; text-align:right;">${val} <span style="font-size:0.7rem; color:#444;">0x${val.toString(16)}</span></td>
-                         </tr>`;
+                        const color = (val > 0 || importedVals.some(v => v > 0)) ? '#fff' : '#888';
+
+                        if (isCompareMode && hasImports) {
+                            const valStr = (val !== undefined) ? val : '-';
+                            let importedCells = importedVals.map(impVal => {
+                                const impStr = (impVal !== undefined) ? impVal : '-';
+                                const isDiff = (val !== undefined && impVal !== undefined && val !== impVal);
+                                const diffClass = isDiff ? 'diff-differ' : (impVal !== undefined ? 'diff-match' : '');
+                                return `<td style="padding:0.25rem; text-align:right;"><span class="${diffClass}">${impStr}</span></td>`;
+                            }).join('');
+
+                            html += `<tr style="background:${rowColor}; color:${color}">
+                                        <td style="padding:0.25rem;">${i}</td>
+                                        <td style="padding:0.25rem; color:#aaa;">${name}</td>
+                                        <td style="padding:0.25rem; text-align:right;">${valStr}</td>
+                                        ${importedCells}
+                                    </tr>`;
+                        } else {
+                            html += `<tr style="background:${rowColor}; color:${color}">
+                                        <td style="padding:0.25rem;">${i}</td>
+                                        <td style="padding:0.25rem; color:#aaa;">${name}</td>
+                                        <td style="padding:0.25rem; text-align:right;">${val} <span style="font-size:0.7rem; color:#444;">0x${val.toString(16)}</span></td>
+                                    </tr>`;
+                        }
                     }
                 }
                 html += '</table>';
@@ -2821,6 +3067,9 @@
             }
 
             div.innerHTML = html;
+
+            // Update the plain-text System Summary
+            updateSystemSummary();
         }
 
         let diagAutoRefreshInterval = null;
@@ -2863,6 +3112,362 @@
                 clearInterval(diagAutoRefreshInterval);
                 diagAutoRefreshInterval = setInterval(diagFullRefresh, diagRefreshMs);
             }
+        }
+
+        // ========== COPY / IMPORT / COMPARE FUNCTIONS ==========
+
+        // Store for imported diagnostic data - array for multiple devices
+        let importedDiagDataList = [];
+        let isCompareMode = false;
+
+        // Toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = 'toast ' + type;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // Copy diagnostics to clipboard
+        function copyDiagnostics() {
+            const exportData = {
+                version: 1,
+                timestamp: new Date().toISOString(),
+                device: device?.name || 'Unknown Device',
+                inputRegisters: { ...registers },
+                settingsRegisters: { ...settingsRegisters }
+            };
+
+            const json = JSON.stringify(exportData, null, 2);
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(json).then(() => {
+                    showToast('📋 Diagnostics copied to clipboard!');
+                    log('Diagnostics exported to clipboard');
+                }).catch(err => {
+                    // Fallback
+                    copyToClipboardFallback(json);
+                });
+            } else {
+                copyToClipboardFallback(json);
+            }
+        }
+
+        // Fallback copy method
+        function copyToClipboardFallback(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showToast('📋 Diagnostics copied to clipboard!');
+            } catch (e) {
+                showToast('Failed to copy. Try again.', 'error');
+            }
+            document.body.removeChild(textarea);
+        }
+
+        // Open import modal
+        function openImportModal() {
+            document.getElementById('importDiagModal').style.display = 'flex';
+            document.getElementById('import-diag-data').value = '';
+            document.getElementById('import-diag-data').focus();
+        }
+
+        // Close import modal
+        function closeImportModal(e, force) {
+            if (force || e?.target?.classList?.contains('modal-overlay')) {
+                document.getElementById('importDiagModal').style.display = 'none';
+            }
+        }
+
+        // Process imported JSON data - adds to list for multi-device
+        function processDiagImport() {
+            const textarea = document.getElementById('import-diag-data');
+            const rawText = textarea.value.trim();
+
+            if (!rawText) {
+                showToast('Please paste some data first', 'error');
+                return;
+            }
+
+            try {
+                const data = JSON.parse(rawText);
+
+                // Validate structure
+                if (!data.inputRegisters && !data.settingsRegisters) {
+                    showToast('Invalid format: missing register data', 'error');
+                    return;
+                }
+
+                // Check for duplicate device names
+                const deviceName = data.device || 'Unknown';
+                const existingIdx = importedDiagDataList.findIndex(d => d.device === deviceName);
+                if (existingIdx >= 0) {
+                    importedDiagDataList[existingIdx] = data;
+                    showToast(`🔄 Updated: ${deviceName}`);
+                } else {
+                    importedDiagDataList.push(data);
+                    showToast(`✅ Added: ${deviceName} (${importedDiagDataList.length} devices)`);
+                }
+
+                closeImportModal(null, true);
+                log(`Imported diagnostic data from: ${deviceName}`);
+
+                document.getElementById('btn-compare')?.classList.remove('hidden');
+                isCompareMode = true;
+                updateCompareButtonState();
+                renderDiagnostics();
+
+            } catch (e) {
+                console.error('Import error:', e);
+                showToast('Invalid JSON format. Check your data.', 'error');
+            }
+        }
+
+        // Toggle compare mode
+        function toggleCompareMode() {
+            if (importedDiagDataList.length === 0) {
+                showToast('Import data first to compare', 'error');
+                return;
+            }
+            isCompareMode = !isCompareMode;
+            updateCompareButtonState();
+            renderDiagnostics();
+        }
+
+        // Update compare button state
+        function updateCompareButtonState() {
+            const btn = document.getElementById('btn-compare');
+            if (btn) {
+                const count = importedDiagDataList.length;
+                if (isCompareMode) {
+                    btn.style.background = '#16a34a';
+                    btn.textContent = `✓ Compare (${count})`;
+                } else {
+                    btn.style.background = '#ea580c';
+                    btn.textContent = `🔍 Compare (${count})`;
+                }
+            }
+        }
+
+        function clearImportedData() {
+            importedDiagDataList = [];
+            isCompareMode = false;
+            document.getElementById('btn-compare')?.classList.add('hidden');
+            updateCompareButtonState();
+            renderDiagnostics();
+            showToast('All imported data cleared');
+        }
+
+        // Change Recording / Reverse Engineering Tool
+        let isChangeRecording = false;
+        let changeBaseline = null;
+
+        function toggleChangeRecording() {
+            const btn = document.getElementById('btn-record-changes');
+
+            // Check if we have data
+            if (!isChangeRecording && Object.keys(registers).length === 0) {
+                showToast("⚠️ No device data. Connect to a device first!");
+                return;
+            }
+
+            if (!isChangeRecording) {
+                // Start Recording
+                isChangeRecording = true;
+                changeBaseline = {
+                    input: JSON.parse(JSON.stringify(registers)),
+                    settings: JSON.parse(JSON.stringify(settingsRegisters))
+                };
+                btn.textContent = '⏹️ Stop & Show';
+                btn.style.background = '#eabe12';
+                btn.style.color = '#000';
+                showToast('Recording... Perform an action on device now.');
+                // Optionally refresh to show we are live
+                renderDiagnostics();
+            } else {
+                // Stop & Show
+                isChangeRecording = false;
+                btn.textContent = '⏺️ Record';
+                btn.style.background = '#be123c';
+                btn.style.color = '#fff';
+                showChangesModal();
+            }
+        }
+
+        function showChangesModal() {
+            const modal = document.getElementById('changesModal');
+            const container = document.getElementById('changes-list-container');
+
+            let html = '<table style="width:100%; border-collapse:collapse; font-size:0.8rem;">';
+            html += '<tr><th style="text-align:left; border-bottom:1px solid #555;">Type</th><th style="text-align:left; border-bottom:1px solid #555;">Reg</th><th style="text-align:left; border-bottom:1px solid #555;">Name</th><th style="text-align:right; border-bottom:1px solid #555;">Old</th><th style="text-align:right; border-bottom:1px solid #555;">New</th></tr>';
+
+            let diffCount = 0;
+
+            // Check Input Registers
+            for (let i = 0; i <= 80; i++) {
+                const oldVal = changeBaseline.input[i];
+                const newVal = registers[i];
+                // Only show if both defined and different
+                if (oldVal !== undefined && newVal !== undefined && oldVal !== newVal) {
+                    const name = KNOWN_REGS[i]?.name || '-';
+                    html += `<tr>
+                        <td style="color:var(--text-green);">Input</td>
+                        <td>${i}</td>
+                        <td style="color:#aaa;">${name}</td>
+                        <td style="text-align:right; color:#888;">${oldVal} <small>(0x${oldVal.toString(16)})</small></td>
+                        <td style="text-align:right; font-weight:bold; color:#fff;">${newVal} <small>(0x${newVal.toString(16)})</small></td>
+                     </tr>`;
+                    diffCount++;
+                }
+            }
+
+            // Check Settings Registers
+            for (let i = 0; i <= 80; i++) {
+                const oldVal = changeBaseline.settings[i];
+                const newVal = settingsRegisters[i];
+                if (oldVal !== undefined && newVal !== undefined && oldVal !== newVal) {
+                    const name = SETTINGS_REGS[i] || '-';
+                    html += `<tr>
+                        <td style="color:var(--text-blue);">Settings</td>
+                        <td>${i}</td>
+                        <td style="color:#aaa;">${name}</td>
+                        <td style="text-align:right; color:#888;">${oldVal} <small>(0x${oldVal.toString(16)})</small></td>
+                        <td style="text-align:right; font-weight:bold; color:#fff;">${newVal} <small>(0x${newVal.toString(16)})</small></td>
+                     </tr>`;
+                    diffCount++;
+                }
+            }
+
+            html += '</table>';
+
+            if (diffCount === 0) {
+                container.innerHTML = '<div style="padding:1rem; text-align:center; color:#888;">No changes detected.</div>';
+            } else {
+                container.innerHTML = html;
+            }
+
+            modal.style.display = 'flex';
+        }
+
+
+        // Generate dynamic plain-text summary of device status or comparison
+        function updateSystemSummary() {
+            const contentDiv = document.getElementById('system-summary-content');
+            if (!contentDiv) return;
+
+            // Determine if we have current data
+            // We check a few key registers to see if populated
+            const currentHasData = registers[2] !== undefined || registers[56] !== undefined;
+            const currentName = device?.name || 'Current Device';
+
+            // Determine if compare mode
+            const hasImports = importedDiagDataList.length > 0;
+            const isComparing = isCompareMode && hasImports;
+
+            let text = '';
+
+            if (isComparing) {
+                // COMPARISON MODE
+                const imp = importedDiagDataList[0]; // Compare against first import for now
+                const impName = imp.device || 'Imported';
+
+                text += `📊 Comparison: ${currentName} vs ${impName}\n\n`;
+
+                // 1. Region/Spec
+                const currHz = (registers[19] || 0) / 10;
+                const impHz = (imp.inputRegisters?.[19] || 0) / 10;
+
+                const currSpec = (currHz > 45 && currHz < 55) ? '50Hz EU' : '60Hz US/JP';
+                const impSpec = (impHz > 55) ? '60Hz US/JP' : '50Hz EU';
+
+                text += `• Region: ${currentName} might be ${currSpec} (${currHz}Hz). ${impName} might be ${impSpec}.\n`;
+
+                // 2. Power Limits
+                const currMaxChg = settingsRegisters[14] || 0;
+                const impMaxChg = imp.settingsRegisters?.[14] || 0;
+                if (currMaxChg !== impMaxChg) {
+                    text += `• Power: AC Charge Limit differs. ${currentName}=${currMaxChg}W, ${impName}=${impMaxChg}W.\n`;
+                }
+
+                // 3. Battery Protection (Reg 66/67)
+                const currMin = (settingsRegisters[66] || 0) / 10;
+                const impMin = (imp.settingsRegisters?.[66] || 0) / 10;
+                const currMax = (settingsRegisters[67] || 0) / 10;
+                const impMax = (imp.settingsRegisters?.[67] || 0) / 10;
+
+                if (currMin !== impMin || currMax !== impMax) {
+                    text += `• Battery Health: `;
+                    if (impMin > 0 || impMax < 100) {
+                        text += `${impName} has protection active (${impMin}% to ${impMax}%). `;
+                    } else {
+                        text += `${impName} uses full range (0-100%). `;
+                    }
+                    if (currMin > 0 || currMax < 100) {
+                        text += `${currentName} is set to ${currMin}-${currMax}%.\n`;
+                    } else {
+                        text += `${currentName} is set to 0-100%.\n`;
+                    }
+                } else {
+                    text += `• Battery Health: Both set to ${currMin}-${currMax}%.\n`;
+                }
+
+                // 4. Flags
+                const currFlags = registers[41] || 0;
+                const impFlags = imp.inputRegisters?.[41] || 0;
+                if (currFlags !== impFlags) {
+                    text += `• State: ${currentName} Flags=${currFlags}, ${impName} Flags=${impFlags}.\n`;
+                }
+
+            } else if (currentHasData) {
+                // SINGLE DEVICE SUMMARY
+                const volts = (registers[18] || 0) / 10;
+                const wattsIn = registers[3] || 0;
+                const wattsOut = registers[39] || 0;
+                const soc = (registers[56] || 0) / 10;
+                const flags = registers[41] || 0;
+
+                const activeState = [];
+                if (flags & 256) activeState.push("USB");
+                if (flags & 512) activeState.push("Inverter");
+                if (flags & 1024) activeState.push("DC");
+                const stateStr = activeState.length > 0 ? activeState.join(', ') : "Idle";
+
+                text += `📱 ${currentName} Status\n`;
+                text += `• State: ${stateStr} (SOC: ${soc}%)\n`;
+                text += `• Power: Input ${wattsIn}W | Output ${wattsOut}W\n`;
+                text += `• AC Out: ${volts}V\n`;
+
+                // Check protection
+                const min = (settingsRegisters[66] || 0) / 10;
+                const max = (settingsRegisters[67] || 0) / 10;
+                if (min > 0 || max < 100) {
+                    text += `• Note: Battery protection enabled (${min}% - ${max}%).\n`;
+                } else {
+                    text += `• Note: Standard battery range (0-100%).\n`;
+                }
+            } else {
+                text = "Waiting for device connection or data update...";
+            }
+
+            contentDiv.textContent = text;
+        }
+
+        // Remove a specific device by index
+        function removeImportedDevice(idx) {
+            const removed = importedDiagDataList.splice(idx, 1);
+            if (removed.length) showToast(`Removed: ${removed[0].device || 'Unknown'}`);
+            if (importedDiagDataList.length === 0) {
+                isCompareMode = false;
+                document.getElementById('btn-compare')?.classList.add('hidden');
+            }
+            updateCompareButtonState();
+            renderDiagnostics();
         }
 
         // Initialize Auto Refresh if checked
