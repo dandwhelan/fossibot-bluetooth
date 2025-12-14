@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fossibot Control</title>
+    <title>Power Bank Control</title>
     <link rel="manifest" href="manifest.json">
     <style>
         :root {
@@ -1568,7 +1568,7 @@
         <div id="view-control" class="view-section active">
             <!-- Terminal Elements -->
             <div class="terminal-window-bar">
-                <span>[ FOSSIBOT CONTROL ]</span>
+                <span>[ POWER CONTROL ]</span>
                 <span style="display:flex; gap:0.5rem;">
                     <button class="btn-main btn-connect" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">
                         Connect
@@ -1585,7 +1585,7 @@
 
             <!-- Standard Header -->
             <div class="header">
-                <h1 style="margin:0; font-size: 1.5rem;">Fossibot</h1>
+                <h1 style="margin:0; font-size: 1.5rem;">POWER</h1>
                 <div class="btn-group" style="width: auto; margin: 0;">
                     <button class="btn-main btn-connect">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -1687,7 +1687,7 @@
             </div>
 
             <div class="terminal-prompt">
-                <span>guest@fossibot:~$</span>
+                <span>guest@POWER:~$</span>
                 <input type="text" id="termInput" class="terminal-input" autocomplete="off" spellcheck="false"
                     onkeydown="handleTerminalCommand(event)">
             </div>
@@ -2200,7 +2200,7 @@
     <div id="installModal" class="modal-overlay" style="z-index: 3000;">
         <div class="modal-content" style="text-align: center;">
             <div class="modal-title">Install Application</div>
-            <p style="margin: 1rem 0; color: #ccc;">Install the Fossibot App for the best experience (Fullscreen,
+            <p style="margin: 1rem 0; color: #ccc;">Install the POWER App for the best experience (Fullscreen,
                 Offline access).</p>
             <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 1.5rem;">
                 <button class="btn-main" onclick="installApp()"
@@ -2290,7 +2290,7 @@ Example format:
         };
 
         // Initialize Settings from LocalStorage
-        const savedSettings = localStorage.getItem('fossibot-settings');
+        const savedSettings = localStorage.getItem('POWER-settings');
         if (savedSettings) {
             try {
                 settings = JSON.parse(savedSettings);
@@ -2303,7 +2303,7 @@ Example format:
 
 
         // Initialize Theme
-        const savedTheme = localStorage.getItem('fossibot-theme');
+        const savedTheme = localStorage.getItem('POWER-theme');
         if (savedTheme) {
             setTheme(savedTheme);
         } else {
@@ -2507,7 +2507,7 @@ Example format:
                 if (!device) {
                     log("Requesting Bluetooth Device...");
                     device = await navigator.bluetooth.requestDevice({
-                        filters: [{ namePrefix: 'POWER' }, { namePrefix: 'Fossibot' }],
+                        filters: [{ namePrefix: 'POWER' }, { namePrefix: 'POWER' }],
                         optionalServices: [SERVICE_UUID]
                     });
                     device.addEventListener('gattserverdisconnected', onDisconnected);
@@ -2526,7 +2526,7 @@ Example format:
 
                         if (detected) {
                             settings.mainCap = detected;
-                            localStorage.setItem('fossibot-settings', JSON.stringify(settings));
+                            localStorage.setItem('POWER-settings', JSON.stringify(settings));
                         }
                     }
                 }
@@ -2861,7 +2861,7 @@ Example format:
         function updateConfig(key, val) {
             if (key === 'mainCap') settings.mainCap = parseInt(val);
             if (key === 'expCap') settings.expCap = parseInt(val);
-            localStorage.setItem('fossibot-settings', JSON.stringify(settings));
+            localStorage.setItem('POWER-settings', JSON.stringify(settings));
             calculateRuntime();
         }
 
@@ -3107,7 +3107,7 @@ Example format:
             if (event.key === 'Enter') {
                 const input = event.target.value.trim();
                 event.target.value = '';
-                log(`guest@fossibot:~$ ${input}`);
+                log(`guest@POWER:~$ ${input}`);
 
                 if (input === 'help') {
                     log("Available commands: help, clear, connect, disconnect, usb on/off, ac on/off, dc on/off, light on/off, theme [name], debug on/off");
@@ -3151,14 +3151,14 @@ Example format:
             document.body.setAttribute('data-theme', themeName);
             const el = document.getElementById('themeSelect');
             if (el) el.value = themeName;
-            localStorage.setItem('fossibot-theme', themeName);
+            localStorage.setItem('POWER-theme', themeName);
         }
 
         // Info Modal Logic
         const INFO_TEXTS = {
             'DC': "DC Powers 12v appliances like Fridge, Lights, Water Pump.",
             'AC': "AC are for big appliances like Induction Hob or any other domestic appliance using a proper house plug.",
-            'USB': "USB will enable the USB ports only on the Fossi. If you have AC Plug sockets with USB connections it doesn't control this. It's separate."
+            'USB': "USB will enable the USB ports only on the Power bank. If you have AC Plug sockets with USB connections it doesn't control this. It's separate."
         };
 
         function showInfo(e, type) {
@@ -3199,7 +3199,7 @@ Example format:
 
             // Also show the visible "popup" asking to install
             // Check if user has dismissed it before to avoid annoyance
-            if (!localStorage.getItem('fossibot-install-dismissed')) {
+            if (!localStorage.getItem('POWER-install-dismissed')) {
                 document.getElementById('installModal').style.display = 'flex';
             }
         });
@@ -3224,7 +3224,7 @@ Example format:
         function closeInstallModal() {
             document.getElementById('installModal').style.display = 'none';
             // Remember dismissal for this session/device
-            localStorage.setItem('fossibot-install-dismissed', 'true');
+            localStorage.setItem('POWER-install-dismissed', 'true');
         }
 
         // Settings Logic
@@ -3959,7 +3959,7 @@ Example format:
 
         function setTheme(themeName) {
             document.documentElement.setAttribute('data-theme', themeName);
-            localStorage.setItem('fossibot-theme', themeName);
+            localStorage.setItem('POWER-theme', themeName);
             // Sync Dropdown
             const sel = document.getElementById('theme-select');
             if (sel) sel.value = themeName;
@@ -4087,7 +4087,7 @@ Example format:
                 settings.mainCap = 2048;
                 log("Auto-detected F2400 -> 2048Wh");
             }
-            localStorage.setItem('fossibot-settings', JSON.stringify(settings));
+            localStorage.setItem('POWER-settings', JSON.stringify(settings));
         }
 
         function mockSimulate(reg, val) {
@@ -4400,7 +4400,7 @@ Example format:
             updateSimDashboard();
 
             // Ensure Ocean is default theme
-            const savedTheme = localStorage.getItem('fossibot-theme');
+            const savedTheme = localStorage.getItem('POWER-theme');
             if (!savedTheme) {
                 setTheme('ocean');
             }
