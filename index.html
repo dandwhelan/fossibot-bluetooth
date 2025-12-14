@@ -359,6 +359,23 @@
             --btn-green: #0d9488;
         }
 
+        /* Daylight Theme - Pleasant light mode */
+        [data-theme="daylight"] {
+            --bg-body: #f8fafc;
+            --bg-card: #ffffff;
+            --bg-log: #f1f5f9;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --text-green: #059669;
+            --text-blue: #0284c7;
+            --text-red: #dc2626;
+            --btn-blue: #3b82f6;
+            --btn-blue-hover: #2563eb;
+            --btn-red: #ef4444;
+            --btn-red-hover: #dc2626;
+            --btn-green: #10b981;
+        }
+
         [data-theme="high-contrast"] {
             --bg-body: #000000;
             --bg-card: #000000;
@@ -1889,7 +1906,7 @@
                     </div>
                     <div class="accordion-content">
                         <div class="theme-pills" id="theme-pills">
-                            <span class="theme-pill active" data-theme="pipboy" onclick="selectThemePill('pipboy')">☢️
+                            <span class="theme-pill" data-theme="pipboy" onclick="selectThemePill('pipboy')">☢️
                                 Pipboy</span>
                             <span class="theme-pill" data-theme="terminal" onclick="selectThemePill('terminal')">🖥️
                                 Terminal</span>
@@ -1897,12 +1914,12 @@
                                 Industrial</span>
                             <span class="theme-pill" data-theme="cyberpunk" onclick="selectThemePill('cyberpunk')">🌃
                                 Cyberpunk</span>
-                            <span class="theme-pill" data-theme="ocean" onclick="selectThemePill('ocean')">🌊
+                            <span class="theme-pill active" data-theme="ocean" onclick="selectThemePill('ocean')">🌊
                                 Ocean</span>
                             <span class="theme-pill" data-theme="sunset" onclick="selectThemePill('sunset')">🌅
                                 Sunset</span>
-                            <span class="theme-pill" data-theme="matrix" onclick="selectThemePill('matrix')">💊
-                                Matrix</span>
+                            <span class="theme-pill" data-theme="daylight" onclick="selectThemePill('daylight')">☀️
+                                Daylight</span>
                             <span class="theme-pill" data-theme="rainbow" onclick="selectThemePill('rainbow')">🌈
                                 Rainbow</span>
                             <span class="theme-pill" data-theme="psychedelic"
@@ -2290,8 +2307,8 @@ Example format:
         if (savedTheme) {
             setTheme(savedTheme);
         } else {
-            // Default to Industrial
-            setTheme('industrial');
+            // Default to Ocean
+            setTheme('ocean');
         }
 
         // Debug Mode
@@ -4382,10 +4399,10 @@ Example format:
             renderSimAppliances();
             updateSimDashboard();
 
-            // Ensure Industrial is default theme
+            // Ensure Ocean is default theme
             const savedTheme = localStorage.getItem('fossibot-theme');
             if (!savedTheme) {
-                setTheme('industrial');
+                setTheme('ocean');
             }
 
             // Robust Listener Attachment

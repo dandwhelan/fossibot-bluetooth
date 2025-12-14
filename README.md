@@ -51,11 +51,11 @@ This Progressive Web App (PWA) allows you to control and monitor your Fossibot F
 ### 🎨 Customization & Themes
 Personalize your control panel with built-in themes:
 *   ☢️ **Pipboy:** Fallout-inspired retro CRT green.
-*   🏭 **Industrial:** Clean, high-contrast, professional amber/slate look. (Default)
+*   🏭 **Industrial:** Clean, high-contrast, professional amber/slate look.
 *   🌃 **Cyberpunk:** Neon magenta and cyan on dark purple.
-*   🌊 **Ocean:** Calming teal and deep blue tones.
+*   🌊 **Ocean:** Calming teal and deep blue tones. (Default)
 *   🌅 **Sunset:** Warm gradients of violet, orange, and gold.
-*   💊 **Matrix:** Classic scrolling code green-on-black aesthetic.
+*   ☀️ **Daylight:** Pleasant light mode with soft whites and muted blues.
 *   🖥️ **Terminal:** Minimalist retro command prompt style.
 *   🌈 **Rainbow:** High-visibility vibrant colors.
 
