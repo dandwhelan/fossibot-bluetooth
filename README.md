@@ -29,6 +29,7 @@ This Progressive Web App (PWA) allows you to control and monitor your Fossibot F
 *   **Silent Charging Mode:** Toggle "Silent Charging" to reduce fan noise max charging speed for overnight use.
 
 ### ⚙️ Power Management Settings
+*   **Accordion Layout:** Clean collapsible sections for Quick Actions, Power Limits, Timers, and Theme selection.
 *   **Charging Rate:** Adjust AC Charging power from **200W to 1100W+** (Verify supported limits for your specific model).
 *   **Discharge Limit:** Set a lower limit for battery discharge (e.g., stop discharging at 10%) to preserve battery health.
 *   **EPS / UPS Settings:** Configure Entry Power Supply (UPS mode) behavior and upper charge limits.

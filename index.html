@@ -1439,6 +1439,98 @@
         .switch input:checked+.slider:before {
             transform: translateX(26px);
         }
+
+        /* Accordion Styles for Settings */
+        .accordion {
+            margin-bottom: 0.75rem;
+        }
+
+        .accordion-header {
+            background: var(--bg-card);
+            padding: 1rem;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s;
+        }
+
+        .accordion-header:hover {
+            filter: brightness(1.1);
+        }
+
+        .accordion.open .accordion-header {
+            border-radius: 12px 12px 0 0;
+            background: var(--btn-green);
+            color: #000;
+        }
+
+        .accordion-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 600;
+        }
+
+        .accordion-icon {
+            font-size: 1.25rem;
+        }
+
+        .accordion-arrow {
+            transition: transform 0.2s;
+        }
+
+        .accordion.open .accordion-arrow {
+            transform: rotate(180deg);
+        }
+
+        .accordion-content {
+            display: none;
+            background: var(--bg-log);
+            border-radius: 0 0 12px 12px;
+            padding: 1rem;
+        }
+
+        .accordion.open .accordion-content {
+            display: block;
+        }
+
+        .accordion-count {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 0.2rem 0.5rem;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            margin-left: 0.5rem;
+        }
+
+        /* Theme Pills */
+        .theme-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .theme-pill {
+            padding: 0.5rem 0.75rem;
+            background: var(--bg-card);
+            border: 2px solid transparent;
+            border-radius: 20px;
+            color: var(--text-main);
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .theme-pill:hover {
+            border-color: var(--text-muted);
+        }
+
+        .theme-pill.active {
+            border-color: var(--text-green);
+            background: rgba(74, 222, 128, 0.1);
+        }
     </style>
 </head>
 
@@ -1589,192 +1681,234 @@
                 <h1>Settings</h1>
             </div>
 
-            <div
-                style="background: rgba(255,165,0,0.2); border: 1px solid #ff9800; color: #ff9800; padding: 0.5rem; margin: 0.5rem 1rem; border-radius: 0.5rem; font-size: 0.8rem; text-align: center;">
-                ⚠️ <strong>Work in Progress</strong> - Not all settings may function correctly.
-            </div>
-
-            <div class="setting-group">
-                <div class="setting-header">Device Control</div>
-                <div class="setting-row">
-                    <div class="setting-info">
-                        <span class="setting-title">AC Silent Charging</span>
-                        <span class="setting-desc">Quieter, slower charging</span>
-                    </div>
-                    <div class="setting-control">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="set-ac-silent" onchange="toggleSetting('ac_silent')">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="setting-row">
-                    <div class="setting-info">
-                        <span class="setting-title">LED Light</span>
-                        <span class="setting-desc">Toggle device light</span>
-                    </div>
-                    <div class="setting-control">
-                        <button class="btn-main" onclick="toggle('light')"
-                            style="width: auto; padding: 0.5rem 1rem;">Toggle</button>
-                    </div>
-                </div>
-
-                <div class="setting-row">
-                    <div class="setting-info">
-                        <span class="setting-title text-red">Power Off</span>
-                        <span class="setting-desc">Shutdown Device</span>
-                    </div>
-                    <div class="setting-control">
-                        <button class="btn-main" style="background: var(--btn-red); width: 140px; padding: 0.5rem;"
-                            onclick="toggleSetting('power_off')">OFF</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="setting-group">
-                <div class="setting-header">Power Limits</div>
-                <div class="setting-row">
-                    <div class="setting-info">
-                        <span class="setting-title">AC Charging On/Off</span>
-                        <span class="setting-desc">Toggle AC input charging (Experimental)</span>
-                    </div>
-                    <div class="setting-control">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="set-eps-toggle" onchange="toggleSetting('eps_toggle')">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                </div>
-                <div class="setting-row">
-                    <div class="setting-info">
-                        <span class="setting-title">AC Charging Upper Limit (EPS)</span>
-                        <span class="setting-desc">Max charge % <span id="status-eps" class="text-blue"></span></span>
-                    </div>
-                    <select class="setting-select" id="set-eps-limit" onchange="changeSelect('eps_limit')">
-                        <option value="1000">100%</option>
-                        <option value="900">90%</option>
-                        <option value="800">80%</option>
-                        <option value="700">70%</option>
-                        <option value="600">60%</option>
-                    </select>
-                </div>
-                <div class="setting-row" style="flex-direction: column; align-items: stretch;">
-                    <div style="display:flex; justify-content: space-between;">
-                        <div class="setting-info">
-                            <span class="setting-title">Discharge Limit</span>
-                            <span class="setting-desc">Stop discharging at %</span>
+            <div style="padding: 0 1rem;">
+                <!-- Quick Actions Accordion -->
+                <div class="accordion open" id="acc-quick">
+                    <div class="accordion-header" onclick="toggleAccordion('acc-quick')">
+                        <div class="accordion-title">
+                            <span class="accordion-icon">⚡</span>
+                            Quick Actions
+                            <span class="accordion-count">3</span>
                         </div>
-                        <span id="val-discharge-limit" class="text-blue">0%</span>
+                        <span class="accordion-arrow">▼</span>
                     </div>
-                    <input type="range" id="set-discharge-limit" min="0" max="1000" value="0"
-                        onchange="updateSlider('discharge_limit', this.value)"
-                        oninput="updateSliderLabel('discharge_limit', this.value)">
+                    <div class="accordion-content">
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <span class="setting-title">AC Silent Charging</span>
+                                <span class="setting-desc">Quieter, slower charging</span>
+                            </div>
+                            <div class="setting-control">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="set-ac-silent" onchange="toggleSetting('ac_silent')">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <span class="setting-title">LED Light</span>
+                                <span class="setting-desc">Toggle device light</span>
+                            </div>
+                            <div class="setting-control">
+                                <button class="btn-main" onclick="toggle('light')"
+                                    style="width: auto; padding: 0.5rem 1rem;">Toggle</button>
+                            </div>
+                        </div>
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <span class="setting-title text-red">Power Off</span>
+                                <span class="setting-desc">Shutdown Device</span>
+                            </div>
+                            <div class="setting-control">
+                                <button class="btn-main"
+                                    style="background: var(--btn-red); width: 140px; padding: 0.5rem;"
+                                    onclick="toggleSetting('power_off')">OFF</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <div class="setting-group">
-                <div class="setting-header">Timers</div>
-                <div class="setting-row">
-                    <div class="setting-info">
-                        <span class="setting-title">Screen Timeout</span>
-                        <span class="setting-desc"><span id="status-screen-timeout" class="text-blue"></span></span>
+                <!-- Power Limits Accordion -->
+                <div class="accordion" id="acc-power">
+                    <div class="accordion-header" onclick="toggleAccordion('acc-power')">
+                        <div class="accordion-title">
+                            <span class="accordion-icon">🔋</span>
+                            Power Limits
+                            <span class="accordion-count">3</span>
+                        </div>
+                        <span class="accordion-arrow">▼</span>
                     </div>
-                    <select class="setting-select" id="set-screen-timeout" onchange="changeSelect('screen_timeout')">
-                        <option value="180">3 min</option>
-                        <option value="300">5 min</option>
-                        <option value="600">10 min</option>
-                        <option value="1800">30 min</option>
-                        <option value="0">Never</option>
-                    </select>
+                    <div class="accordion-content">
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <span class="setting-title">AC Charging On/Off</span>
+                                <span class="setting-desc">Toggle AC input charging (Experimental)</span>
+                            </div>
+                            <div class="setting-control">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="set-eps-toggle" onchange="toggleSetting('eps_toggle')">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <span class="setting-title">AC Charging Upper Limit (EPS)</span>
+                                <span class="setting-desc">Max charge % <span id="status-eps"
+                                        class="text-blue"></span></span>
+                            </div>
+                            <select class="setting-select" id="set-eps-limit" onchange="changeSelect('eps_limit')">
+                                <option value="1000">100%</option>
+                                <option value="900">90%</option>
+                                <option value="800">80%</option>
+                                <option value="700">70%</option>
+                                <option value="600">60%</option>
+                            </select>
+                        </div>
+                        <div class="setting-row" style="flex-direction: column; align-items: stretch;">
+                            <div style="display:flex; justify-content: space-between;">
+                                <div class="setting-info">
+                                    <span class="setting-title">Discharge Limit</span>
+                                    <span class="setting-desc">Stop discharging at %</span>
+                                </div>
+                                <span id="val-discharge-limit" class="text-blue">0%</span>
+                            </div>
+                            <input type="range" id="set-discharge-limit" min="0" max="1000" value="0"
+                                onchange="updateSlider('discharge_limit', this.value)"
+                                oninput="updateSliderLabel('discharge_limit', this.value)">
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div class="setting-row" style="flex-direction: column; align-items: stretch;">
-                <div class="setting-info">
-                    <span class="setting-title">Schedule Charge</span>
-                    <span class="setting-desc">Start charging at time (or enter minutes)</span>
-                </div>
-                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; align-items: center;">
-                    <input type="time" class="setting-input" id="set-booking-time" style="flex: 1;"
-                        onchange="updateBookingFromTime()">
-                    <span>or</span>
-                    <input type="number" class="setting-input" id="set-booking-charge" value="0" min="0"
-                        onchange="changeInput('booking_charge')">
-                    <span>mins</span>
-                </div>
-            </div>
-            <div class="setting-row">
-                <div class="setting-info">
-                    <span class="setting-title">System Standby</span>
-                    <span class="setting-desc"><span id="status-sys-standby" class="text-blue"></span></span>
-                </div>
-                <select class="setting-select" id="set-sys-standby" onchange="changeSelect('sys_standby')">
-                    <option value="5">5 min</option>
-                    <option value="10">10 min</option>
-                    <option value="30">30 min</option>
-                    <option value="480">480 min (8h)</option>
-                    <!-- <option value="0">Never</option> -->
-                </select>
-            </div>
-            <div class="setting-row">
-                <div class="setting-info">
-                    <span class="setting-title">AC Standby</span>
-                    <span class="setting-desc"><span id="status-ac-standby" class="text-blue"></span></span>
-                </div>
-                <select class="setting-select" id="set-ac-standby" onchange="changeSelect('ac_standby')">
-                    <option value="480">8 hr</option>
-                    <option value="960">16 hr</option>
-                    <option value="1440">24 hr</option>
-                    <option value="0">Never</option>
-                </select>
-            </div>
-            <div class="setting-row">
-                <div class="setting-info">
-                    <span class="setting-title">DC Standby</span>
-                    <span class="setting-desc"><span id="status-dc-standby" class="text-blue"></span></span>
-                </div>
-                <select class="setting-select" id="set-dc-standby" onchange="changeSelect('dc_standby')">
-                    <option value="480">8 hr</option>
-                    <option value="960">16 hr</option>
-                    <option value="1440">24 hr</option>
-                    <option value="0">Never</option>
-                </select>
-            </div>
-            <div class="setting-row">
-                <div class="setting-info">
-                    <span class="setting-title">USB Standby</span>
-                    <span class="setting-desc"><span id="status-usb-standby" class="text-blue"></span></span>
-                </div>
-                <select class="setting-select" id="set-usb-standby" onchange="changeSelect('usb_standby')">
-                    <option value="5">5 min</option>
-                    <option value="10">10 min</option>
-                    <option value="30">30 min</option>
-                    <option value="60">1 hr</option>
-                    <option value="120">2 hr</option>
-                    <option value="480">8 hr</option>
-                    <option value="600">10 hr</option>
-                    <option value="0">Never</option>
-                </select>
-            </div>
 
-            <div class="setting-group">
-                <div class="setting-header">Theme</div>
-                <div class="setting-row">
-                    <div class="setting-info">
-                        <span class="setting-title">App Theme</span>
-                        <span class="setting-desc">Visual Style</span>
+                <!-- Timers Accordion -->
+                <div class="accordion" id="acc-timers">
+                    <div class="accordion-header" onclick="toggleAccordion('acc-timers')">
+                        <div class="accordion-title">
+                            <span class="accordion-icon">⏱️</span>
+                            Timers
+                            <span class="accordion-count">6</span>
+                        </div>
+                        <span class="accordion-arrow">▼</span>
                     </div>
-                    <select class="setting-select" id="theme-select" onchange="setTheme(this.value)">
-                        <option value="pipboy">☢️ Pipboy (Default)</option>
-                        <option value="terminal">🖥️ Terminal</option>
-                        <option value="industrial">🏭 Industrial</option>
-                        <option value="cyberpunk">🌃 Cyberpunk</option>
-                        <option value="ocean">🌊 Ocean</option>
-                        <option value="sunset">🌅 Sunset</option>
-                        <option value="matrix">💊 Matrix</option>
-                        <option value="rainbow">🌈 Rainbow</option>
-                        <option value="psychedelic">😵 Acid Mode</option>
-                    </select>
+                    <div class="accordion-content">
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <span class="setting-title">Screen Timeout</span>
+                                <span class="setting-desc"><span id="status-screen-timeout"
+                                        class="text-blue"></span></span>
+                            </div>
+                            <select class="setting-select" id="set-screen-timeout"
+                                onchange="changeSelect('screen_timeout')">
+                                <option value="180">3 min</option>
+                                <option value="300">5 min</option>
+                                <option value="600">10 min</option>
+                                <option value="1800">30 min</option>
+                                <option value="0">Never</option>
+                            </select>
+                        </div>
+                        <div class="setting-row" style="flex-direction: column; align-items: stretch;">
+                            <div class="setting-info">
+                                <span class="setting-title">Schedule Charge</span>
+                                <span class="setting-desc">Start charging at time (or enter minutes)</span>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; align-items: center;">
+                                <input type="time" class="setting-input" id="set-booking-time" style="flex: 1;"
+                                    onchange="updateBookingFromTime()">
+                                <span>or</span>
+                                <input type="number" class="setting-input" id="set-booking-charge" value="0" min="0"
+                                    onchange="changeInput('booking_charge')">
+                                <span>mins</span>
+                            </div>
+                        </div>
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <span class="setting-title">System Standby</span>
+                                <span class="setting-desc"><span id="status-sys-standby"
+                                        class="text-blue"></span></span>
+                            </div>
+                            <select class="setting-select" id="set-sys-standby" onchange="changeSelect('sys_standby')">
+                                <option value="5">5 min</option>
+                                <option value="10">10 min</option>
+                                <option value="30">30 min</option>
+                                <option value="480">480 min (8h)</option>
+                            </select>
+                        </div>
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <span class="setting-title">AC Standby</span>
+                                <span class="setting-desc"><span id="status-ac-standby" class="text-blue"></span></span>
+                            </div>
+                            <select class="setting-select" id="set-ac-standby" onchange="changeSelect('ac_standby')">
+                                <option value="480">8 hr</option>
+                                <option value="960">16 hr</option>
+                                <option value="1440">24 hr</option>
+                                <option value="0">Never</option>
+                            </select>
+                        </div>
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <span class="setting-title">DC Standby</span>
+                                <span class="setting-desc"><span id="status-dc-standby" class="text-blue"></span></span>
+                            </div>
+                            <select class="setting-select" id="set-dc-standby" onchange="changeSelect('dc_standby')">
+                                <option value="480">8 hr</option>
+                                <option value="960">16 hr</option>
+                                <option value="1440">24 hr</option>
+                                <option value="0">Never</option>
+                            </select>
+                        </div>
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <span class="setting-title">USB Standby</span>
+                                <span class="setting-desc"><span id="status-usb-standby"
+                                        class="text-blue"></span></span>
+                            </div>
+                            <select class="setting-select" id="set-usb-standby" onchange="changeSelect('usb_standby')">
+                                <option value="5">5 min</option>
+                                <option value="10">10 min</option>
+                                <option value="30">30 min</option>
+                                <option value="60">1 hr</option>
+                                <option value="120">2 hr</option>
+                                <option value="480">8 hr</option>
+                                <option value="600">10 hr</option>
+                                <option value="0">Never</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Theme Accordion -->
+                <div class="accordion" id="acc-theme">
+                    <div class="accordion-header" onclick="toggleAccordion('acc-theme')">
+                        <div class="accordion-title">
+                            <span class="accordion-icon">🎨</span>
+                            Theme
+                        </div>
+                        <span class="accordion-arrow">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="theme-pills" id="theme-pills">
+                            <span class="theme-pill active" data-theme="pipboy" onclick="selectThemePill('pipboy')">☢️
+                                Pipboy</span>
+                            <span class="theme-pill" data-theme="terminal" onclick="selectThemePill('terminal')">🖥️
+                                Terminal</span>
+                            <span class="theme-pill" data-theme="industrial" onclick="selectThemePill('industrial')">🏭
+                                Industrial</span>
+                            <span class="theme-pill" data-theme="cyberpunk" onclick="selectThemePill('cyberpunk')">🌃
+                                Cyberpunk</span>
+                            <span class="theme-pill" data-theme="ocean" onclick="selectThemePill('ocean')">🌊
+                                Ocean</span>
+                            <span class="theme-pill" data-theme="sunset" onclick="selectThemePill('sunset')">🌅
+                                Sunset</span>
+                            <span class="theme-pill" data-theme="matrix" onclick="selectThemePill('matrix')">💊
+                                Matrix</span>
+                            <span class="theme-pill" data-theme="rainbow" onclick="selectThemePill('rainbow')">🌈
+                                Rainbow</span>
+                            <span class="theme-pill" data-theme="psychedelic"
+                                onclick="selectThemePill('psychedelic')">😵 Acid Mode</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2117,6 +2251,20 @@ Example format:
         let device, server, service, writeChar, notifyChar, pollInterval;
         // Manual override for light state because device feedback is unreliable
         let manualLightOverride = null;
+
+        // Accordion toggle function for Settings page
+        function toggleAccordion(id) {
+            const acc = document.getElementById(id);
+            if (acc) acc.classList.toggle('open');
+        }
+
+        // Theme pill selection function
+        function selectThemePill(themeName) {
+            document.querySelectorAll('.theme-pill').forEach(p => p.classList.remove('active'));
+            const pill = document.querySelector(`.theme-pill[data-theme="${themeName}"]`);
+            if (pill) pill.classList.add('active');
+            setTheme(themeName);
+        }
 
         // Settings
         let settings = {
