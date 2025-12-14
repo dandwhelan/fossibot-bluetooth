@@ -16,6 +16,13 @@ This Progressive Web App (PWA) allows you to control and monitor your Fossibot F
 *   **System Health:** Monitor system voltage, frequency, and internal temperatures (fan levels).
 *   **Battery Extensions:** Support for monitoring external battery packs (Success/Extension batteries) with individual charge levels.
 
+### 🔋 Power Simulator
+*   **Runtime Calculator:** Estimate how long your power station will run with selected appliances.
+*   **Split AC/DC Lists:** Clearly organized appliance management with separate AC and DC columns.
+*   **Editable Wattages:** Click any appliance wattage to customize its power draw.
+*   **Efficiency Modeling:** Card-based AC (88%) and DC (96%) efficiency toggles to account for real-world conversion losses.
+*   **Custom Appliances:** Add your own devices with custom names, wattages, and AC/DC type.
+
 ### 🛠️ Advanced Control Dashboard
 *   **Power Toggle:** Remotely toggle AC Inverter, DC (12V) Output, and USB Ports.
 *   **LED Light Control:** Switch between Light modes: **Off**, **Low**, **High**, **SOS**, and **Flash**.

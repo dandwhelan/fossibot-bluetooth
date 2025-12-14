@@ -1261,6 +1261,185 @@
             overflow-y: auto;
         }
     </style>
+    <style>
+        /* New styles for Concept B integration */
+        .eff-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .eff-card {
+            flex: 1;
+            background: var(--bg-card);
+            border: 1px solid var(--text-muted);
+            border-radius: 12px;
+            padding: 1rem;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 80px;
+        }
+
+        .eff-card.active {
+            border-color: var(--text-green);
+            background: rgba(22, 163, 74, 0.1);
+            box-shadow: 0 0 10px rgba(74, 222, 128, 0.1);
+        }
+
+        .eff-card.inactive {
+            opacity: 0.6;
+        }
+
+        .eff-title {
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 0.25rem;
+            color: var(--text-main);
+        }
+
+        .eff-subtitle {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .eff-help-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-muted);
+            border: none;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .eff-help-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: var(--text-main);
+        }
+
+        .list-col-container {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .list-col {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 0.5rem;
+            min-width: 200px;
+        }
+
+        .list-col-header {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 0.25rem;
+        }
+
+        .app-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .app-item:last-child {
+            border-bottom: none;
+        }
+
+        .app-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-name {
+            font-weight: bold;
+            font-size: 0.9rem;
+            color: var(--text-main);
+        }
+
+        .app-control {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .app-input {
+            width: 45px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--text-muted);
+            color: var(--text-main);
+            padding: 0.25rem;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 0.8rem;
+        }
+
+        /* Toggle switch for appliances */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .switch .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #374151;
+            transition: .3s;
+            border-radius: 24px;
+        }
+
+        .switch .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        .switch input:checked+.slider {
+            background-color: var(--btn-green);
+        }
+
+        .switch input:checked+.slider:before {
+            transform: translateX(26px);
+        }
+    </style>
 </head>
 
 <body>
@@ -1617,8 +1796,6 @@
                 </div>
 
                 <div class="dash-col center">
-                    <div class="dash-sub" style="margin-bottom: 0.25rem;">Eff: <span id="sim-efficiency">85</span>%
-                    </div>
                     <div class="battery-ring-container">
                         <svg width="100%" height="100%" viewBox="0 0 36 36" style="transform: rotate(-90deg);">
                             <path class="ring-bg"
@@ -1641,7 +1818,7 @@
                     <div class="dash-label">Output</div>
                     <div class="dash-val text-blue"><span id="sim-outputWatts">0</span> <span
                             style="font-size:0.75rem;">W</span></div>
-                    <div class="dash-sub">Net: <span id="sim-netWatts">0</span>W</div>
+                    <div class="dash-sub"></div>
                 </div>
             </div>
         </div>
@@ -1667,26 +1844,36 @@
                         style="width: 100%; padding: 0.5rem; background: var(--bg-log); color: var(--text-main); border: 1px solid var(--text-muted); border-radius: 0.25rem;">
                 </div>
             </div>
-            <div class="setting-row" style="padding: 0.5rem;">
-                <div class="setting-info">
-                    <span class="setting-title">AC Inverter Efficiency (85%)</span>
-                    <span class="setting-desc">Account for DC→AC conversion loss</span>
+        </div>
+
+        <!-- Efficiency Cards -->
+        <div class="setting-group" style="margin: 1rem; padding: 0.5rem;">
+            <div class="setting-header">Efficiency Settings</div>
+            <div class="eff-row">
+                <div id="card-ac" class="eff-card active" onclick="toggleEfficiency('ac')">
+                    <button class="eff-help-btn" onclick="showEfficiencyHelp('ac', event)">?</button>
+                    <div class="eff-title">AC</div>
+                    <div class="eff-subtitle">88% Efficiency</div>
                 </div>
-                <div class="setting-control">
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="sim-efficiency-toggle" checked onchange="updateSimDashboard()">
-                        <span class="slider"></span>
-                    </label>
+                <div id="card-dc" class="eff-card active" onclick="toggleEfficiency('dc')">
+                    <button class="eff-help-btn" onclick="showEfficiencyHelp('dc', event)">?</button>
+                    <div class="eff-title">DC</div>
+                    <div class="eff-subtitle">96% Efficiency</div>
                 </div>
             </div>
         </div>
 
-        <!-- Appliance Toggles -->
-        <div class="setting-group" style="margin: 1rem;">
-            <div class="setting-header">Appliances</div>
-            <div id="sim-appliances"
-                style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; padding: 0.5rem;">
-                <!-- Appliances will be populated by JS -->
+        <!-- Appliances (Split Lists) -->
+        <div class="setting-group" style="margin: 1rem; padding: 0.5rem;">
+            <div class="list-col-container">
+                <div class="list-col">
+                    <div class="list-col-header">AC Appliances</div>
+                    <div id="list-ac"></div>
+                </div>
+                <div class="list-col">
+                    <div class="list-col-header">DC Appliances</div>
+                    <div id="list-dc"></div>
+                </div>
             </div>
         </div>
 
@@ -1703,6 +1890,14 @@
                     <label style="font-size: 0.75rem; color: var(--text-muted);">Watts</label>
                     <input type="number" id="sim-custom-watts" placeholder="100" min="1"
                         style="width: 100%; padding: 0.5rem; background: var(--bg-log); color: var(--text-main); border: 1px solid var(--text-muted); border-radius: 0.25rem;">
+                </div>
+                <div style="flex: 1;">
+                    <label style="font-size: 0.75rem; color: var(--text-muted);">Type</label>
+                    <select id="sim-custom-type"
+                        style="width: 100%; padding: 0.5rem; background: var(--bg-log); color: var(--text-main); border: 1px solid var(--text-muted); border-radius: 0.25rem;">
+                        <option value="DC">DC</option>
+                        <option value="AC">AC</option>
+                    </select>
                 </div>
                 <button onclick="addCustomAppliance()" class="btn-main"
                     style="padding: 0.5rem 1rem; background: var(--btn-green);">Add</button>
@@ -3764,34 +3959,80 @@ Example format:
         // ========== POWER SIMULATOR ==========
         // Preset appliances with wattages from user/FAQ data
         const SIM_APPLIANCES = [
-            { id: 'tv', name: '60W LED TV', watts: 60, enabled: false },
-            { id: 'fridge', name: '15L Mini Fridge', watts: 85, enabled: false },
-            { id: 'pump', name: 'Water Pump', watts: 40, enabled: false },
-            { id: 'laptop', name: 'Laptop (AC)', watts: 90, enabled: false },
-            { id: 'led', name: 'LED Lights', watts: 20, enabled: false },
-            { id: 'heater', name: 'Heater', watts: 800, enabled: false },
-            { id: 'phone', name: 'Mobile Phone', watts: 30, enabled: false },
-            { id: 'cpap', name: 'Air Fryer', watts: 800, enabled: false }, // Replaced CPAP
-            { id: 'projector', name: 'Projector', watts: 150, enabled: false },
-            { id: 'blender', name: 'Electric Fan', watts: 25, enabled: false } // Replaced Blender
+            { id: 'tv', name: 'LED TV', watts: 60, type: 'DC', enabled: false },
+            { id: 'fridge', name: '15L Mini Fridge', watts: 85, type: 'DC', enabled: false },
+            { id: 'pump', name: 'Water Pump', watts: 40, type: 'DC', enabled: false },
+            { id: 'laptop', name: 'Laptop', watts: 90, type: 'AC', enabled: false },
+            { id: 'led', name: 'LED Lights', watts: 20, type: 'DC', enabled: false },
+            { id: 'heater', name: 'Heater', watts: 800, type: 'AC', enabled: false },
+            { id: 'phone', name: 'Mobile Phone', watts: 30, type: 'DC', enabled: false },
+            { id: 'cpap', name: 'Air Fryer', watts: 800, type: 'AC', enabled: false },
+            { id: 'projector', name: 'Induction Hob', watts: 600, type: 'AC', enabled: false },
+            { id: 'blender', name: 'Electric Fan', watts: 25, type: 'DC', enabled: false }
         ];
 
         // Custom appliances added by user
         let customAppliances = [];
+        let useAcEff = true;
+        let useDcEff = true;
+
+        // Show efficiency help modal
+        function showEfficiencyHelp(type, event) {
+            if (event) event.stopPropagation();
+
+            let title, message;
+            if (type === 'ac') {
+                title = 'AC Inverter Efficiency (88%)';
+                message = `<p>When you use AC appliances (like laptops, heaters, or air fryers), the power station must convert DC battery power to AC using an <strong>inverter</strong>.</p>
+                <p>This conversion isn't perfect - about <strong>12% of energy is lost as heat</strong> during the process.</p>
+                <p><strong>Example:</strong> To power a 100W AC appliance, the battery must actually supply ~114W.</p>
+                <p>Pure sine wave inverters (like in the F2400) typically achieve 85-92% efficiency.</p>`;
+            } else {
+                title = 'DC-DC Converter Efficiency (96%)';
+                message = `<p>When you use DC appliances (like USB devices, LED lights, or 12V fridges), the power station uses a <strong>DC-DC converter</strong> to regulate voltage.</p>
+                <p>This is much more efficient than AC conversion - only about <strong>4% of energy is lost</strong>.</p>
+                <p><strong>Example:</strong> To power a 100W DC appliance, the battery supplies ~104W.</p>
+                <p>High-quality buck/boost converters achieve 95-98% efficiency.</p>`;
+            }
+
+            // Use existing modal or create alert
+            const modal = document.getElementById('info-modal');
+            if (modal) {
+                document.getElementById('modal-title').textContent = title;
+                document.getElementById('modal-body').innerHTML = message;
+                modal.style.display = 'flex';
+            } else {
+                alert(title + '\n\n' + message.replace(/<[^>]*>/g, ''));
+            }
+        }
 
         function renderSimAppliances() {
-            const container = document.getElementById('sim-appliances');
-            if (!container) return;
+            const all = [...SIM_APPLIANCES, ...customAppliances];
+            const acApps = all.filter(a => a.type === 'AC');
+            const dcApps = all.filter(a => a.type === 'DC');
 
-            const allApps = [...SIM_APPLIANCES, ...customAppliances];
-            container.innerHTML = allApps.map((app, i) => `
-                <button class="control-tile ${app.enabled ? 'active' : ''}" 
-                        onclick="toggleSimApp('${app.id}')" 
-                        style="padding: 0.5rem; font-size: 0.75rem; min-height: 60px;">
-                    <span style="font-weight: bold;">${app.name}</span>
-                    <span style="font-size: 0.65rem; color: var(--text-muted);">${app.watts}W</span>
-                </button>
-            `).join('');
+            const renderItem = (app) => `
+                <div class="app-item">
+                    <div class="app-info">
+                        <span class="app-name">${app.name}</span>
+                    </div>
+                    <div class="app-control">
+                        <input type="number" class="app-input" value="${app.watts}" 
+                            onclick="event.stopPropagation()" 
+                            onchange="updateAppWatts('${app.id}', this.value)">
+                        <label class="switch">
+                            <input type="checkbox" ${app.enabled ? 'checked' : ''} onchange="toggleSimApp('${app.id}')">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            `;
+
+            const acContainer = document.getElementById('list-ac');
+            const dcContainer = document.getElementById('list-dc');
+
+            if (acContainer) acContainer.innerHTML = acApps.map(renderItem).join('');
+            if (dcContainer) dcContainer.innerHTML = dcApps.map(renderItem).join('');
         }
 
         function toggleSimApp(id) {
@@ -3804,19 +4045,44 @@ Example format:
                 const custom = customAppliances.find(a => a.id === id);
                 if (custom) custom.enabled = !custom.enabled;
             }
-            renderSimAppliances();
+            // No need to re-render full list on toggle if we trust the switch visual state
+            // But to be safe and ensure sync:
+            // renderSimAppliances(); 
+            // Actually, re-rendering might interrupt the switch animation? 
+            // For now, let's NOT re-render on enable/disable, just update dashboard.
+            updateSimDashboard();
+        }
+
+        function updateAppWatts(id, val) {
+            let app = SIM_APPLIANCES.find(a => a.id === id) || customAppliances.find(a => a.id === id);
+            if (app) {
+                app.watts = parseInt(val) || 0;
+                updateSimDashboard();
+            }
+        }
+
+        function toggleEfficiency(type) {
+            if (type === 'ac') {
+                useAcEff = !useAcEff;
+                document.getElementById('card-ac').className = `eff-card ${useAcEff ? 'active' : 'inactive'}`;
+            } else {
+                useDcEff = !useDcEff;
+                document.getElementById('card-dc').className = `eff-card ${useDcEff ? 'active' : 'inactive'}`;
+            }
             updateSimDashboard();
         }
 
         function addCustomAppliance() {
             const nameEl = document.getElementById('sim-custom-name');
             const wattsEl = document.getElementById('sim-custom-watts');
+            const typeEl = document.getElementById('sim-custom-type');
 
             const name = nameEl.value.trim() || 'Custom Device';
             const watts = parseInt(wattsEl.value) || 100;
+            const type = typeEl?.value || 'DC';
 
             const id = 'custom_' + Date.now();
-            customAppliances.push({ id, name, watts, enabled: true });
+            customAppliances.push({ id, name, watts, type, enabled: true });
 
             // Clear inputs
             nameEl.value = '';
@@ -3825,39 +4091,47 @@ Example format:
             renderSimAppliances();
             updateSimDashboard();
         }
-
         function updateSimDashboard() {
             // Get input values
             const batteryPct = parseFloat(document.getElementById('sim-battery-input')?.value) || 100;
             const inputWatts = parseFloat(document.getElementById('sim-input-watts')?.value) || 0;
             const capacityWh = parseFloat(document.getElementById('sim-capacity')?.value) || 2048;
-            const useEfficiency = document.getElementById('sim-efficiency-toggle')?.checked ?? true;
-            const efficiency = useEfficiency ? 0.85 : 1.0;
 
-            // Calculate total output from enabled appliances
+            // Efficiency factors (global vars)
+            const AC_EFFICIENCY = useAcEff ? 0.88 : 1.0;
+            const DC_EFFICIENCY = useDcEff ? 0.96 : 1.0;
+
+            // Calculate total output
             const allApps = [...SIM_APPLIANCES, ...customAppliances];
-            const outputWatts = allApps.filter(a => a.enabled).reduce((sum, a) => sum + a.watts, 0);
+            const enabledApps = allApps.filter(a => a.enabled);
 
-            // Net watts (positive = charging, negative = discharging)
-            const netWatts = inputWatts - outputWatts;
+            // Effective output (watts drawn from battery)
+            let effectiveOutputWatts = 0;
+            enabledApps.forEach(app => {
+                const eff = app.type === 'AC' ? AC_EFFICIENCY : DC_EFFICIENCY;
+                effectiveOutputWatts += app.watts / eff;
+            });
 
-            // Available energy with efficiency factor
-            const availableWh = (batteryPct / 100) * capacityWh * efficiency;
+            // Raw output for summary
+            const rawOutputWatts = enabledApps.reduce((s, a) => s + a.watts, 0);
+
+            // Available energy
+            const availableWh = (batteryPct / 100) * capacityWh;
             const availableKwh = availableWh / 1000;
 
             // Calculate runtime
             let runtimeText = '--';
-            if (outputWatts > inputWatts && outputWatts > 0) {
+            if (effectiveOutputWatts > inputWatts && effectiveOutputWatts > 0) {
                 // Discharging
-                const effectiveOutput = outputWatts - inputWatts;
-                const hours = availableWh / effectiveOutput;
+                const effectiveDrain = effectiveOutputWatts - inputWatts;
+                const hours = availableWh / effectiveDrain;
                 const h = Math.floor(hours);
                 const m = Math.round((hours - h) * 60);
                 runtimeText = `${h}h ${m}m`;
-            } else if (inputWatts > outputWatts && inputWatts > 0) {
-                // Charging - show time to full
+            } else if (inputWatts > effectiveOutputWatts && inputWatts > 0) {
+                // Charging
                 const emptyWh = (1 - batteryPct / 100) * capacityWh;
-                const netCharge = inputWatts - outputWatts;
+                const netCharge = inputWatts - effectiveOutputWatts;
                 const hours = emptyWh / netCharge;
                 const h = Math.floor(hours);
                 const m = Math.round((hours - h) * 60);
@@ -3866,12 +4140,13 @@ Example format:
 
             // Update Dashboard UI
             document.getElementById('sim-inputWatts').textContent = inputWatts;
-            document.getElementById('sim-outputWatts').textContent = outputWatts;
-            document.getElementById('sim-netWatts').textContent = (netWatts >= 0 ? '+' : '') + netWatts;
+            // User Request: "set the eff as the output removing the eff section"
+            // So we display effective watts in the main output slot
+            document.getElementById('sim-outputWatts').textContent = Math.round(effectiveOutputWatts);
+
             document.getElementById('sim-batteryPercent').textContent = Math.round(batteryPct);
             document.getElementById('sim-remainingHours').textContent = runtimeText;
             document.getElementById('sim-remainingKwh').textContent = availableKwh.toFixed(2);
-            document.getElementById('sim-efficiency').textContent = useEfficiency ? '85' : '100';
 
             // Update battery ring
             const ring = document.getElementById('sim-batteryRing');
@@ -3880,16 +4155,15 @@ Example format:
                 ring.style.color = batteryPct < 20 ? '#ef4444' : '#60a5fa';
             }
 
-            // Update active loads summary
-            const activeLoads = allApps.filter(a => a.enabled);
+            // Update active loads summary if element exists
             const loadsEl = document.getElementById('sim-active-loads');
             if (loadsEl) {
-                if (activeLoads.length === 0) {
+                if (enabledApps.length === 0) {
                     loadsEl.innerHTML = '<span style="color: var(--text-muted);">No appliances selected.</span>';
                 } else {
-                    loadsEl.innerHTML = activeLoads.map(a =>
-                        `<span style="display: inline-block; background: var(--bg-log); padding: 0.25rem 0.5rem; margin: 0.1rem; border-radius: 0.25rem;">${a.name} (${a.watts}W)</span>`
-                    ).join('') + `<div style="margin-top: 0.5rem; font-weight: bold; color: var(--text-blue);">Total: ${outputWatts}W</div>`;
+                    loadsEl.innerHTML = enabledApps.map(a =>
+                        `<span style="display: inline-block; background: var(--bg-log); padding: 0.25rem 0.5rem; margin: 0.1rem; border-radius: 0.25rem;">${a.name} (${a.watts}W ${a.type})</span>`
+                    ).join('') + `<div style="margin-top: 0.5rem; font-weight: bold; color: var(--text-blue);">Total: ${rawOutputWatts}W | Draw: ${Math.round(effectiveOutputWatts)}W</div>`;
                 }
             }
         }
