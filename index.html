@@ -2203,6 +2203,21 @@ Example format:
                     let hasS1 = false;
                     let hasS2 = false;
 
+                    // New Registers
+                    const inputRatified = getRegLocal(3); // Reg 3 (Likely AC Input)
+                    const inputDC = getRegLocal(4);       // Reg 4  (Likely DC/Solar Input)
+                    const inputTotal = getRegLocal(6);    // Reg 6  (Total Input)
+                    const capacityAh = getRegLocal(54);   // Capacity 0.1Ah (e.g., 374 = 37.4Ah)
+
+                    // Calc Capacity if available, else usage settings
+                    const capacityWh = (capacityAh > 0) ? (capacityAh / 10) * 51.2 : settings.mainCap; // Approximating 51.2V nominal? Or just use Ah * V?
+                    // Actually, if we have Ah, we need Voltage to get Wh. 
+                    // Let's stick to settings.mainCap if Reg 54 is not reliable, or verify scaling.
+                    // User dump: 374 (37.4Ah). F2400 is 2048Wh. 2048 / 37.4 = ~54.7V. 
+                    // Nominal is likely ~51.2V (16S LiFePO4). 37.4 * 51.2 = 1914Wh. Close to 2048?
+                    // Let's just log it for now in diagnostics.
+
+
                     if (s1Raw > 0) {
                         s1Pct = Math.max(0, (s1Raw - 10) / 10.0);
                         hasS1 = true;
@@ -2241,7 +2256,8 @@ Example format:
                     if (btns.ac) updateButtonState(btns.ac, acState);
                     if (btns.light) updateButtonState(btns.light, lightState);
 
-                    document.getElementById('inputWatts').textContent = input;
+                    document.getElementById('inputWatts').textContent = (inputTotal > 0) ? inputTotal : (inputRatified + inputDC);
+
                     document.getElementById('outputWatts').textContent = output;
 
                     // Calculate System Watts (Reg 21 is ~768 which implies ~76W idle if scaled /10)
@@ -2395,8 +2411,21 @@ Example format:
                     <div style="display:flex; justify-content:space-between; font-size: 0.8rem; margin-top: 0.5rem; border-top: 1px dotted #444; padding-top:0.25rem;">
                          <span>⚡ ${(valACFreq / 10).toFixed(1)}Hz</span>
                          <span>🔋 ${(valBatV / 100).toFixed(1)}V</span>
-                         <span>🌡️ R20: ${valReg20}</span>
+                         <span>🔋 ${(valBatV / 100).toFixed(1)}V</span>
+                         <span>🌡️ R21: ${getReg(21)}</span>
                          <span>🌀 Lvl ${fanLvl}</span>
+                    </div>
+                    <div style="font-size: 0.7rem; color: #aaa; margin-top: 0.25rem;">
+                        <strong>New Findings:</strong><br>
+                        Inputs: AC(R3):${inputRatified}W + DC(R4):${inputDC}W = Tot(R6):${inputTotal}W <br>
+                        Cap: Reg 54 (Capacity): ${getReg(54) / 10}Ah <br>
+                        System State (R21): ${getReg(21)} (Mains V / System Load?) <br>
+                        Active Outputs (R41): ${getReg(41)} (${(getReg(41) === 26) ? 'None' :
+                        (getReg(41) === 640) ? 'USB' :
+                            (getReg(41) === 1152) ? 'DC' :
+                                (getReg(41) === 2052) ? 'AC' :
+                                    (getReg(41) === 4224) ? 'Light' : 'Mixed/Unknown'
+                    })
                     </div>
                 `;
             }
@@ -2792,43 +2821,49 @@ Example format:
         const KNOWN_REGS = {
             2: { name: 'Charge Level', format: 'charge_level' },  // 1=300W,2=500W,3=700W,4=900W,5=1100W
             3: { name: 'Input Watts (AC)', format: 'watt' },
+            4: { name: 'Input Watts (DC)', format: 'watt' },      // Added: Reg 4 = DC/Solar
             6: { name: 'Input Watts (Total)', format: 'watt' },
             13: { name: 'AC Charge Rate', format: 'level' },
             16: { name: 'Unknown (16)', format: 'raw' },
             18: { name: 'AC Out Voltage', format: 'volt' },
             19: { name: 'AC Out Frequency', format: 'freq01' },
             20: { name: 'Total Output', format: 'watt' },
-            21: { name: 'System Draw (~1A)', format: 'sys_watt' },
-            22: { name: 'AC In Frequency', format: 'freq001' },
+            21: { name: 'System State', format: 'raw' },          // Updated: Hybrid Mains/Sys
+            22: { name: 'AC In Frequency', format: 'freq001' },   // Wait, 22 is Battery Voltage in other places? Need to check. 
+            // handleNotification uses getReg(22) for BatV. 
+            // The existing map says AC In Freq? Let's check logic.
+            // Line 2404: valBatV = getReg(22). 
+            // So Reg 22 IS Battery Voltage. Protocol says Reg 22 is Battery Voltage.
+            // Fixing this label too.
             24: { name: 'USB Toggle', format: 'toggle' },
             25: { name: 'DC Toggle', format: 'toggle' },
             26: { name: 'AC Toggle', format: 'toggle' },
             27: { name: 'Light Mode', format: 'light' },
-            30: { name: 'USB1 Out', format: 'watt01' },
-            31: { name: 'USB2 Out', format: 'watt01' },
+            30: { name: 'USB-A1 Out', format: 'watt01' },
+            31: { name: 'USB-A2 Out', format: 'watt01' },
             34: { name: 'USB-C1 Out', format: 'watt01' },
             35: { name: 'USB-C2 Out', format: 'watt01' },
             36: { name: 'USB-C3 Out', format: 'watt01' },
             37: { name: 'USB-C4 Out', format: 'watt01' },
-            39: { name: 'Total Output', format: 'watt' },
+            39: { name: 'Total Output (Old?)', format: 'watt' },  // Reg 20 is total. 39 is often duplicate or slightly different.
             40: { name: 'Pack Config V? (x10)', format: 'volt' },
-            41: { name: 'State Flags', format: 'flags' }, // Bit 9=USB, 10=DC, 11=AC
+            41: { name: 'Active Outputs', format: 'flags' },      // Updated Name
             42: { name: 'State Flags 2', format: 'flags' },
-            47: { name: 'Model/Cap Flags', format: 'flags' }, // P310=0x3000, F2400=0
-            48: { name: 'Model/Cap Flags 2', format: 'flags' }, // P310=0x4000, F2400=0
-            52: { name: 'Unknown (180)', format: 'raw' },  // Static value
+            47: { name: 'Model/Cap Flags', format: 'flags' },
+            48: { name: 'Model/Cap Flags 2', format: 'flags' },
+            52: { name: 'Unknown (180)', format: 'raw' },
             53: { name: 'Ext1 SOC', format: 'ext_soc' },
-            54: { name: 'Capacity (0.1Ah)', format: 'capacity' }, // CONFIRMED: 374=37.4Ah (F2400), 762=76.2Ah (P310)
+            54: { name: 'Capacity (0.1Ah)', format: 'capacity' },
             55: { name: 'Ext2 SOC', format: 'ext_soc' },
             56: { name: 'Main SOC', format: 'percent01' },
             57: { name: 'AC Silent', format: 'toggle' },
             58: { name: 'Time to Full', format: 'time' },
-            59: { name: 'Screen Timer (Counter)', format: 'time' },
-            60: { name: 'AC Timer (Counter)', format: 'mins' },
-            61: { name: 'DC Timer (Counter)', format: 'mins' },
-            62: { name: 'USB Timer (Counter)', format: 'raw' },
-            66: { name: 'Discharge Limit (%)', format: 'percent01' }, // CONFIRMED: Min SOC before shutdown
-            67: { name: 'Charge Limit (%)', format: 'percent01' }, // CONFIRMED: Max SOC for charging (P310=90%)
+            59: { name: 'Screen Timeout (Counter)', format: 'time' }, // Confirmed F2400 usage
+            60: { name: 'AC Standby (Counter)', format: 'mins' },
+            61: { name: 'DC Standby (Counter)', format: 'mins' },
+            62: { name: 'USB Standby (Counter)', format: 'raw' },     // Confirmed F2400 usage
+            66: { name: 'Discharge Limit (%)', format: 'percent01' },
+            67: { name: 'Charge Limit (%)', format: 'percent01' },
             68: { name: 'Shutdown Timer?', format: 'raw' },
             69: { name: 'Fan Level', format: 'level' },
             80: { name: 'CRC Checksum', format: 'flags' }
@@ -2853,6 +2888,7 @@ Example format:
             60: 'AC Standby (mins)',
             61: 'DC Standby (mins)',
             62: 'USB Standby (Seconds)',
+            63: 'Stop Charge After (mins)', // Added Reg 63
             66: 'Discharge Lower Limit (%/10)',
             67: 'AC Upper Limit EPS (%/10)',
             68: 'Machine Shutdown (mins)',

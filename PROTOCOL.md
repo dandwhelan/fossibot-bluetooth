@@ -30,12 +30,15 @@ The device uses different function codes (OpCodes) for different types of data:
 
 | Reg | Name | Format | Notes |
 |:----|:-----|:-------|:------|
+| 3   | **AC Input Watts** | Watts | Likely AC Input only. |
+| 4   | **DC Input Watts** | Watts | **Solar/DC Input**. (Confirmed by user). |
+| 6   | **Total Input Watts** | Watts | Sum of AC (Reg 3) + DC (Reg 4). |
 | 13  | AC Charge Rate | 1-5 | Level 1 (~300W) to 5 (~1100W) |
 | 16  | Frequency | Hz &times; 10 | e.g., 500 = 50.0 Hz |
 | 18  | AC Out Voltage | V &times; 10 | e.g., 2300 = 230.0 V |
 | 19  | AC Out Frequency | Hz &times; 10 | e.g., 500 = 50.0 Hz |
 | 20  | Total Output Power | Watts | Sum of all outputs |
-| 21  | System Voltage | V &times; 10 | Battery/Bus voltage. ~0.7-1.0V. Used to calc idle watts (V &times; 1A). |
+| 21  | **System State** | Hybrid | **Hybrid**: [AC In] = Mains Voltage (e.g. 1229 = 122.9V). [AC Out] = System Load (Scales up with usage). |
 | 22  | Battery Voltage | V &times; 100 | e.g., 4900 = 49.00 V |
 | 24  | USB Toggle State | 0/1 | Status of USB ports |
 | 25  | DC Toggle State | 0/1 | Status of DC ports (12V/Car) |
@@ -44,8 +47,11 @@ The device uses different function codes (OpCodes) for different types of data:
 | 30  | USB-A Output | Watts &times; 10 | |
 | 31  | USB-A Output | Watts &times; 10 | |
 | 34-37| USB-C Output | Watts &times; 10 | |
+| 41  | **Active Outputs** | Bitmask | **State Flags**: None=26, USB=640, DC=1152, AC=2052, Light=4224. |
 | 47-49| Temp Sensors | Raw? | Unconfirmed scaling |
-| 59-62| **Timer Counters** | ? | **Do not use for settings display**. These values differ from the 0x1103 types. |
+| 54  | **Capacity** | 0.1Ah | Battery Capacity. e.g. 374 = 37.4Ah. |
+| 56  | **Main SOC** | 0.1% | State of Charge. e.g. 830 = 83.0% |
+| 59-62| **Timer Counters** | ? | **Do not use for settings display**. |
 
 ---
 
@@ -65,6 +71,7 @@ The device uses different function codes (OpCodes) for different types of data:
 | 60  | **AC Standby** | Minutes | 0 = Never. 480 = 8 hours. |
 | 61  | **DC Standby** | Minutes | 0 = Never. |
 | 62  | **USB Standby** | **Seconds** | **Note:** 1800 = 30 mins. 600 = 10 mins. |
+| 63  | Stop Charge After | Minutes | Stop charging after X mins? |
 | 66  | Discharge Limit | % &times; 10 | Lower SOC limit. |
 | 67  | AC Upper Limit | % &times; 10 | Target charge % (EPS) |
 | 68  | System Shutdown | Minutes | Global auto-off timer. |
