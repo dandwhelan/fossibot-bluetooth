@@ -1603,50 +1603,117 @@
 
     <div id="view-simulation" class="view-section">
         <div class="header">
-            <h1>Simulation</h1>
-            <p style="color: var(--text-muted); font-size: 0.8rem;">🚧 Coming Soon - Appliance power simulator</p>
+            <h1>Power Simulator</h1>
+            <p style="color: var(--text-muted); font-size: 0.8rem;">Calculate runtime for your appliances</p>
         </div>
-        <div class="setting-group">
-            <div class="setting-row">
-                <div class="setting-info">
-                    <span class="setting-title">Simulation State</span>
-                    <span class="setting-desc">Test dashboard without device</span>
+
+        <!-- Simulation Dashboard -->
+        <div id="sim-dashboard" class="dashboard" style="opacity: 1;">
+            <div class="dash-row">
+                <div class="dash-col left">
+                    <div class="dash-label">Input</div>
+                    <div class="dash-val text-green"><span id="sim-inputWatts">0</span> <span
+                            style="font-size:0.75rem;">W</span></div>
                 </div>
-                <button onclick="activateDebug()" class="btn-main"
-                    style="width: auto; padding: 0.5rem; background: var(--btn-green);">Start Sim</button>
+
+                <div class="dash-col center">
+                    <div class="dash-sub" style="margin-bottom: 0.25rem;">Eff: <span id="sim-efficiency">85</span>%
+                    </div>
+                    <div class="battery-ring-container">
+                        <svg width="100%" height="100%" viewBox="0 0 36 36" style="transform: rotate(-90deg);">
+                            <path class="ring-bg"
+                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                fill="none" stroke="currentColor" stroke-width="3" />
+                            <path id="sim-batteryRing" class="ring-val text-blue" stroke-dasharray="100, 100"
+                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                fill="none" stroke="currentColor" stroke-width="3" />
+                        </svg>
+                        <div class="battery-text"><span id="sim-batteryPercent">100</span><span
+                                class="battery-unit">%</span></div>
+                    </div>
+                    <div class="dash-sub" style="margin-top: 0.25rem;">
+                        <div><span id="sim-remainingHours">--</span> hrs</div>
+                        <div><span id="sim-remainingKwh">2.05</span> kWh</div>
+                    </div>
+                </div>
+
+                <div class="dash-col right">
+                    <div class="dash-label">Output</div>
+                    <div class="dash-val text-blue"><span id="sim-outputWatts">0</span> <span
+                            style="font-size:0.75rem;">W</span></div>
+                    <div class="dash-sub">Net: <span id="sim-netWatts">0</span>W</div>
+                </div>
             </div>
         </div>
-        <div id="sim-controls" style="width:100%; display:none; padding:1rem;">
-            <div
-                style="background: rgba(0,0,0,0.5); padding: 1rem; margin-bottom: 1rem; border: 1px solid var(--text-muted);">
-                <div
-                    style="display:flex; justify-content:space-between; margin-bottom:0.5rem; border-bottom:1px dashed #555;">
-                    <strong>Simulator State</strong>
-                    <button onclick="closeDebug()"
-                        style="color:red; background:none; border:none; cursor:pointer;">Stop</button>
+
+        <!-- Manual Inputs -->
+        <div class="setting-group" style="margin: 1rem;">
+            <div class="setting-header">Manual Inputs</div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; padding: 0.5rem;">
+                <div>
+                    <label style="font-size: 0.75rem; color: var(--text-muted);">Battery %</label>
+                    <input type="number" id="sim-battery-input" value="100" min="0" max="100"
+                        onchange="updateSimDashboard()"
+                        style="width: 100%; padding: 0.5rem; background: var(--bg-log); color: var(--text-main); border: 1px solid var(--text-muted); border-radius: 0.25rem;">
                 </div>
-                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; margin-bottom: 1rem;">
-                    <div>
-                        <label style="font-size: 0.7rem;">Battery %</label>
-                        <input type="number" id="sim-battery" value="50" min="0" max="100" onchange="updateSimulation()"
-                            style="width: 100%; padding: 0.25rem; background: #111; color: #0f0; border: 1px solid #0f0;">
-                    </div>
-                    <div>
-                        <label style="font-size: 0.7rem;">Input W</label>
-                        <input type="number" id="sim-input" value="0" min="0" onchange="updateSimulation()"
-                            style="width: 100%; padding: 0.25rem; background: #111; color: #0f0; border: 1px solid #0f0;">
-                    </div>
-                    <div>
-                        <label style="font-size: 0.7rem;">Output W</label>
-                        <input type="number" id="sim-output" value="0" min="0" onchange="updateSimulation()"
-                            style="width: 100%; padding: 0.25rem; background: #111; color: #0f0; border: 1px solid #0f0;">
-                    </div>
-                    <div>
-                        <label style="font-size: 0.7rem;">System W</label>
-                        <input type="number" id="sim-sys" value="0" min="0" onchange="updateSimulation()"
-                            style="width: 100%; padding: 0.25rem; background: #111; color: #0f0; border: 1px solid #0f0;">
-                    </div>
+                <div>
+                    <label style="font-size: 0.75rem; color: var(--text-muted);">Input (W)</label>
+                    <input type="number" id="sim-input-watts" value="0" min="0" onchange="updateSimDashboard()"
+                        style="width: 100%; padding: 0.5rem; background: var(--bg-log); color: var(--text-main); border: 1px solid var(--text-muted); border-radius: 0.25rem;">
                 </div>
+                <div>
+                    <label style="font-size: 0.75rem; color: var(--text-muted);">Capacity (Wh)</label>
+                    <input type="number" id="sim-capacity" value="2048" min="100" onchange="updateSimDashboard()"
+                        style="width: 100%; padding: 0.5rem; background: var(--bg-log); color: var(--text-main); border: 1px solid var(--text-muted); border-radius: 0.25rem;">
+                </div>
+            </div>
+            <div class="setting-row" style="padding: 0.5rem;">
+                <div class="setting-info">
+                    <span class="setting-title">AC Inverter Efficiency (85%)</span>
+                    <span class="setting-desc">Account for DC→AC conversion loss</span>
+                </div>
+                <div class="setting-control">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="sim-efficiency-toggle" checked onchange="updateSimDashboard()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Appliance Toggles -->
+        <div class="setting-group" style="margin: 1rem;">
+            <div class="setting-header">Appliances</div>
+            <div id="sim-appliances"
+                style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; padding: 0.5rem;">
+                <!-- Appliances will be populated by JS -->
+            </div>
+        </div>
+
+        <!-- Custom Appliance -->
+        <div class="setting-group" style="margin: 1rem;">
+            <div class="setting-header">Custom Load</div>
+            <div style="display: flex; gap: 0.5rem; padding: 0.5rem; align-items: flex-end;">
+                <div style="flex: 2;">
+                    <label style="font-size: 0.75rem; color: var(--text-muted);">Name</label>
+                    <input type="text" id="sim-custom-name" placeholder="My Device"
+                        style="width: 100%; padding: 0.5rem; background: var(--bg-log); color: var(--text-main); border: 1px solid var(--text-muted); border-radius: 0.25rem;">
+                </div>
+                <div style="flex: 1;">
+                    <label style="font-size: 0.75rem; color: var(--text-muted);">Watts</label>
+                    <input type="number" id="sim-custom-watts" placeholder="100" min="1"
+                        style="width: 100%; padding: 0.5rem; background: var(--bg-log); color: var(--text-main); border: 1px solid var(--text-muted); border-radius: 0.25rem;">
+                </div>
+                <button onclick="addCustomAppliance()" class="btn-main"
+                    style="padding: 0.5rem 1rem; background: var(--btn-green);">Add</button>
+            </div>
+        </div>
+
+        <!-- Active Loads Summary -->
+        <div class="setting-group" style="margin: 1rem;">
+            <div class="setting-header">Active Loads</div>
+            <div id="sim-active-loads" style="padding: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
+                No appliances selected.
             </div>
         </div>
     </div>
@@ -3694,55 +3761,158 @@ Example format:
         // Close Debug Console
 
 
-        // Appliance Calculator
-        const APPLIANCES = [
-            { name: 'Induction Hob', watts: 800, enabled: false },
-            { name: 'TV', watts: 100, enabled: false },
-            { name: 'LED Lights', watts: 10, enabled: false },
-            { name: 'Water Pump', watts: 40, enabled: false },
-            { name: '12V Fridge', watts: 90, enabled: false },
-            { name: 'Air Fryer', watts: 1500, enabled: false },
-            { name: 'Electric Heater', watts: 400, enabled: false },
-            { name: 'Phone Charger', watts: 15, enabled: false }
+        // ========== POWER SIMULATOR ==========
+        // Preset appliances with wattages from user/FAQ data
+        const SIM_APPLIANCES = [
+            { id: 'tv', name: '60W LED TV', watts: 60, enabled: false },
+            { id: 'fridge', name: '15L Mini Fridge', watts: 85, enabled: false },
+            { id: 'pump', name: 'Water Pump', watts: 40, enabled: false },
+            { id: 'laptop', name: 'Laptop (AC)', watts: 90, enabled: false },
+            { id: 'led', name: 'LED Lights', watts: 20, enabled: false },
+            { id: 'heater', name: 'Heater', watts: 800, enabled: false },
+            { id: 'phone', name: 'Mobile Phone', watts: 30, enabled: false },
+            { id: 'cpap', name: 'Air Fryer', watts: 800, enabled: false }, // Replaced CPAP
+            { id: 'projector', name: 'Projector', watts: 150, enabled: false },
+            { id: 'blender', name: 'Electric Fan', watts: 25, enabled: false } // Replaced Blender
         ];
 
-        function renderAppliances() {
-            const container = document.getElementById('appliance-list');
+        // Custom appliances added by user
+        let customAppliances = [];
+
+        function renderSimAppliances() {
+            const container = document.getElementById('sim-appliances');
             if (!container) return;
-            container.innerHTML = APPLIANCES.map((app, i) => `
-                <div style="display: flex; align-items: center; gap: 0.25rem;">
-                    <input type="checkbox" id="app-${i}" ${app.enabled ? 'checked' : ''} onchange="toggleAppliance(${i})">
-                    <label for="app-${i}" style="flex: 1;">${app.name}</label>
-                    <input type="number" value="${app.watts}" min="0" style="width: 50px; padding: 0.1rem; background: #111; color: #0f0; border: 1px solid #0f0; font-size: 0.7rem;" onchange="updateApplianceWatts(${i}, this.value)">W
-                </div>
+
+            const allApps = [...SIM_APPLIANCES, ...customAppliances];
+            container.innerHTML = allApps.map((app, i) => `
+                <button class="control-tile ${app.enabled ? 'active' : ''}" 
+                        onclick="toggleSimApp('${app.id}')" 
+                        style="padding: 0.5rem; font-size: 0.75rem; min-height: 60px;">
+                    <span style="font-weight: bold;">${app.name}</span>
+                    <span style="font-size: 0.65rem; color: var(--text-muted);">${app.watts}W</span>
+                </button>
             `).join('');
         }
 
+        function toggleSimApp(id) {
+            // Check preset appliances
+            const preset = SIM_APPLIANCES.find(a => a.id === id);
+            if (preset) {
+                preset.enabled = !preset.enabled;
+            } else {
+                // Check custom appliances
+                const custom = customAppliances.find(a => a.id === id);
+                if (custom) custom.enabled = !custom.enabled;
+            }
+            renderSimAppliances();
+            updateSimDashboard();
+        }
+
+        function addCustomAppliance() {
+            const nameEl = document.getElementById('sim-custom-name');
+            const wattsEl = document.getElementById('sim-custom-watts');
+
+            const name = nameEl.value.trim() || 'Custom Device';
+            const watts = parseInt(wattsEl.value) || 100;
+
+            const id = 'custom_' + Date.now();
+            customAppliances.push({ id, name, watts, enabled: true });
+
+            // Clear inputs
+            nameEl.value = '';
+            wattsEl.value = '';
+
+            renderSimAppliances();
+            updateSimDashboard();
+        }
+
+        function updateSimDashboard() {
+            // Get input values
+            const batteryPct = parseFloat(document.getElementById('sim-battery-input')?.value) || 100;
+            const inputWatts = parseFloat(document.getElementById('sim-input-watts')?.value) || 0;
+            const capacityWh = parseFloat(document.getElementById('sim-capacity')?.value) || 2048;
+            const useEfficiency = document.getElementById('sim-efficiency-toggle')?.checked ?? true;
+            const efficiency = useEfficiency ? 0.85 : 1.0;
+
+            // Calculate total output from enabled appliances
+            const allApps = [...SIM_APPLIANCES, ...customAppliances];
+            const outputWatts = allApps.filter(a => a.enabled).reduce((sum, a) => sum + a.watts, 0);
+
+            // Net watts (positive = charging, negative = discharging)
+            const netWatts = inputWatts - outputWatts;
+
+            // Available energy with efficiency factor
+            const availableWh = (batteryPct / 100) * capacityWh * efficiency;
+            const availableKwh = availableWh / 1000;
+
+            // Calculate runtime
+            let runtimeText = '--';
+            if (outputWatts > inputWatts && outputWatts > 0) {
+                // Discharging
+                const effectiveOutput = outputWatts - inputWatts;
+                const hours = availableWh / effectiveOutput;
+                const h = Math.floor(hours);
+                const m = Math.round((hours - h) * 60);
+                runtimeText = `${h}h ${m}m`;
+            } else if (inputWatts > outputWatts && inputWatts > 0) {
+                // Charging - show time to full
+                const emptyWh = (1 - batteryPct / 100) * capacityWh;
+                const netCharge = inputWatts - outputWatts;
+                const hours = emptyWh / netCharge;
+                const h = Math.floor(hours);
+                const m = Math.round((hours - h) * 60);
+                runtimeText = `+${h}h ${m}m`;
+            }
+
+            // Update Dashboard UI
+            document.getElementById('sim-inputWatts').textContent = inputWatts;
+            document.getElementById('sim-outputWatts').textContent = outputWatts;
+            document.getElementById('sim-netWatts').textContent = (netWatts >= 0 ? '+' : '') + netWatts;
+            document.getElementById('sim-batteryPercent').textContent = Math.round(batteryPct);
+            document.getElementById('sim-remainingHours').textContent = runtimeText;
+            document.getElementById('sim-remainingKwh').textContent = availableKwh.toFixed(2);
+            document.getElementById('sim-efficiency').textContent = useEfficiency ? '85' : '100';
+
+            // Update battery ring
+            const ring = document.getElementById('sim-batteryRing');
+            if (ring) {
+                ring.setAttribute('stroke-dasharray', `${batteryPct}, 100`);
+                ring.style.color = batteryPct < 20 ? '#ef4444' : '#60a5fa';
+            }
+
+            // Update active loads summary
+            const activeLoads = allApps.filter(a => a.enabled);
+            const loadsEl = document.getElementById('sim-active-loads');
+            if (loadsEl) {
+                if (activeLoads.length === 0) {
+                    loadsEl.innerHTML = '<span style="color: var(--text-muted);">No appliances selected.</span>';
+                } else {
+                    loadsEl.innerHTML = activeLoads.map(a =>
+                        `<span style="display: inline-block; background: var(--bg-log); padding: 0.25rem 0.5rem; margin: 0.1rem; border-radius: 0.25rem;">${a.name} (${a.watts}W)</span>`
+                    ).join('') + `<div style="margin-top: 0.5rem; font-weight: bold; color: var(--text-blue);">Total: ${outputWatts}W</div>`;
+                }
+            }
+        }
+
+        // Legacy appliance calculator (for old simulation controls)
+        const APPLIANCES = SIM_APPLIANCES;
+
+        function renderAppliances() {
+            renderSimAppliances();
+        }
+
         function toggleAppliance(index) {
-            APPLIANCES[index].enabled = !APPLIANCES[index].enabled;
-            calculateRuntime();
+            SIM_APPLIANCES[index].enabled = !SIM_APPLIANCES[index].enabled;
+            updateSimDashboard();
         }
 
         function updateApplianceWatts(index, value) {
-            APPLIANCES[index].watts = parseInt(value) || 0;
-            calculateRuntime();
+            SIM_APPLIANCES[index].watts = parseInt(value) || 0;
+            updateSimDashboard();
         }
 
         function calculateRuntime() {
-            const totalWatts = APPLIANCES.filter(a => a.enabled).reduce((sum, a) => sum + a.watts, 0);
-            document.getElementById('calc-total-watts').textContent = totalWatts;
-
-            if (totalWatts > 0) {
-                const batteryWh = settings.mainCap; // Use configured capacity
-                const batteryPercent = parseInt(document.getElementById('sim-battery')?.value || 100);
-                const availableWh = (batteryPercent / 100) * batteryWh * 0.85; // 85% efficiency
-                const hours = availableWh / totalWatts;
-                const h = Math.floor(hours);
-                const m = Math.round((hours - h) * 60);
-                document.getElementById('calc-runtime').textContent = `${h}h ${m}m`;
-            } else {
-                document.getElementById('calc-runtime').textContent = '--';
-            }
+            updateSimDashboard();
         }
 
         function updateSimulation() {
@@ -3786,12 +3956,14 @@ Example format:
 
         // Render appliances on load
         document.addEventListener('DOMContentLoaded', () => {
-            renderAppliances();
+            // Initialize Power Simulator
+            renderSimAppliances();
+            updateSimDashboard();
 
-            // Ensure Pipboy is default theme
+            // Ensure Industrial is default theme
             const savedTheme = localStorage.getItem('fossibot-theme');
             if (!savedTheme) {
-                setTheme('pipboy');
+                setTheme('industrial');
             }
 
             // Robust Listener Attachment
