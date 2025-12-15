@@ -85,5 +85,44 @@ The device uses different function codes (OpCodes) for different types of data:
 |:----|:-----|:------|:------------|
 | 64  | Power Off | 1 | Shuts down the entire machine. |
 
+## 4. Network Configuration (0x1107)
+*Write/Notify. Controls WiFi connectivity.*
+
+**OpCode:** `0x07`
+
+### Connect to WiFi (Disable AP)
+Sending valid WiFi credentials causes the device to connect to the local network and **automatically disable** its credentials-free Access Point (AP).
+
+| Header | OpCode | SSID Len | Pass Len | SSID | Password | CRC |
+|:-------|:-------|:---------|:---------|:-----|:---------|:----|
+| `11`   | `07`   | `Len`    | `Len`    | String ... | String ... | `CRC` |
+
+**Example (from logs):**
+*   **SSID:** "Test" (Len 4)
+*   **Pass:** "TEST1234" (Len 8)
+*   **Packet:** `11 07 04 08 54 65 73 74 54 45 53 54 31 32 33 34 76 C3`
+
+### Notifications
+The device sends status updates containing the `0x07` OpCode.
+
+| Status Byte | Meaning |
+|:------------|:--------|
+| `02`        | Connecting... |
+| `01`        | Connected / Success |
+
+**Example:**
+*   `11 07 02 ...` -> Connecting
+*   `11 07 01 ...` -> Connected
+
+## 5. Protocol Discovery Findings
+Recent analysis reveals the device stack is likely based on Espressif AT commands.
+- **AT Command Leak:** The device occasionally leaks raw AT command strings via the Notification characteristic (0xc305).
+  - Example: `AT+HTTPCLIENT=3,1,"https://api.app.sydpower.com/http/router/emqx/findByDeviceId",,,"DC:1E:D5:E4:07:1E",...`
+  - Cloud API identified: `api.app.sydpower.com`
+- **Known Errors:** 
+  - Sending `Read Request` (0x11 [OpCode] ...) to OpCodes `0x01, 0x02, 0x05, 0x06, 0x08` returns an error packet with the high bit set (e.g., `0x81, 0x82, 0x85...`). 
+  - This indicates these OpCodes are either not supported or require a specific payload not yet known.
+- **OpCode 0x06**: Appears to be an event/notification sent by the device after `ac_on` (0x05) commands, rather than a readable register.
+
 ## CRC Calculation
 The protocol uses a custom CRC-16 checksum. See `calculateChecksum()` in `index.html` for implementation details.
