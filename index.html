@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Power Bank Control</title>
+    <title>Fossibot BLE PWA</title>
     <link rel="manifest" href="manifest.json">
     <style>
         :root {
@@ -1850,10 +1850,14 @@
                         </div>
                         <select class="setting-select" id="set-screen-timeout"
                             onchange="changeSelect('screen_timeout')">
+                            <option value="60">1 min</option>
                             <option value="180">3 min</option>
                             <option value="300">5 min</option>
                             <option value="600">10 min</option>
                             <option value="1800">30 min</option>
+                            <option value="3600">60 min</option>
+                            <option value="7200">2 hr</option>
+                            <option value="14400">4 hr</option>
                             <option value="0">Never</option>
                         </select>
                     </div>
@@ -1873,14 +1877,18 @@
                     </div>
                     <div class="setting-row">
                         <div class="setting-info">
-                            <span class="setting-title">System Standby</span>
-                            <span class="setting-desc"><span id="status-sys-standby" class="text-blue"></span></span>
+                            <span class="setting-title">System Idle Shutdown</span>
+                            <span class="setting-desc">Whole Device <span id="status-sys-standby"
+                                    class="text-blue"></span></span>
                         </div>
                         <select class="setting-select" id="set-sys-standby" onchange="changeSelect('sys_standby')">
                             <option value="5">5 min</option>
                             <option value="10">10 min</option>
                             <option value="30">30 min</option>
+                            <option value="60">1 hr</option>
                             <option value="480">480 min (8h)</option>
+                            <option value="1440">24 hr</option>
+                            <option value="0">Never</option>
                         </select>
                     </div>
                     <div class="setting-row">
@@ -1889,6 +1897,7 @@
                             <span class="setting-desc"><span id="status-ac-standby" class="text-blue"></span></span>
                         </div>
                         <select class="setting-select" id="set-ac-standby" onchange="changeSelect('ac_standby')">
+                            <option value="60">1 hr</option>
                             <option value="480">8 hr</option>
                             <option value="960">16 hr</option>
                             <option value="1440">24 hr</option>
@@ -1901,6 +1910,7 @@
                             <span class="setting-desc"><span id="status-dc-standby" class="text-blue"></span></span>
                         </div>
                         <select class="setting-select" id="set-dc-standby" onchange="changeSelect('dc_standby')">
+                            <option value="60">1 hr</option>
                             <option value="480">8 hr</option>
                             <option value="960">16 hr</option>
                             <option value="1440">24 hr</option>
@@ -2377,12 +2387,28 @@ Example format:
             // Reg 60: AC Standby (mins)
             const acStandby = settingsRegisters[60] || 0;
             const acStandbyStatus = document.getElementById('status-ac-standby');
-            if (acStandbyStatus) acStandbyStatus.textContent = acStandby > 0 ? (acStandby / 60) + 'h' : 'Never';
+            if (acStandbyStatus) {
+                if (acStandby === 0) {
+                    acStandbyStatus.textContent = 'Never';
+                } else if (acStandby < 60) {
+                    acStandbyStatus.textContent = acStandby + ' min';
+                } else {
+                    acStandbyStatus.textContent = Math.round(acStandby / 60) + 'h';
+                }
+            }
 
             // Reg 61: DC Standby (mins)
             const dcStandby = settingsRegisters[61] || 0;
             const dcStandbyStatus = document.getElementById('status-dc-standby');
-            if (dcStandbyStatus) dcStandbyStatus.textContent = dcStandby > 0 ? (dcStandby / 60) + 'h' : 'Never';
+            if (dcStandbyStatus) {
+                if (dcStandby === 0) {
+                    dcStandbyStatus.textContent = 'Never';
+                } else if (dcStandby < 60) {
+                    dcStandbyStatus.textContent = dcStandby + ' min';
+                } else {
+                    dcStandbyStatus.textContent = Math.round(dcStandby / 60) + 'h';
+                }
+            }
 
             // Reg 62: Unknown (NOT USB Standby - shows 600 when USB set to 5 mins)
             // Skipping for now until we determine what this actually is
@@ -2401,19 +2427,27 @@ Example format:
             const acUpperStatus = document.getElementById('status-ac-upper-limit');
             if (acUpperStatus) acUpperStatus.textContent = acUpperLimit.toFixed(0) + '%';
 
-            // Reg 68: Machine Shutdown (mins)
+            // Reg 68: System Standby (mins)
             const machineShutdown = settingsRegisters[68] || 0;
             const sysStandbyStatus = document.getElementById('status-sys-standby');
-            if (sysStandbyStatus) sysStandbyStatus.textContent = machineShutdown > 0 ? (machineShutdown / 60) + 'h' : 'Never';
+            if (sysStandbyStatus) {
+                if (machineShutdown === 0) {
+                    sysStandbyStatus.textContent = 'Never';
+                } else if (machineShutdown < 60) {
+                    sysStandbyStatus.textContent = machineShutdown + ' min';
+                } else {
+                    sysStandbyStatus.textContent = Math.round(machineShutdown / 60) + 'h';
+                }
+            }
 
             console.log('Settings synced:', { chargeRate, screenTimeout, acStandby, dcStandby, machineShutdown });
         }
 
         const COMMANDS = {
-            usb_on: [17, 24, 1], usb_off: [17, 24, 0],
-            dc_on: [17, 25, 1], dc_off: [17, 25, 0],
-            ac_on: [17, 26, 1], ac_off: [17, 26, 0],
-            light_on: [17, 27, 1], light_off: [17, 27, 0]
+            usb_on: [0x06, 24, 1], usb_off: [0x06, 24, 0],
+            dc_on: [0x06, 25, 1], dc_off: [0x06, 25, 0],
+            ac_on: [0x06, 26, 1], ac_off: [0x06, 26, 0],
+            light_on: [0x06, 27, 1], light_off: [0x06, 27, 0]
         };
 
         const btns = {
@@ -2535,8 +2569,11 @@ Example format:
         }
 
         function generateCommandBytes(address, feature, value) {
-            const payload = [address, 6, (feature >> 8) & 0xff, feature & 0xff, (value >> 8) & 0xff, value & 0xff];
+            // address is Header (0x11), feature is Reg, value is Val
+            // OpCode is fixed 0x06 for Write
+            const payload = [address, 0x06, (feature >> 8) & 0xff, feature & 0xff, (value >> 8) & 0xff, value & 0xff];
             const checksum = calculateChecksum(payload);
+            // CRC Hi-Lo
             return new Uint8Array([...payload, (checksum >> 8) & 0xff, checksum & 0xff]);
         }
 
@@ -2544,9 +2581,14 @@ Example format:
             try {
                 if (!device) {
                     log("Requesting Bluetooth Device...");
+
+                    // Generate list of services to request (0x1800 - 0x1820)
+                    const svcList = [SERVICE_UUID, 0xA002, 0xA003];
+                    for (let i = 0x1800; i <= 0x1820; i++) svcList.push(i);
+
                     device = await navigator.bluetooth.requestDevice({
-                        filters: [{ namePrefix: 'POWER' }, { namePrefix: 'POWER' }],
-                        optionalServices: [SERVICE_UUID]
+                        filters: [{ namePrefix: 'POWER' }, { namePrefix: 'AFERIY' }, { namePrefix: 'FOSSIBOT' }],
+                        optionalServices: svcList
                     });
                     device.addEventListener('gattserverdisconnected', onDisconnected);
 
@@ -2615,6 +2657,16 @@ Example format:
                 // Relaxed check: Just check for DataView and length. 
                 // We will trust the length 168 mostly? Or maybe the header changed?
                 // Let's attempt to parse even if header is different for now, or just log it.
+                // Relaxed check: Just check for DataView and length. 
+
+                // DATA INSPECTION TOOL
+                if (window.dumpNextPacket) {
+                    const hex = [...new Uint8Array(value.buffer)].map(b => b.toString(16).padStart(2, '0')).join(' ');
+                    log(`[DUMP] OpCode 0x${value.getUint8(1).toString(16).padStart(2, '0')} (${value.byteLength}b): ${hex}`);
+                    window.dumpNextPacket = false;
+                    console.log("Dumped Packet:", value);
+                }
+
                 // Keeping strict check but logging will tell us why it fails.
 
                 const opCode = value.getUint8(1);
@@ -2780,6 +2832,11 @@ Example format:
                                 handleNotification({ target: { value: restValue } });
                             }
                         }
+                    } else if ((opCode & 0x80) === 0x80) {
+                        // Error Code (Protocol usually replies with RequestOpCode | 0x80)
+                        const originalOpCode = opCode & 0x7F;
+                        const hex = [...new Uint8Array(value.buffer)].map(b => b.toString(16).padStart(2, '0')).join(' ');
+                        log(`Rx 0x${opCode.toString(16)} (Error): OpCode 0x11${originalOpCode.toString(16).padStart(2, '0')} Not Supported`);
                     } else {
                         // Log unknown packets for discovery
                         const hex = [...new Uint8Array(value.buffer)].map(b => b.toString(16).padStart(2, '0')).join(' ');
@@ -3089,10 +3146,30 @@ Example format:
                 log("Not connected!");
                 return;
             }
-            const [addr, reg, val] = COMMANDS[cmdName];
-            const data = generateCommandBytes(addr, reg, val);
+            // Def: [OpCode, Reg, Val]
+            const [opCode, reg, val] = COMMANDS[cmdName];
+
+            // Construct Packet: 11 06 [RegHi] [RegLo] [ValHi] [ValLo]
+            // This 16-bit structure matches valid Tuya/Modbus write commands.
+
+            const arr = [
+                0x11,
+                opCode,
+                (reg >> 8) & 0xff, reg & 0xff,
+                (val >> 8) & 0xff, val & 0xff
+            ];
+
+            // CRC - Hi byte first (Modbus standard)
+            const crc = calculateChecksum(arr);
+            arr.push((crc >> 8) & 0xff);
+            arr.push(crc & 0xff);
+
+            const data = new Uint8Array(arr);
+
             try {
-                log(`Sending ${cmdName}...`);
+                // Detailed log
+                const hex = [...data].map(b => b.toString(16).padStart(2, '0')).join(' ');
+                log(`Sending ${cmdName}: ${hex}`);
                 await writeChar.writeValue(data);
                 log("Command sent");
                 await new Promise(r => setTimeout(r, 200));
@@ -3691,29 +3768,61 @@ Example format:
                     Probe undiscovered OpCodes. Check Activity Log for responses.
                 </div>
                 <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                    <button onclick="sendProbe(0x01)" 
-                        style="background: #333; color: #eab308; border: 1px solid #eab308; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">
-                        Probe 0x1101
-                    </button>
-                    <button onclick="sendProbe(0x02)" 
-                        style="background: #333; color: #eab308; border: 1px solid #eab308; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">
-                        Probe 0x1102
-                    </button>
-                    <button onclick="sendProbe(0x05)" 
-                        style="background: #333; color: #eab308; border: 1px solid #eab308; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">
-                        Probe 0x1105
-                    </button>
                     <button onclick="scanOpCodes()" 
                         style="background: #eab308; color: #000; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-weight: bold;">
-                        Scan 0x00-0x20
+                        Scan 0x1100-0x1120
                     </button>
-                    <button onclick="sendProbe(0x06)" 
-                        style="background: #333; color: #eab308; border: 1px solid #eab308; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">
-                        Probe 0x1106
+                    <!-- Individual probes removed as Scan covers them -->
+                </div>
+             </div>`;
+
+            // BLE Service Explorer Section
+            html += `<div style="margin-top: 1rem; border-top: 1px solid #444; padding-top: 1rem;">
+                <h3 style="color:#60a5fa; margin-top:0;">BLE Explorer</h3>
+                <div style="font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">
+                    Query standard BLE Services. <strong>Requires Reconnect.</strong>
+                </div>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <button onclick="exploreService('generic_access')" 
+                        style="background: #333; color: #60a5fa; border: 1px solid #60a5fa; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">
+                        Query 0x1800 (GAP)
                     </button>
-                    <button onclick="sendProbe(0x08)" 
-                        style="background: #333; color: #eab308; border: 1px solid #eab308; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">
-                        Probe 0x1108
+                    <button onclick="exploreService('generic_attribute')" 
+                        style="background: #333; color: #60a5fa; border: 1px solid #60a5fa; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">
+                        Query 0x1801 (GATT)
+                    </button>
+                    <button onclick="scanServices()" 
+                        style="background: #333; color: #60a5fa; border: 1px solid #60a5fa; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">
+                        Scan 0x1800-1820
+                    </button>
+                    <button onclick="exploreService(0xA002)"  
+                        style="background: #333; color: #60a5fa; border: 1px solid #60a5fa; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">
+                        Query 0xA002
+                    </button>
+                     <button onclick="exploreService(0xA003)" 
+                        style="background: #333; color: #60a5fa; border: 1px solid #60a5fa; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">
+                        Query 0xA003
+                    </button>
+                    <button onclick="readAndDecodeC301()" 
+                        style="background: #60a5fa; color: #000; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-weight: bold;">
+                        Decode 0xC301
+                    </button>
+                </div>
+                <!-- Register Inspector -->
+                <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
+                     <button onclick="dumpRegisters(4)" 
+                        style="background: #333; color: #fff; border: 1px dashed #aaa; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">
+                        📋 Dump Status Regs
+                    </button>
+                    <button onclick="dumpRegisters(3)" 
+                        style="background: #333; color: #fff; border: 1px dashed #aaa; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">
+                        📋 Dump Settings Regs
+                    </button>
+                </div>
+                <div style="margin-top: 0.5rem;">
+                     <button onclick="{ window.dumpNextPacket = true; log('Waiting for next packet to dump...'); }" 
+                        style="background: #333; color: #fff; border: 1px dashed #aaa; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">
+                        👁️ Dump Next Packet (0x1103/04)
                     </button>
                 </div>
             </div>`;
@@ -3810,10 +3919,27 @@ Example format:
 
             try {
                 const data = new Uint8Array(arr);
-                log(`Sending Probe 0x${opCode.toString(16).padStart(2, '0')}...`);
-                await writeChar.writeValue(data);
+                log(`Sending Probe 0x11${opCode.toString(16).padStart(2, '0')}...`);
+
+                // Retry logic for GATT busy errors
+                let retries = 3;
+                while (retries > 0) {
+                    try {
+                        await writeChar.writeValue(data);
+                        return; // Success
+                    } catch (e) {
+                        if (e.message.includes("in progress") || e.name === 'NetworkError') {
+                            log(`GATT busy, retrying... (${retries})`);
+                            retries--;
+                            await new Promise(r => setTimeout(r, 500));
+                        } else {
+                            throw e; // Critical error
+                        }
+                    }
+                }
+                throw new Error("Max retries exceeded");
             } catch (e) {
-                log(`Probe failed: ${e}`);
+                log(`Probe failed: ${e.message}`);
             }
         }
 
@@ -3823,13 +3949,151 @@ Example format:
                 showToast("Not connected", "error");
                 return;
             }
-            log("Starting Scan 0x00 - 0x20...");
+            log("Starting Scan 0x1100 - 0x1120...");
             for (let i = 0; i <= 0x20; i++) {
                 await sendProbe(i);
                 // Delay to prevent flood
-                await new Promise(r => setTimeout(r, 2000));
+                await new Promise(r => setTimeout(r, 5000));
             }
             log("Scan Complete.");
+        }
+
+        // Scan Services Range
+        async function scanServices() {
+            if (!device || !device.gatt.connected) {
+                showToast("Not connected", "error");
+                return;
+            }
+            log("Starting Service Scan 0x1800 - 0x1820...");
+            for (let i = 0x1800; i <= 0x1820; i++) {
+                try {
+                    const svc = await device.gatt.getPrimaryService(i);
+                    log(`[FOUND] Service 0x${i.toString(16)}!`);
+                    // Automatically explore
+                    await exploreService(i);
+                } catch (e) {
+                    // Log to UI so user sees progress
+                    log(`Service 0x${i.toString(16)} not found.`);
+                }
+            }
+            log("Service Scan Complete.");
+        }
+
+        // BLE Service Explorer
+        async function exploreService(uuid) {
+            if (!device || !device.gatt.connected) {
+                showToast("Now connect (Reconnect required to access new services)", "error");
+                return;
+            }
+            try {
+                log(`Exploring Service ${uuid}...`);
+                const svc = await device.gatt.getPrimaryService(uuid);
+                log(`Service Found: ${svc.uuid}`);
+
+                const chars = await svc.getCharacteristics();
+                log(`Found ${chars.length} Characteristics:`);
+
+                for (const c of chars) {
+                    let valStr = "";
+                    if (c.properties.read) {
+                        try {
+                            const val = await c.readValue();
+                            valStr = `Val: 0x${[...new Uint8Array(val.buffer)].map(b => b.toString(16).padStart(2, '0')).join('')}`;
+                            // Try ASCII
+                            const text = new TextDecoder().decode(val);
+                            if (/^[\x20-\x7E]+$/.test(text)) valStr += ` ("${text}")`;
+                        } catch (e) { valStr = "(Read Error)"; }
+                    }
+                    const props = [];
+                    if (c.properties.read) props.push("READ");
+                    if (c.properties.write) props.push("WRITE");
+                    if (c.properties.notify) props.push("NOTIFY");
+
+                    log(`  - Char: ${c.uuid} [${props.join(',')}] ${valStr}`);
+                }
+            } catch (e) {
+                log(`Explore failed: ${e.message}`);
+                log("Tip: You must Disconnect & Reconnect to access new services.");
+            }
+        }
+
+        // Special Decoder for C301
+        async function readAndDecodeC301() {
+            if (!device || !device.gatt.connected) {
+                showToast("Not connected", "error");
+                return;
+            }
+            try {
+                log("Connecting to Service 0xA002...");
+                const svc = await device.gatt.getPrimaryService(0xA002);
+                log("Reading Characteristic 0xC301...");
+                const char = await svc.getCharacteristic(0xC301);
+                const val = await char.readValue();
+
+                log(`Read ${val.byteLength} bytes.`);
+
+                // Hex
+                const hex = [...new Uint8Array(val.buffer)].map(b => b.toString(16).padStart(2, '0')).join(' ');
+                log(`Raw Hex: ${hex}`);
+
+                // Try Float32 (Little Endian)
+                try {
+                    const floats = new Float32Array(val.buffer);
+                    const floatList = [...floats].map(f => f.toFixed(4)); // 4 decimals
+                    log(`Float32: [${floatList.join(', ')}]`);
+                } catch (e) { log("Float32 decode failed (alignment?)"); }
+
+                // Try Int16
+                try {
+                    const ints = new Int16Array(val.buffer);
+                    log(`Int16: [${[...ints].join(', ')}]`);
+                } catch (e) { }
+
+                // Try ASCII (Full and Substrings)
+                const textDecoder = new TextDecoder('utf-8');
+                const fullText = textDecoder.decode(val);
+                // Filter for printable chunks
+                const printable = fullText.replace(/[^\x20-\x7E\n]/g, '');
+                if (printable.length > 5) {
+                    log(`ASCII Content: "${printable}"`);
+                    if (printable.includes("Y_DHK")) log("Found Device Keys!");
+                }
+
+            } catch (e) {
+                log(`Decode failed: ${e.message}`);
+            }
+        }
+
+        // Dump Registers
+        function dumpRegisters(type) {
+            const target = (type === 4) ? registers : settingsRegisters;
+            const name = (type === 4) ? "Status (0x04)" : "Settings (0x03)";
+
+            log(`--- Dumping ${name} Registers ---`);
+            let count = 0;
+            const keys = Object.keys(target).map(Number).sort((a, b) => a - b);
+
+            if (keys.length === 0) {
+                log("No data yet. Wait for update.");
+                return;
+            }
+
+            // Batch log to avoid UI lag
+            let buffer = "";
+            keys.forEach(k => {
+                const val = target[k];
+                buffer += `R${k}: ${val} (0x${val.toString(16)})\n`;
+                count++;
+                if (count % 10 === 0) { // Log every 10 lines
+                    console.log(buffer); // Console gets full
+                    buffer = "";
+                }
+            });
+            // Log summary to UI
+            log(`Dumped ${count} registers to Console (F12).`);
+            // Also log first 5 and specific interesting ones to UI
+            log(`Sample: R0=${target[0] || 0}, R1=${target[1] || 0}, R21=${target[21] || 0} (Watts)`);
+            console.log(buffer); // Flush remainder
         }
 
         // Copy diagnostics to clipboard
@@ -4180,7 +4444,7 @@ Example format:
         }, 1000);
 
         async function setRegister(reg, val) {
-            const cmd = generateCommandBytes(17, reg, val); // Address 17
+            const cmd = generateCommandBytes(0x11, reg, val); // Address 0x11
             if (device && writeChar) {
                 try {
                     await writeChar.writeValue(cmd);
@@ -4243,17 +4507,17 @@ Example format:
             const el = document.getElementById('set-' + name.replace('_', '-'));
             const val = parseInt(el.value);
             const map = {
-                'screen_timeout': 60,
-                // 'sys_standby': 59, // Reg 59 might be remaining time? User dump says 14329.
-                'ac_standby': 61, 'dc_standby': 62,
+                'screen_timeout': 59,
+                'ac_standby': 60,
+                'dc_standby': 61,
+                'usb_standby': 62,
+                'sys_standby': 68,
                 'eps_limit': 67
             };
-            if (map[name]) setRegister(map[name], val);
-            // USB Unknown currently
-            if (name === 'sys_standby') {
-                // Temp: Try Reg 59 anyway? Or just log
-                // setRegister(59, val); 
-                console.log("System Standby set to " + val + " (Reg Unknown/Conflict)");
+            if (map[name]) {
+                setRegister(map[name], val);
+            } else {
+                console.log("Unknown setting: " + name);
             }
         }
 

@@ -114,15 +114,71 @@ The device sends status updates containing the `0x07` OpCode.
 *   `11 07 02 ...` -> Connecting
 *   `11 07 01 ...` -> Connected
 
+*   `11 07 01 ...` -> Connected
+
 ## 5. Protocol Discovery Findings
 Recent analysis reveals the device stack is likely based on Espressif AT commands.
 - **AT Command Leak:** The device occasionally leaks raw AT command strings via the Notification characteristic (0xc305).
-  - Example: `AT+HTTPCLIENT=3,1,"https://api.app.sydpower.com/http/router/emqx/findByDeviceId",,,"DC:1E:D5:E4:07:1E",...`
   - Cloud API identified: `api.app.sydpower.com`
-- **Known Errors:** 
-  - Sending `Read Request` (0x11 [OpCode] ...) to OpCodes `0x01, 0x02, 0x05, 0x06, 0x08` returns an error packet with the high bit set (e.g., `0x81, 0x82, 0x85...`). 
-  - This indicates these OpCodes are either not supported or require a specific payload not yet known.
-- **OpCode 0x06**: Appears to be an event/notification sent by the device after `ac_on` (0x05) commands, rather than a readable register.
+- **OpCode Scan (0x00 - 0x20):**
+  - **Readable/Valid:** `0x03` (Settings), `0x04` (Status).
+  - **Write-Only/Notify:** `0x07` (Network), `0x05` (Switch Control).
+  - **Error (OpCode | 0x80):** `0x00-0x02`, `0x06`, `0x08-0x20`.
+  - **Conclusion:** No hidden readable registers found in this range. The "Silent" behavior seen earlier was likely due to GATT congestion which is now resolved.
+
+### OpCode Map (0x00 - 0x20)
+| OpCode | Function | Type | Status |
+| :--- | :--- | :--- | :--- |
+| `0x00` | - | Error | Returns `0x80` |
+| `0x01` | - | Error | Returns `0x81` |
+| `0x02` | - | Error | Returns `0x82` |
+| `0x03` | **Settings** | R/W | Returns Settings Data |
+| `0x04` | **Status** | Read | Returns Status Data |
+| `0x06` | Write | **Control** | Write to Registers (e.g. Turn USB On) |
+| `0x07` | Write | **WiFi** | WiFi Configuration |
+| `0x08`+ | - | Error | All return `0x8x` (Not Supported) |
+
+## Packet Construction Notes
+**OpCode 0x06 (Write):** used for all control actions (USB, AC, DC, Light).
+Structure: `Header(11) Op(06) RegHi RegLo ValHi ValLo CRC_Hi CRC_Lo`.
+
+**CRC Order:**
+The correct CRC byte order is **Hi-Byte First** (Modbus Standard), e.g., `0xAA 0xBB`.
+Legacy code/findings suggesting `Lo-Hi` were incorrect and caused packet rejection.
+
+## 7. BLE Service Map (Discovered)
+Based on exploration of `0xA002` and `0xA003`.
+
+### Service `0xA002` (Main Control)
+**Likely Tuya BLE Protocol (v3.x or similar)**
+The presence of `Y_DHK` and `LOCAL_KEY` in `0xC301` confirms this is a **Tuya-based** device.
+
+| UUID | Props | Description | Notes |
+| :--- | :--- | :--- | :--- |
+| `0xC300` | Read | ? | Static Value: `0x30` ("0") |
+| `0xC301` | Read | **Tuya Config** | Contains `Y_DHK` (Device Secret) and `LE_LOCAL_KEY` (Local Key). |
+| `0xC302` | Write | ? | - |
+| `0xC303` | ? | ? | - |
+| `0xC304` | **Write** | **Command** | Used for sending packets (0x11...) |
+| `0xC305` | **Notify** | **Status** | Used for receiving packets (0x11...) |
+| `0xC306` | ? | ? | - |
+| `0xC307` | Read | ? | Static Value: `0x30` ("0") |
+
+## 8. Candidate Registers for Investigation
+Based on recent "Dump" analysis, these registers show interesting activity:
+
+| Register | Value (Idle) | Value (Load) | Hypothesis | Test to Verify |
+| :--- | :--- | :--- | :--- | :--- |
+| `R18` | 33 | 115? | **Temp?** / Power? | Watch while heating up. |
+| `R50` | 0 | 42 | **Inverter Temp?** | Watch during AC use. |
+| `R60` | 0 | 480 | **Fan Speed?** | Watch when fan spins up. |
+| `R19` | 500 | 500 | **Frequency?** | 50.0 Hz? |
+
+### Service `0xA003` (Auxiliary?)
+| UUID | Props | Description | Notes |
+| :--- | :--- | :--- | :--- |
+| `0xC400` | Read | ? | Static Value: `0x30` ("0") |
+| `0xC401` | Read | ? | Static Value: `0x30` ("0") |
 
 ## CRC Calculation
 The protocol uses a custom CRC-16 checksum. See `calculateChecksum()` in `index.html` for implementation details.
