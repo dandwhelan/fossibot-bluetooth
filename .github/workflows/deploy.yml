@@ -1,0 +1,58 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup deployment
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          
+          # Create or checkout gh-pages branch
+          git fetch origin gh-pages || git checkout --orphan gh-pages || git checkout gh-pages
+          git checkout gh-pages || git checkout --orphan gh-pages
+          
+          # Clear the branch
+          git rm -rf . || true
+          
+      - name: Deploy main branch files
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git checkout main -- index.html manifest.json sw.js icon-192.png icon-512.png PROTOCOL.md
+          git add .
+          git commit -m "Deploy main branch to root" || true
+          
+      - name: Deploy dev branch files
+        if: github.ref == 'refs/heads/dev'
+        run: |
+          # Create dev directory
+          mkdir -p dev
+          git checkout dev -- index.html manifest.json sw.js icon-192.png icon-512.png PROTOCOL.md
+          mv index.html manifest.json sw.js dev/ || true
+          mv icon-*.png dev/ 2>/dev/null || true
+          mv PROTOCOL.md dev/ 2>/dev/null || true
+          
+          # Update manifest.json paths if needed
+          sed -i 's|"start_url": "/"|"start_url": "/fossibot-bluetooth/dev/"|g' dev/manifest.json || true
+          
+          git add dev/
+          git commit -m "Deploy dev branch to /dev" || true
+          
+      - name: Push to gh-pages
+        run: |
+          git push origin gh-pages --force
