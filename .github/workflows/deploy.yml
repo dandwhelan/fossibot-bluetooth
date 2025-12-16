@@ -33,21 +33,48 @@ jobs:
       - name: Deploy main branch files
         if: github.ref == 'refs/heads/main'
         run: |
+          # Checkout gh-pages
+          git checkout gh-pages
+          
+          # 1. Back up 'dev' folder if it exists
+          if [ -d "dev" ]; then
+            mv dev ../dev_temp
+            echo "Backed up dev folder"
+          fi
+          
+          # 2. Clear root files (everything except .git)
+          find . -maxdepth 1 -not -name '.git' -not -name '.' -exec rm -rf {} +
+          
+          # 3. Restore 'dev' folder if we backed it up
+          if [ -d "../dev_temp" ]; then
+            mv ../dev_temp dev
+            echo "Restored dev folder"
+          fi
+          
+          # 4. Get files from main
           git checkout main -- index.html manifest.json sw.js icon-192.png icon-512.png PROTOCOL.md
+          
           git add .
           git commit -m "Deploy main branch to root" || true
           
       - name: Deploy dev branch files
         if: github.ref == 'refs/heads/dev'
         run: |
-          # Create dev directory
-          mkdir -p dev
-          git checkout dev -- index.html manifest.json sw.js icon-192.png icon-512.png PROTOCOL.md
-          mv index.html manifest.json sw.js dev/ || true
-          mv icon-*.png dev/ 2>/dev/null || true
-          mv PROTOCOL.md dev/ 2>/dev/null || true
+          # Checkout gh-pages
+          git checkout gh-pages
           
-          # Update manifest.json paths if needed
+          # 1. Remove old dev folder
+          rm -rf dev
+          mkdir dev
+          
+          # 2. Get files from dev branch into temp spot, then move
+          # (git checkout <ref> -- <paths> restores to original path, so we move them after)
+          git checkout dev -- index.html manifest.json sw.js icon-192.png icon-512.png PROTOCOL.md
+          
+          # Move these specific files into dev/
+          mv index.html manifest.json sw.js icon-192.png icon-512.png PROTOCOL.md dev/
+          
+          # Update manifest in dev folder
           sed -i 's|"start_url": "/"|"start_url": "/fossibot-bluetooth/dev/"|g' dev/manifest.json || true
           
           git add dev/
@@ -55,4 +82,4 @@ jobs:
           
       - name: Push to gh-pages
         run: |
-          git push origin gh-pages --force
+          git push origin gh-pages
