@@ -439,7 +439,8 @@
             color: var(--text-main);
             font-family: var(--font-main);
             margin: 0;
-            padding: 1rem;
+            padding: 0.5rem;
+            /* Reduced from 1rem */
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -458,7 +459,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 2rem;
+            margin-bottom: 0.5rem;
+            /* Reduced from 2rem */
             width: 100%;
             max-width: 28rem;
         }
@@ -543,6 +545,17 @@
             background-color: var(--btn-red);
         }
 
+        /* Fix Back Button Visibility */
+        .btn-back {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+            border: 1px solid var(--text-muted);
+        }
+
+        .btn-back:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
         [data-theme="terminal"] .btn-main {
             background: transparent;
             color: #00ff00;
@@ -565,6 +578,30 @@
             margin-bottom: 2rem;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
             transition: opacity 0.3s;
+            position: relative;
+        }
+
+        .settings-btn-dash {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            width: 2rem;
+            height: 2rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            pointer-events: auto !important;
+            /* Always clickable even when parent is disabled */
+        }
+
+        .settings-btn-dash:hover {
+            color: var(--text-blue);
+            background: rgba(255, 255, 255, 0.1);
         }
 
         [data-theme="terminal"] .dashboard {
@@ -598,6 +635,87 @@
             text-align: center;
             flex: 0 0 auto;
             min-width: 6rem;
+            position: relative;
+            /* For positioning btn */
+        }
+
+        .bt-btn-dash {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            width: 2rem;
+            height: 2rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            pointer-events: auto !important;
+            /* Always clickable even when parent is disabled */
+        }
+
+        .bt-btn-dash:hover {
+            color: var(--text-blue);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .bt-btn-dash.connected {
+            color: var(--text-green);
+            /* Optional: Add background or border if desired */
+        }
+
+        .bt-center-btn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 3rem;
+            height: 3rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 20;
+            transition: all 0.2s;
+            color: var(--text-muted);
+            border: 1px solid var(--text-muted);
+        }
+
+        .bt-center-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+
+        .bt-center-btn.connected {
+            /* If connected, maybe move it or change style? 
+               User asked for 'another [icon] for disconnect'. 
+               We will use different icon in JS. 
+               Style-wise, let's make it green border. */
+            border-color: var(--btn-green);
+            color: var(--btn-green);
+            top: 85%;
+            /* Move to bottom of ring when connected? Or keep center?
+                       If center, it covers text. 
+                       User said "add another icon in the circle". 
+                       If we put it in circle, it covers text. 
+                       Let's put it at TOP of ring for Connect (default) 
+                       and maybe maintain position but change icon. 
+                       Wait, text is in center. */
+            background: rgba(0, 0, 0, 0.5);
+            /* contrast */
+        }
+
+        /* Adjust battery text to not overlap if needed, or we position BT btn above/below text */
+        .battery-text {
+            /* Existing: absolute center */
+            /* We might need to shift it if button is in center. 
+               But user said "icon in the circle". 
+               Let's try positioning button somewhat clearly. */
+            z-index: 10;
         }
 
         .dash-col.right {
@@ -1276,6 +1394,7 @@
         /* Accordion Styles for Settings */
         .accordion {
             margin-bottom: 0.75rem;
+            width: 100%;
         }
 
         .accordion-header {
@@ -1354,6 +1473,12 @@
             font-size: 0.75rem;
             cursor: pointer;
             transition: all 0.2s;
+            position: relative;
+            /* Enable z-index */
+            z-index: 50;
+            /* Ensure above potentially overlapping containers */
+            pointer-events: auto !important;
+            /* Force clickable */
         }
 
         .theme-pill:hover {
@@ -1368,17 +1493,6 @@
 </head>
 
 <body>
-    <!-- Watching Eyes for Psychedelic Theme -->
-    <div class="psy-eye-container">
-        <div class="psy-eye">
-            <div class="psy-pupil"></div>
-            <div class="psy-glint"></div>
-        </div>
-        <div class="psy-eye">
-            <div class="psy-pupil"></div>
-            <div class="psy-glint"></div>
-        </div>
-    </div>
 
     <div class="container">
         <div id="view-control" class="view-section active">
@@ -1401,15 +1515,7 @@
 
             <!-- Standard Header -->
             <div class="header">
-                <h1 style="margin:0; font-size: 1.5rem;">POWER</h1>
-                <div class="btn-group" style="width: auto; margin: 0;">
-                    <button class="btn-main btn-connect">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M7 7l10 10-5 5V2l5 5L7 17" />
-                        </svg>
-                        Connect
-                    </button>
+                <div class="btn-group" style="width: auto; margin: 0; margin-left: auto;">
                     <button id="btn-install-ui" class="btn-main hidden" onclick="installApp()"
                         style="background-color: var(--btn-green);">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -1420,18 +1526,30 @@
                         </svg>
                         Install App
                     </button>
-                    <button class="btn-main btn-disconnect hidden">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                        Disconnect
-                    </button>
+                    <!-- Old Connect Buttons Removed -->
                 </div>
             </div>
 
             <div id="dashboard" class="dashboard disabled">
+                <!-- Bluetooth Control (Top Left) -->
+                <div id="bt-center-control" class="bt-btn-dash" onclick="toggleConnection()" title="Connect/Disconnect">
+                    <svg id="bt-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M7 7l10 10-5 5V2l5 5L7 17"></path>
+                    </svg>
+                </div>
+
+                <!-- Settings Button (Top Right - Existing) -->
+                <div class="settings-btn-dash" onclick="switchView('settings')" title="Settings">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path
+                            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1.6 1.41 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                        </path>
+                    </svg>
+                </div>
+
                 <div class="dash-row">
                     <div class="dash-col left">
                         <div class="dash-label">Input</div>
@@ -1440,7 +1558,9 @@
                     </div>
 
                     <div class="dash-col center">
-                        <div class="dash-sub" style="margin-bottom: 0.25rem;">Sys: <span id="sysWatts">--</span>W</div>
+                        <div class="dash-sub" style="margin-bottom: 0.25rem;">Sys: <span id="sysWatts">--</span>W
+                        </div>
+
                         <div class="battery-ring-container">
                             <svg width="100%" height="100%" viewBox="0 0 36 36" style="transform: rotate(-90deg);">
                                 <path class="ring-bg"
@@ -1450,6 +1570,7 @@
                                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                                     fill="none" stroke="currentColor" stroke-width="3" />
                             </svg>
+                            <!-- Old Center Control Removed -->
                             <div class="battery-text"><span id="batteryPercent">--</span><span
                                     class="battery-unit">%</span>
                             </div>
@@ -1502,6 +1623,7 @@
                 <div id="log" class="log-box"></div>
             </div>
 
+
             <div class="terminal-prompt">
                 <span>guest@POWER:~$</span>
                 <input type="text" id="termInput" class="terminal-input" autocomplete="off" spellcheck="false"
@@ -1511,7 +1633,13 @@
 
         <div id="view-settings" class="view-section">
             <div class="header">
-                <h1>Settings</h1>
+                <button class="btn-main btn-back" onclick="switchView('control')" style="width: auto; padding: 0.5rem;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5M12 19l-7-7 7-7" />
+                    </svg>
+                </button>
+                <h1 style="margin:0; flex:1; text-align:center;">Settings</h1>
+                <div style="width: 40px;"></div> <!-- Spacer -->
             </div>
 
             <div style="padding: 0 1rem;">
@@ -1641,166 +1769,148 @@
                         </div>
                     </div>
                 </div>
-            </div>
+                <!-- Timers Accordion -->
+                <div class="accordion" id="acc-timers">
+                    <div class="accordion-header" onclick="toggleAccordion('acc-timers')">
+                        <div class="accordion-title">
+                            <span class="accordion-icon">⏱️</span>
+                            Timers
+                            <span class="accordion-count">6</span>
+                        </div>
+                        <span class="accordion-arrow">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <span class="setting-title">Screen Timeout</span>
+                                <span class="setting-desc"><span id="status-screen-timeout"
+                                        class="text-blue"></span></span>
+                            </div>
+                            <select class="setting-select" id="set-screen-timeout"
+                                onchange="changeSelect('screen_timeout')">
+                                <option value="60">1 min</option>
+                                <option value="180">3 min</option>
+                                <option value="300">5 min</option>
+                                <option value="600">10 min</option>
+                                <option value="1800">30 min</option>
+                                <option value="3600">60 min</option>
+                                <option value="7200">2 hr</option>
+                                <option value="14400">4 hr</option>
+                                <option value="0">Never</option>
+                            </select>
+                        </div>
+                        <div class="setting-row" style="flex-direction: column; align-items: stretch;">
+                            <div class="setting-info">
+                                <span class="setting-title">Schedule Charge</span>
+                                <span class="setting-desc">Start charging at time (or enter minutes)</span>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; align-items: center;">
+                                <input type="time" class="setting-input" id="set-booking-time" style="flex: 1;"
+                                    onchange="updateBookingFromTime()">
+                                <span>or</span>
+                                <input type="number" class="setting-input" id="set-booking-charge" value="0" min="0"
+                                    onchange="changeInput('booking_charge')">
+                                <span>mins</span>
+                            </div>
+                        </div>
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <span class="setting-title">System Idle Shutdown</span>
+                                <span class="setting-desc">Whole Device <span id="status-sys-standby"
+                                        class="text-blue"></span></span>
+                            </div>
+                            <select class="setting-select" id="set-sys-standby" onchange="changeSelect('sys_standby')">
+                                <option value="5">5 min</option>
+                                <option value="10">10 min</option>
+                                <option value="30">30 min</option>
+                                <option value="60">1 hr</option>
+                                <option value="480">480 min (8h)</option>
+                                <option value="1440">24 hr</option>
+                                <option value="0">Never</option>
+                            </select>
+                        </div>
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <span class="setting-title">AC Standby</span>
+                                <span class="setting-desc"><span id="status-ac-standby" class="text-blue"></span></span>
+                            </div>
+                            <select class="setting-select" id="set-ac-standby" onchange="changeSelect('ac_standby')">
+                                <option value="60">1 hr</option>
+                                <option value="480">8 hr</option>
+                                <option value="960">16 hr</option>
+                                <option value="1440">24 hr</option>
+                                <option value="0">Never</option>
+                            </select>
+                        </div>
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <span class="setting-title">DC Standby</span>
+                                <span class="setting-desc"><span id="status-dc-standby" class="text-blue"></span></span>
+                            </div>
+                            <select class="setting-select" id="set-dc-standby" onchange="changeSelect('dc_standby')">
+                                <option value="60">1 hr</option>
+                                <option value="480">8 hr</option>
+                                <option value="960">16 hr</option>
+                                <option value="1440">24 hr</option>
+                                <option value="0">Never</option>
+                            </select>
+                        </div>
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <span class="setting-title">USB Standby</span>
+                                <span class="setting-desc"><span id="status-usb-standby"
+                                        class="text-blue"></span></span>
+                            </div>
+                            <select class="setting-select" id="set-usb-standby" onchange="changeSelect('usb_standby')">
+                                <option value="5">5 min</option>
+                                <option value="10">10 min</option>
+                                <option value="30">30 min</option>
+                                <option value="60">1 hr</option>
+                                <option value="120">2 hr</option>
+                                <option value="480">8 hr</option>
+                                <option value="600">10 hr</option>
+                                <option value="0">Never</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
 
-            <!-- Timers Accordion -->
-            <div class="accordion" id="acc-timers">
-                <div class="accordion-header" onclick="toggleAccordion('acc-timers')">
-                    <div class="accordion-title">
-                        <span class="accordion-icon">⏱️</span>
-                        Timers
-                        <span class="accordion-count">6</span>
-                    </div>
-                    <span class="accordion-arrow">▼</span>
-                </div>
-                <div class="accordion-content">
-                    <div class="setting-row">
-                        <div class="setting-info">
-                            <span class="setting-title">Screen Timeout</span>
-                            <span class="setting-desc"><span id="status-screen-timeout" class="text-blue"></span></span>
+                <!-- Theme Accordion -->
+                <div class="accordion" id="acc-theme">
+                    <div class="accordion-header" onclick="toggleAccordion('acc-theme')">
+                        <div class="accordion-title">
+                            <span class="accordion-icon">🎨</span>
+                            Theme
                         </div>
-                        <select class="setting-select" id="set-screen-timeout"
-                            onchange="changeSelect('screen_timeout')">
-                            <option value="60">1 min</option>
-                            <option value="180">3 min</option>
-                            <option value="300">5 min</option>
-                            <option value="600">10 min</option>
-                            <option value="1800">30 min</option>
-                            <option value="3600">60 min</option>
-                            <option value="7200">2 hr</option>
-                            <option value="14400">4 hr</option>
-                            <option value="0">Never</option>
-                        </select>
+                        <span class="accordion-arrow">▼</span>
                     </div>
-                    <div class="setting-row" style="flex-direction: column; align-items: stretch;">
-                        <div class="setting-info">
-                            <span class="setting-title">Schedule Charge</span>
-                            <span class="setting-desc">Start charging at time (or enter minutes)</span>
+                    <div class="accordion-content">
+                        <div class="theme-pills" id="theme-pills">
+                            <span class="theme-pill" data-theme="pipboy" onclick="selectThemePill('pipboy')">☢️
+                                Pipboy</span>
+                            <span class="theme-pill" data-theme="terminal" onclick="selectThemePill('terminal')">🖥️
+                                Terminal</span>
+                            <span class="theme-pill" data-theme="industrial" onclick="selectThemePill('industrial')">🏭
+                                Industrial</span>
+                            <span class="theme-pill" data-theme="cyberpunk" onclick="selectThemePill('cyberpunk')">🌃
+                                Cyberpunk</span>
+                            <span class="theme-pill active" data-theme="ocean" onclick="selectThemePill('ocean')">🌊
+                                Ocean</span>
+                            <span class="theme-pill" data-theme="sunset" onclick="selectThemePill('sunset')">🌅
+                                Sunset</span>
+                            <span class="theme-pill" data-theme="daylight" onclick="selectThemePill('daylight')">☀️
+                                Daylight</span>
+                            <span class="theme-pill" data-theme="rainbow" onclick="selectThemePill('rainbow')">🌈
+                                Rainbow</span>
                         </div>
-                        <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; align-items: center;">
-                            <input type="time" class="setting-input" id="set-booking-time" style="flex: 1;"
-                                onchange="updateBookingFromTime()">
-                            <span>or</span>
-                            <input type="number" class="setting-input" id="set-booking-charge" value="0" min="0"
-                                onchange="changeInput('booking_charge')">
-                            <span>mins</span>
-                        </div>
-                    </div>
-                    <div class="setting-row">
-                        <div class="setting-info">
-                            <span class="setting-title">System Idle Shutdown</span>
-                            <span class="setting-desc">Whole Device <span id="status-sys-standby"
-                                    class="text-blue"></span></span>
-                        </div>
-                        <select class="setting-select" id="set-sys-standby" onchange="changeSelect('sys_standby')">
-                            <option value="5">5 min</option>
-                            <option value="10">10 min</option>
-                            <option value="30">30 min</option>
-                            <option value="60">1 hr</option>
-                            <option value="480">480 min (8h)</option>
-                            <option value="1440">24 hr</option>
-                            <option value="0">Never</option>
-                        </select>
-                    </div>
-                    <div class="setting-row">
-                        <div class="setting-info">
-                            <span class="setting-title">AC Standby</span>
-                            <span class="setting-desc"><span id="status-ac-standby" class="text-blue"></span></span>
-                        </div>
-                        <select class="setting-select" id="set-ac-standby" onchange="changeSelect('ac_standby')">
-                            <option value="60">1 hr</option>
-                            <option value="480">8 hr</option>
-                            <option value="960">16 hr</option>
-                            <option value="1440">24 hr</option>
-                            <option value="0">Never</option>
-                        </select>
-                    </div>
-                    <div class="setting-row">
-                        <div class="setting-info">
-                            <span class="setting-title">DC Standby</span>
-                            <span class="setting-desc"><span id="status-dc-standby" class="text-blue"></span></span>
-                        </div>
-                        <select class="setting-select" id="set-dc-standby" onchange="changeSelect('dc_standby')">
-                            <option value="60">1 hr</option>
-                            <option value="480">8 hr</option>
-                            <option value="960">16 hr</option>
-                            <option value="1440">24 hr</option>
-                            <option value="0">Never</option>
-                        </select>
-                    </div>
-                    <div class="setting-row">
-                        <div class="setting-info">
-                            <span class="setting-title">USB Standby</span>
-                            <span class="setting-desc"><span id="status-usb-standby" class="text-blue"></span></span>
-                        </div>
-                        <select class="setting-select" id="set-usb-standby" onchange="changeSelect('usb_standby')">
-                            <option value="5">5 min</option>
-                            <option value="10">10 min</option>
-                            <option value="30">30 min</option>
-                            <option value="60">1 hr</option>
-                            <option value="120">2 hr</option>
-                            <option value="480">8 hr</option>
-                            <option value="600">10 hr</option>
-                            <option value="0">Never</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Theme Accordion -->
-            <div class="accordion" id="acc-theme">
-                <div class="accordion-header" onclick="toggleAccordion('acc-theme')">
-                    <div class="accordion-title">
-                        <span class="accordion-icon">🎨</span>
-                        Theme
-                    </div>
-                    <span class="accordion-arrow">▼</span>
-                </div>
-                <div class="accordion-content">
-                    <div class="theme-pills" id="theme-pills">
-                        <span class="theme-pill" data-theme="pipboy" onclick="selectThemePill('pipboy')">☢️
-                            Pipboy</span>
-                        <span class="theme-pill" data-theme="terminal" onclick="selectThemePill('terminal')">🖥️
-                            Terminal</span>
-                        <span class="theme-pill" data-theme="industrial" onclick="selectThemePill('industrial')">🏭
-                            Industrial</span>
-                        <span class="theme-pill" data-theme="cyberpunk" onclick="selectThemePill('cyberpunk')">🌃
-                            Cyberpunk</span>
-                        <span class="theme-pill active" data-theme="ocean" onclick="selectThemePill('ocean')">🌊
-                            Ocean</span>
-                        <span class="theme-pill" data-theme="sunset" onclick="selectThemePill('sunset')">🌅
-                            Sunset</span>
-                        <span class="theme-pill" data-theme="daylight" onclick="selectThemePill('daylight')">☀️
-                            Daylight</span>
-                        <span class="theme-pill" data-theme="rainbow" onclick="selectThemePill('rainbow')">🌈
-                            Rainbow</span>
-                        <span class="theme-pill" data-theme="psychedelic" onclick="selectThemePill('psychedelic')">😵
-                            Acid Mode</span>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    </div>
 
-    <!-- Bottom Navigation -->
-    <nav class="bottom-nav">
-        <button class="nav-item active" onclick="switchView('control')">
-            <svg viewBox="0 0 24 24">
-                <path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" stroke-width="2" />
-            </svg>
-            <span>Control</span>
-        </button>
-        <button class="nav-item" onclick="switchView('settings')">
-            <svg viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" />
-                <path
-                    d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1.6 1.41 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"
-                    stroke="currentColor" stroke-width="2" fill="none" />
-            </svg>
-            <span>Settings</span>
-        </button>
-    </nav>
+
+
 
     <!-- Melt Filter SVG -->
     <svg style="display: none;">
@@ -2789,15 +2899,55 @@ Example format:
         connectBtns.forEach(btn => btn.addEventListener('click', connect));
         disconnectBtns.forEach(btn => btn.addEventListener('click', disconnect));
 
+        // Bluetooth Toggle Logic
+        function toggleConnection() {
+            if (device && device.gatt.connected) {
+                disconnect();
+            } else {
+                connect();
+            }
+        }
+
+        function updateBtButton(isConnected) {
+            const btn = document.getElementById('bt-center-control');
+            const icon = document.getElementById('bt-icon');
+            if (!btn || !icon) return;
+            if (isConnected) {
+                btn.classList.add('connected');
+                btn.title = "Disconnect";
+                // X icon or broken chain
+                icon.innerHTML = '<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>';
+            } else {
+                btn.classList.remove('connected');
+                btn.title = "Connect";
+                // BT icon
+                icon.innerHTML = '<path d="M7 7l10 10-5 5V2l5 5L7 17"></path>';
+            }
+        }
+
+        // Hook into existing connect/disconnect
+        const originalUpdateStatus = updateStatus;
+        updateStatus = function (connected) {
+            originalUpdateStatus(connected); // Call original
+            updateBtButton(connected);
+        };
+
+        // Initial state
+        updateBtButton(false);
+
         // Service Worker Registration
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./service-worker.js')
-                    .then(reg => console.log('SW registered'))
-                    .catch(err => console.log('SW failed', err));
+                // Only register if http or https (avoids file:// error)
+                if (window.location.protocol.startsWith('http')) {
+                    navigator.serviceWorker.register('service-worker.js').then(registration => {
+                        console.log('SW registered: ', registration);
+                    }).catch(registrationError => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+                }
             });
         }
-
         function toggleScanner() {
             const el = document.getElementById('scanner');
             el.classList.toggle('hidden');
@@ -3025,15 +3175,10 @@ Example format:
         // View Switching
         function switchView(viewId) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            // Nav items removed, no need to update classes
 
-            document.getElementById('view-' + viewId).classList.add('active');
-
-            // Highlight nav
-            const navIndex = ['control', 'settings', 'simulation', 'diagnostics'].indexOf(viewId);
-            if (navIndex >= 0) {
-                document.querySelectorAll('.nav-item')[navIndex].classList.add('active');
-            }
+            const targetView = document.getElementById('view-' + viewId);
+            if (targetView) targetView.classList.add('active');
 
             if (viewId === 'diagnostics') renderDiagnostics();
         }
@@ -4053,6 +4198,16 @@ Example format:
             // Sync Dropdown
             const sel = document.getElementById('theme-select');
             if (sel) sel.value = themeName;
+
+            // Sync Pills
+            document.querySelectorAll('.theme-pill').forEach(el => {
+                if (el.dataset.theme === themeName) el.classList.add('active');
+                else el.classList.remove('active');
+            });
+        }
+
+        function selectThemePill(themeName) {
+            setTheme(themeName);
         }
 
         function toggleSetting(name) {
