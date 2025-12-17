@@ -4,13 +4,12 @@
 
 This Progressive Web App (PWA) lets you control and monitor your Fossibot F2400, F3600 Pro, and similar power stations via Bluetooth Low Energy (BLE). No cloud, no official app required — private, offline-first control.
 
-> 💡 **Looking for advanced diagnostics?** Switch to the [`dev` branch](https://github.com/dandwhelan/fossibot-bluetooth/tree/dev) for troubleshooting tools, register scanners, protocol explorers, and raw system data.
-
 **🚀 [Launch Web App](https://dandwhelan.github.io/fossibot-bluetooth/)**
 
 ![App Preview](icon-512.png)
 
 ---
+<img width="570" height="496" alt="image" src="https://github.com/user-attachments/assets/77779422-5d75-4a2e-ac61-8acc07f66069" />
 
 ## ✨ Features
 
@@ -108,3 +107,4 @@ This device uses a **Tuya BLE Protocol** with Modbus-like commands.
 ## 📄 License
 
 MIT License — Free for personal and commercial use.
+
