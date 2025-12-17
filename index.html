@@ -241,6 +241,7 @@
 
         /* Bottom Navigation */
         .bottom-nav {
+            display: none !important;
             position: fixed;
             bottom: 0;
             left: 0;
@@ -439,8 +440,7 @@
             color: var(--text-main);
             font-family: var(--font-main);
             margin: 0;
-            padding: 0.5rem;
-            /* Reduced from 1rem */
+            padding: 1rem;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -457,10 +457,10 @@
         /* Standard Header */
         .header {
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-end;
+            /* Align remaining items to right if needed, or keeping structure but empty title */
             align-items: center;
-            margin-bottom: 0.5rem;
-            /* Reduced from 2rem */
+            margin-bottom: 2rem;
             width: 100%;
             max-width: 28rem;
         }
@@ -545,17 +545,6 @@
             background-color: var(--btn-red);
         }
 
-        /* Fix Back Button Visibility */
-        .btn-back {
-            background: rgba(255, 255, 255, 0.1);
-            color: var(--text-main);
-            border: 1px solid var(--text-muted);
-        }
-
-        .btn-back:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
         [data-theme="terminal"] .btn-main {
             background: transparent;
             color: #00ff00;
@@ -578,30 +567,6 @@
             margin-bottom: 2rem;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
             transition: opacity 0.3s;
-            position: relative;
-        }
-
-        .settings-btn-dash {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            width: 2rem;
-            height: 2rem;
-            color: var(--text-muted);
-            cursor: pointer;
-            transition: all 0.2s;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10;
-            pointer-events: auto !important;
-            /* Always clickable even when parent is disabled */
-        }
-
-        .settings-btn-dash:hover {
-            color: var(--text-blue);
-            background: rgba(255, 255, 255, 0.1);
         }
 
         [data-theme="terminal"] .dashboard {
@@ -635,87 +600,6 @@
             text-align: center;
             flex: 0 0 auto;
             min-width: 6rem;
-            position: relative;
-            /* For positioning btn */
-        }
-
-        .bt-btn-dash {
-            position: absolute;
-            top: 1rem;
-            left: 1rem;
-            width: 2rem;
-            height: 2rem;
-            color: var(--text-muted);
-            cursor: pointer;
-            transition: all 0.2s;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10;
-            pointer-events: auto !important;
-            /* Always clickable even when parent is disabled */
-        }
-
-        .bt-btn-dash:hover {
-            color: var(--text-blue);
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .bt-btn-dash.connected {
-            color: var(--text-green);
-            /* Optional: Add background or border if desired */
-        }
-
-        .bt-center-btn {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 3rem;
-            height: 3rem;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 20;
-            transition: all 0.2s;
-            color: var(--text-muted);
-            border: 1px solid var(--text-muted);
-        }
-
-        .bt-center-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: translate(-50%, -50%) scale(1.1);
-        }
-
-        .bt-center-btn.connected {
-            /* If connected, maybe move it or change style? 
-               User asked for 'another [icon] for disconnect'. 
-               We will use different icon in JS. 
-               Style-wise, let's make it green border. */
-            border-color: var(--btn-green);
-            color: var(--btn-green);
-            top: 85%;
-            /* Move to bottom of ring when connected? Or keep center?
-                       If center, it covers text. 
-                       User said "add another icon in the circle". 
-                       If we put it in circle, it covers text. 
-                       Let's put it at TOP of ring for Connect (default) 
-                       and maybe maintain position but change icon. 
-                       Wait, text is in center. */
-            background: rgba(0, 0, 0, 0.5);
-            /* contrast */
-        }
-
-        /* Adjust battery text to not overlap if needed, or we position BT btn above/below text */
-        .battery-text {
-            /* Existing: absolute center */
-            /* We might need to shift it if button is in center. 
-               But user said "icon in the circle". 
-               Let's try positioning button somewhat clearly. */
-            z-index: 10;
         }
 
         .dash-col.right {
@@ -791,8 +675,11 @@
         }
 
         .control-tile svg {
-            width: 24px;
-            height: 24px;
+            width: 50%;
+            /* Reduced by ~25% from original full size implicitly or set explicit base */
+            height: auto;
+            transform: scale(0.75);
+            /* Explicit 25% reduction */
         }
 
         .control-tile.active {
@@ -853,44 +740,7 @@
             font-family: 'Courier New', Courier, monospace;
         }
 
-        /* Diagnostic Flash Animations */
-        @keyframes flash-green {
-            0% {
-                color: #0f0;
-                font-weight: bold;
-                transform: scale(1.1);
-            }
 
-            100% {
-                color: inherit;
-                font-weight: normal;
-                transform: scale(1);
-            }
-        }
-
-        @keyframes flash-yellow {
-            0% {
-                color: #ff0;
-                font-weight: bold;
-                transform: scale(1.1);
-            }
-
-            100% {
-                color: inherit;
-                font-weight: normal;
-                transform: scale(1);
-            }
-        }
-
-        .flash-up {
-            animation: flash-green 1.5s ease-out;
-            display: inline-block;
-        }
-
-        .flash-down {
-            animation: flash-yellow 1.5s ease-out;
-            display: inline-block;
-        }
 
         .hidden {
             display: none !important;
@@ -1394,7 +1244,6 @@
         /* Accordion Styles for Settings */
         .accordion {
             margin-bottom: 0.75rem;
-            width: 100%;
         }
 
         .accordion-header {
@@ -1473,12 +1322,6 @@
             font-size: 0.75rem;
             cursor: pointer;
             transition: all 0.2s;
-            position: relative;
-            /* Enable z-index */
-            z-index: 50;
-            /* Ensure above potentially overlapping containers */
-            pointer-events: auto !important;
-            /* Force clickable */
         }
 
         .theme-pill:hover {
@@ -1493,6 +1336,17 @@
 </head>
 
 <body>
+    <!-- Watching Eyes for Psychedelic Theme -->
+    <div class="psy-eye-container">
+        <div class="psy-eye">
+            <div class="psy-pupil"></div>
+            <div class="psy-glint"></div>
+        </div>
+        <div class="psy-eye">
+            <div class="psy-pupil"></div>
+            <div class="psy-glint"></div>
+        </div>
+    </div>
 
     <div class="container">
         <div id="view-control" class="view-section active">
@@ -1513,41 +1367,76 @@
                 </span>
             </div>
 
-            <!-- Standard Header -->
-            <div class="header">
-                <div class="btn-group" style="width: auto; margin: 0; margin-left: auto;">
-                    <button id="btn-install-ui" class="btn-main hidden" onclick="installApp()"
-                        style="background-color: var(--btn-green);">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="7 10 12 15 17 10"></polyline>
-                            <line x1="12" y1="15" x2="12" y2="3"></line>
-                        </svg>
-                        Install App
-                    </button>
-                    <!-- Old Connect Buttons Removed -->
-                </div>
-            </div>
+            <!-- Header Removed -->
 
-            <div id="dashboard" class="dashboard disabled">
-                <!-- Bluetooth Control (Top Left) -->
-                <div id="bt-center-control" class="bt-btn-dash" onclick="toggleConnection()" title="Connect/Disconnect">
-                    <svg id="bt-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
-                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M7 7l10 10-5 5V2l5 5L7 17"></path>
+            <!-- Dashboard -->
+            <div class="dashboard" id="dashboard-container" style="position: relative;">
+                <!-- Settings Trigger (Top Left) -->
+                <div id="settings-trigger" onclick="switchView('settings')"
+                    style="position: absolute; top: 10px; left: 10px; cursor: pointer; z-index: 20; color: var(--text-muted); opacity: 0.8;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path
+                            d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2-.3l-.15-.09a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 .32l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 .3l.15.09a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2-.32l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z">
+                        </path>
+                        <circle cx="12" cy="12" r="3"></circle>
                     </svg>
                 </div>
 
-                <!-- Settings Button (Top Right - Existing) -->
-                <div class="settings-btn-dash" onclick="switchView('settings')" title="Settings">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                <!-- Connect/Disconnect Triggers (Top Right) -->
+                <div class="btn-connect" onclick="connect()"
+                    style="position: absolute; top: 10px; right: 10px; cursor: pointer; z-index: 20; color: var(--text-muted); opacity: 0.8; background: transparent !important; box-shadow: none;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M7 7l10 10-5 5V2l5 5L7 17" />
+                    </svg>
+                </div>
+                <div class="btn-disconnect hidden" onclick="window.location.reload()"
+                    style="position: absolute; top: 10px; right: 10px; cursor: pointer; z-index: 20; color: var(--text-green); opacity: 1;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </div>
+
+                <!-- Simulation Trigger (Bottom Left) -->
+                <div id="sim-trigger" onclick="toggleSimulationUI()"
+                    style="position: absolute; bottom: 10px; left: 10px; cursor: pointer; opacity: 0.5; z-index: 20;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    </svg>
+                </div>
+
+                <!-- Diagnostics Trigger (Bottom Right) -->
+                <div id="diag-trigger" onclick="switchView('diagnostics')"
+                    style="position: absolute; bottom: 10px; right: 10px; cursor: pointer; opacity: 0.5; z-index: 20;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path
-                            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1.6 1.41 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                            d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z">
                         </path>
                     </svg>
+                </div>
+
+                <!-- Sim UI Overlay (Hidden by default) -->
+                <div id="sim-ui" class="hidden"
+                    style="position: absolute; bottom: 40px; left: 10px; background: var(--bg-card); border: 1px solid var(--text-muted); padding: 10px; border-radius: 8px; z-index: 30; width: 200px;">
+                    <div style="font-size: 0.8rem; font-weight: bold; margin-bottom: 5px;">Simulation Mode</div>
+                    <div class="setting-row" style="padding: 5px; gap: 5px;">
+                        <label style="font-size: 0.7rem;">Bat %</label>
+                        <input type="number" id="sim-battery" value="50" style="width: 50px;"
+                            onchange="updateSimulation()">
+                    </div>
+                    <div class="setting-row" style="padding: 5px; gap: 5px;">
+                        <label style="font-size: 0.7rem;">Input W</label>
+                        <input type="number" id="sim-input" value="0" style="width: 50px;"
+                            onchange="updateSimulation()">
+                    </div>
+                    <div class="setting-row" style="padding: 5px; gap: 5px;">
+                        <label style="font-size: 0.7rem;">Out W</label>
+                        <input type="number" id="sim-output" value="0" style="width: 50px;"
+                            onchange="updateSimulation()">
+                    </div>
                 </div>
 
                 <div class="dash-row">
@@ -1558,9 +1447,7 @@
                     </div>
 
                     <div class="dash-col center">
-                        <div class="dash-sub" style="margin-bottom: 0.25rem;">Sys: <span id="sysWatts">--</span>W
-                        </div>
-
+                        <div class="dash-sub" style="margin-bottom: 0.25rem;">Sys: <span id="sysWatts">--</span>W</div>
                         <div class="battery-ring-container">
                             <svg width="100%" height="100%" viewBox="0 0 36 36" style="transform: rotate(-90deg);">
                                 <path class="ring-bg"
@@ -1570,7 +1457,6 @@
                                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                                     fill="none" stroke="currentColor" stroke-width="3" />
                             </svg>
-                            <!-- Old Center Control Removed -->
                             <div class="battery-text"><span id="batteryPercent">--</span><span
                                     class="battery-unit">%</span>
                             </div>
@@ -1618,11 +1504,7 @@
                 </div>
             </div>
 
-            <div class="log-container">
-                <div class="log-title">Activity Log</div>
-                <div id="log" class="log-box"></div>
-            </div>
-
+            <!-- Activity Log moved to Diagnostics view -->
 
             <div class="terminal-prompt">
                 <span>guest@POWER:~$</span>
@@ -1632,14 +1514,15 @@
         </div>
 
         <div id="view-settings" class="view-section">
-            <div class="header">
-                <button class="btn-main btn-back" onclick="switchView('control')" style="width: auto; padding: 0.5rem;">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <div class="header" style="display: flex; align-items: center; gap: 0.5rem;">
+                <button onclick="switchView('control')"
+                    style="background: var(--bg-card); color: var(--text-muted); border: 1px solid var(--text-muted); padding: 0.25rem 0.5rem; border-radius: 0.25rem; display: flex; align-items: center; gap: 0.25rem;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M19 12H5M12 19l-7-7 7-7" />
                     </svg>
+                    Back
                 </button>
-                <h1 style="margin:0; flex:1; text-align:center;">Settings</h1>
-                <div style="width: 40px;"></div> <!-- Spacer -->
+                <h1 style="margin: 0;">Settings</h1>
             </div>
 
             <div style="padding: 0 1rem;">
@@ -1661,7 +1544,8 @@
                             </div>
                             <div class="setting-control">
                                 <label class="toggle-switch">
-                                    <input type="checkbox" id="set-ac-silent" onchange="toggleSetting('ac_silent')">
+                                    <input type="checkbox" id="set-ac-silent"
+                                        onchange="toggleSetting('ac_silent', this.checked)">
                                     <span class="slider"></span>
                                 </label>
                             </div>
@@ -1672,8 +1556,11 @@
                                 <span class="setting-desc">Toggle device light</span>
                             </div>
                             <div class="setting-control">
-                                <button class="btn-main" onclick="toggle('light')"
-                                    style="width: auto; padding: 0.5rem 1rem;">Toggle</button>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="set-light-mode"
+                                        onchange="toggleSetting('light_mode', this.checked)">
+                                    <span class="slider"></span>
+                                </label>
                             </div>
                         </div>
                         <div class="setting-row">
@@ -1769,148 +1656,238 @@
                         </div>
                     </div>
                 </div>
-                <!-- Timers Accordion -->
-                <div class="accordion" id="acc-timers">
-                    <div class="accordion-header" onclick="toggleAccordion('acc-timers')">
-                        <div class="accordion-title">
-                            <span class="accordion-icon">⏱️</span>
-                            Timers
-                            <span class="accordion-count">6</span>
-                        </div>
-                        <span class="accordion-arrow">▼</span>
+            </div>
+
+            <!-- Timers Accordion -->
+            <div class="accordion" id="acc-timers">
+                <div class="accordion-header" onclick="toggleAccordion('acc-timers')">
+                    <div class="accordion-title">
+                        <span class="accordion-icon">⏱️</span>
+                        Timers
+                        <span class="accordion-count">6</span>
                     </div>
-                    <div class="accordion-content">
-                        <div class="setting-row">
-                            <div class="setting-info">
-                                <span class="setting-title">Screen Timeout</span>
-                                <span class="setting-desc"><span id="status-screen-timeout"
-                                        class="text-blue"></span></span>
-                            </div>
-                            <select class="setting-select" id="set-screen-timeout"
-                                onchange="changeSelect('screen_timeout')">
-                                <option value="60">1 min</option>
-                                <option value="180">3 min</option>
-                                <option value="300">5 min</option>
-                                <option value="600">10 min</option>
-                                <option value="1800">30 min</option>
-                                <option value="3600">60 min</option>
-                                <option value="7200">2 hr</option>
-                                <option value="14400">4 hr</option>
-                                <option value="0">Never</option>
-                            </select>
+                    <span class="accordion-arrow">▼</span>
+                </div>
+                <div class="accordion-content">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-title">Screen Timeout</span>
+                            <span class="setting-desc"><span id="status-screen-timeout" class="text-blue"></span></span>
                         </div>
-                        <div class="setting-row" style="flex-direction: column; align-items: stretch;">
-                            <div class="setting-info">
-                                <span class="setting-title">Schedule Charge</span>
-                                <span class="setting-desc">Start charging at time (or enter minutes)</span>
-                            </div>
-                            <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; align-items: center;">
-                                <input type="time" class="setting-input" id="set-booking-time" style="flex: 1;"
-                                    onchange="updateBookingFromTime()">
-                                <span>or</span>
-                                <input type="number" class="setting-input" id="set-booking-charge" value="0" min="0"
-                                    onchange="changeInput('booking_charge')">
-                                <span>mins</span>
-                            </div>
+                        <select class="setting-select" id="set-screen-timeout"
+                            onchange="changeSelect('screen_timeout')">
+                            <option value="60">1 min</option>
+                            <option value="180">3 min</option>
+                            <option value="300">5 min</option>
+                            <option value="600">10 min</option>
+                            <option value="1800">30 min</option>
+                            <option value="3600">60 min</option>
+                            <option value="7200">2 hr</option>
+                            <option value="14400">4 hr</option>
+                            <option value="0">Never</option>
+                        </select>
+                    </div>
+                    <div class="setting-row" style="flex-direction: column; align-items: stretch;">
+                        <div class="setting-info">
+                            <span class="setting-title">Schedule Charge</span>
+                            <span class="setting-desc">Start charging at time (or enter minutes)</span>
                         </div>
-                        <div class="setting-row">
-                            <div class="setting-info">
-                                <span class="setting-title">System Idle Shutdown</span>
-                                <span class="setting-desc">Whole Device <span id="status-sys-standby"
-                                        class="text-blue"></span></span>
-                            </div>
-                            <select class="setting-select" id="set-sys-standby" onchange="changeSelect('sys_standby')">
-                                <option value="5">5 min</option>
-                                <option value="10">10 min</option>
-                                <option value="30">30 min</option>
-                                <option value="60">1 hr</option>
-                                <option value="480">480 min (8h)</option>
-                                <option value="1440">24 hr</option>
-                                <option value="0">Never</option>
-                            </select>
+                        <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; align-items: center;">
+                            <input type="time" class="setting-input" id="set-booking-time" style="flex: 1;"
+                                onchange="updateBookingFromTime()">
+                            <span>or</span>
+                            <input type="number" class="setting-input" id="set-booking-charge" value="0" min="0"
+                                onchange="changeInput('booking_charge')">
+                            <span>mins</span>
                         </div>
-                        <div class="setting-row">
-                            <div class="setting-info">
-                                <span class="setting-title">AC Standby</span>
-                                <span class="setting-desc"><span id="status-ac-standby" class="text-blue"></span></span>
-                            </div>
-                            <select class="setting-select" id="set-ac-standby" onchange="changeSelect('ac_standby')">
-                                <option value="60">1 hr</option>
-                                <option value="480">8 hr</option>
-                                <option value="960">16 hr</option>
-                                <option value="1440">24 hr</option>
-                                <option value="0">Never</option>
-                            </select>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-title">System Idle Shutdown</span>
+                            <span class="setting-desc">Whole Device <span id="status-sys-standby"
+                                    class="text-blue"></span></span>
                         </div>
-                        <div class="setting-row">
-                            <div class="setting-info">
-                                <span class="setting-title">DC Standby</span>
-                                <span class="setting-desc"><span id="status-dc-standby" class="text-blue"></span></span>
-                            </div>
-                            <select class="setting-select" id="set-dc-standby" onchange="changeSelect('dc_standby')">
-                                <option value="60">1 hr</option>
-                                <option value="480">8 hr</option>
-                                <option value="960">16 hr</option>
-                                <option value="1440">24 hr</option>
-                                <option value="0">Never</option>
-                            </select>
+                        <select class="setting-select" id="set-sys-standby" onchange="changeSelect('sys_standby')">
+                            <option value="5">5 min</option>
+                            <option value="10">10 min</option>
+                            <option value="30">30 min</option>
+                            <option value="60">1 hr</option>
+                            <option value="480">480 min (8h)</option>
+                            <option value="1440">24 hr</option>
+                            <option value="0">Never</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-title">AC Standby</span>
+                            <span class="setting-desc"><span id="status-ac-standby" class="text-blue"></span></span>
                         </div>
-                        <div class="setting-row">
-                            <div class="setting-info">
-                                <span class="setting-title">USB Standby</span>
-                                <span class="setting-desc"><span id="status-usb-standby"
-                                        class="text-blue"></span></span>
-                            </div>
-                            <select class="setting-select" id="set-usb-standby" onchange="changeSelect('usb_standby')">
-                                <option value="5">5 min</option>
-                                <option value="10">10 min</option>
-                                <option value="30">30 min</option>
-                                <option value="60">1 hr</option>
-                                <option value="120">2 hr</option>
-                                <option value="480">8 hr</option>
-                                <option value="600">10 hr</option>
-                                <option value="0">Never</option>
-                            </select>
+                        <select class="setting-select" id="set-ac-standby" onchange="changeSelect('ac_standby')">
+                            <option value="60">1 hr</option>
+                            <option value="480">8 hr</option>
+                            <option value="960">16 hr</option>
+                            <option value="1440">24 hr</option>
+                            <option value="0">Never</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-title">DC Standby</span>
+                            <span class="setting-desc"><span id="status-dc-standby" class="text-blue"></span></span>
                         </div>
+                        <select class="setting-select" id="set-dc-standby" onchange="changeSelect('dc_standby')">
+                            <option value="60">1 hr</option>
+                            <option value="480">8 hr</option>
+                            <option value="960">16 hr</option>
+                            <option value="1440">24 hr</option>
+                            <option value="0">Never</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-title">USB Standby</span>
+                            <span class="setting-desc"><span id="status-usb-standby" class="text-blue"></span></span>
+                        </div>
+                        <select class="setting-select" id="set-usb-standby" onchange="changeSelect('usb_standby')">
+                            <option value="5">5 min</option>
+                            <option value="10">10 min</option>
+                            <option value="30">30 min</option>
+                            <option value="60">1 hr</option>
+                            <option value="120">2 hr</option>
+                            <option value="480">8 hr</option>
+                            <option value="600">10 hr</option>
+                            <option value="0">Never</option>
+                        </select>
                     </div>
                 </div>
+            </div>
 
-                <!-- Theme Accordion -->
-                <div class="accordion" id="acc-theme">
-                    <div class="accordion-header" onclick="toggleAccordion('acc-theme')">
-                        <div class="accordion-title">
-                            <span class="accordion-icon">🎨</span>
-                            Theme
-                        </div>
-                        <span class="accordion-arrow">▼</span>
+            <!-- Theme Accordion -->
+            <div class="accordion" id="acc-theme">
+                <div class="accordion-header" onclick="toggleAccordion('acc-theme')">
+                    <div class="accordion-title">
+                        <span class="accordion-icon">🎨</span>
+                        Theme
                     </div>
-                    <div class="accordion-content">
-                        <div class="theme-pills" id="theme-pills">
-                            <span class="theme-pill" data-theme="pipboy" onclick="selectThemePill('pipboy')">☢️
-                                Pipboy</span>
-                            <span class="theme-pill" data-theme="terminal" onclick="selectThemePill('terminal')">🖥️
-                                Terminal</span>
-                            <span class="theme-pill" data-theme="industrial" onclick="selectThemePill('industrial')">🏭
-                                Industrial</span>
-                            <span class="theme-pill" data-theme="cyberpunk" onclick="selectThemePill('cyberpunk')">🌃
-                                Cyberpunk</span>
-                            <span class="theme-pill active" data-theme="ocean" onclick="selectThemePill('ocean')">🌊
-                                Ocean</span>
-                            <span class="theme-pill" data-theme="sunset" onclick="selectThemePill('sunset')">🌅
-                                Sunset</span>
-                            <span class="theme-pill" data-theme="daylight" onclick="selectThemePill('daylight')">☀️
-                                Daylight</span>
-                            <span class="theme-pill" data-theme="rainbow" onclick="selectThemePill('rainbow')">🌈
-                                Rainbow</span>
-                        </div>
+                    <span class="accordion-arrow">▼</span>
+                </div>
+                <div class="accordion-content">
+                    <div class="theme-pills" id="theme-pills">
+                        <span class="theme-pill" data-theme="pipboy" onclick="selectThemePill('pipboy')">☢️
+                            Pipboy</span>
+                        <span class="theme-pill" data-theme="terminal" onclick="selectThemePill('terminal')">🖥️
+                            Terminal</span>
+                        <span class="theme-pill" data-theme="industrial" onclick="selectThemePill('industrial')">🏭
+                            Industrial</span>
+                        <span class="theme-pill" data-theme="cyberpunk" onclick="selectThemePill('cyberpunk')">🌃
+                            Cyberpunk</span>
+                        <span class="theme-pill active" data-theme="ocean" onclick="selectThemePill('ocean')">🌊
+                            Ocean</span>
+                        <span class="theme-pill" data-theme="sunset" onclick="selectThemePill('sunset')">🌅
+                            Sunset</span>
+                        <span class="theme-pill" data-theme="daylight" onclick="selectThemePill('daylight')">☀️
+                            Daylight</span>
+                        <span class="theme-pill" data-theme="rainbow" onclick="selectThemePill('rainbow')">🌈
+                            Rainbow</span>
+                        <span class="theme-pill" data-theme="psychedelic" onclick="selectThemePill('psychedelic')">😵
+                            Acid Mode</span>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <div id="view-diagnostics" class="view-section">
+        <div class="header"
+            style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+            <!-- Back Button -->
+            <button onclick="switchView('control')"
+                style="background: var(--bg-card); color: var(--text-muted); border: 1px solid var(--text-muted); padding: 0.25rem 0.5rem; border-radius: 0.25rem; display: flex; align-items: center; gap: 0.25rem;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+                Back
+            </button>
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; flex: 1;">
+                <button onclick="renderDiagnostics()"
+                    style="background: var(--btn-green); color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem; flex: 1;">Refresh</button>
+                <button onclick="sendSettingsRequest()"
+                    style="background: #9333ea; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem; flex: 1;">📋
+                    Settings</button>
+                <button id="btn-record-changes" onclick="toggleChangeRecording()"
+                    style="background: #be123c; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem; flex: 1;"
+                    title="Record changes to identify registers">⏺️ Record</button>
+                <button onclick="copyDiagnostics()"
+                    style="background: #0891b2; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem; flex: 1;"
+                    title="Copy diagnostic data to clipboard">Copy</button>
+                <button onclick="openImportModal()"
+                    style="background: #7c3aed; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem; flex: 1;"
+                    title="Import another user's diagnostic data">Import</button>
+                <button id="btn-compare" onclick="toggleCompareMode()" class="hidden"
+                    style="background: #ea580c; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem; flex: 1;"
+                    title="Compare with imported data">🔍 Compare</button>
+            </div>
+            <div
+                style="display: flex; align-items: center; gap: 1rem; width: 100%; justify-content: space-between; margin-top: 0.5rem;">
+                <label style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.25rem;">
+                    <input type="checkbox" id="diag-hide-zero" onchange="renderDiagnostics()"> Hide 0s
+                </label>
+                <label style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.25rem;">
+                    <input type="checkbox" id="diag-auto-refresh" onchange="toggleDiagAutoRefresh(this.checked)"> Auto
+                    <select id="diag-refresh-interval" onchange="updateDiagRefreshInterval()"
+                        style="padding: 0.1rem; font-size: 0.7rem; background: var(--bg-card); color: var(--text-main); border: 1px solid var(--text-muted);">
+                        <option value="1000">1s</option>
+                        <option value="2000" selected>2s</option>
+                        <option value="5000">5s</option>
+                        <option value="10000">10s</option>
+                    </select>
+                </label>
+            </div>
+        </div>
 
+        <!-- Activity Log (Moved to Top) -->
+        <div style="margin: 0.5rem 0; padding: 0.5rem; border-bottom: 1px solid #444;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <h3 style="margin: 0; color: var(--text-muted); font-size: 1rem;">Activity Log</h3>
+                <button onclick="document.getElementById('log').innerHTML = ''"
+                    style="background: #333; color: #aaa; border: none; padding: 0.2rem 0.5rem; border-radius: 0.25rem; font-size: 0.7rem;">Clear</button>
+            </div>
+            <div id="log"
+                style="height: 100px; overflow-y: auto; background: #000; color: #0f0; font-family: monospace; font-size: 0.7rem; padding: 0.5rem; border-radius: 0.5rem; border: 1px solid #333;">
+            </div>
+        </div>
 
+        <div id="full-diag-list" style="padding:1rem; padding-bottom: 5rem; font-family: monospace;"></div>
+
+        <div id="system-summary"
+            style="margin: 1rem; margin-bottom: 2rem; padding: 1rem; background: rgba(0,0,0,0.3); border-radius: 0.5rem; border-left: 3px solid var(--text-blue); font-size: 0.9rem; line-height: 1.5; color: #eee;">
+            <div
+                style="font-weight: bold; color: var(--text-blue); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>ℹ️ System Summary</span>
+            </div>
+            <div id="system-summary-content" style="white-space: pre-wrap;">No active data. Connect to a device or
+                import a file to see analysis.</div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <button class="nav-item active" onclick="switchView('control')">
+            <svg viewBox="0 0 24 24">
+                <path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" stroke-width="2" />
+            </svg>
+            <span>Control</span>
+        </button>
+        <button class="nav-item" onclick="switchView('settings')">
+            <svg viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" />
+                <path
+                    d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1.6 1.41 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"
+                    stroke="currentColor" stroke-width="2" fill="none" />
+            </svg>
+            <span>Settings</span>
+        </button>
+    </nav>
 
     <!-- Melt Filter SVG -->
     <svg style="display: none;">
@@ -1948,7 +1925,7 @@
         </div>
     </div>
 
-    <!-- Import Diagnostics Modal -->
+    <!-- Import Diagnostic Data Modal -->
     <div id="importDiagModal" class="modal-overlay" onclick="closeImportModal(event)">
         <div class="modal-content" style="width: 90%; max-width: 500px;" onclick="event.stopPropagation()">
             <button class="modal-close" onclick="closeImportModal(null, true)">&times;</button>
@@ -2241,16 +2218,16 @@ Example format:
 
         function updateStatus(connected) {
             const controls = document.getElementById('controls');
-            const dashboard = document.getElementById('dashboard');
+            const dashboard = document.getElementById('dashboard-container');
 
             if (connected) {
-                controls.classList.remove('disabled');
-                dashboard.classList.remove('disabled');
+                if (controls) controls.classList.remove('disabled');
+                if (dashboard) dashboard.classList.remove('disabled');
                 connectBtns.forEach(b => b.classList.add('hidden'));
                 disconnectBtns.forEach(b => b.classList.remove('hidden'));
             } else {
-                controls.classList.add('disabled');
-                dashboard.classList.add('disabled');
+                if (controls) controls.classList.add('disabled');
+                if (dashboard) dashboard.classList.add('disabled');
                 connectBtns.forEach(b => b.classList.remove('hidden'));
                 disconnectBtns.forEach(b => b.classList.add('hidden'));
             }
@@ -2309,7 +2286,19 @@ Example format:
                 }
 
                 log("Connecting...");
-                server = await device.gatt.connect();
+
+                // Single attempt with Timeout
+                try {
+                    const connectPromise = device.gatt.connect();
+                    const timeoutPromise = new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error("Timeout (5s)")), 5000)
+                    );
+
+                    server = await Promise.race([connectPromise, timeoutPromise]);
+                } catch (e) {
+                    throw e; // Pass to outer handler
+                }
+
                 await new Promise(r => setTimeout(r, 500));
 
                 log("Getting Service...");
@@ -2334,12 +2323,14 @@ Example format:
                 await sendSettingsRequest();
 
             } catch (error) {
-                log("Connection failed: " + error);
+                log("Connection failed: " + (error.message || error));
                 if (device && device.gatt.connected) device.gatt.disconnect();
+                updateStatus(false); // Reset UI so user can retry
             }
         }
 
         function handleNotification(event) {
+            console.log("Data Handler v2 active");
             try {
                 const value = event.target.value;
                 // debug logging for the first few packets
@@ -2379,6 +2370,7 @@ Example format:
                     }
                     // Sync UI dropdowns with received settings
                     syncSettingsUI();
+                    updateSettingsUI(getReg);
                 }
 
                 // Handle 0x1104 STATUS payload
@@ -2457,15 +2449,20 @@ Example format:
                     if (hasS2) extText.push(`Ext2: ${s2Pct.toFixed(1)}%`);
                     extContainer.textContent = extText.join(' | ');
 
-                    if (manualLightOverride !== null) {
-                        lightState = manualLightOverride;
+                    // Light State - User confirms Reg 27 (Settings) is the source of truth
+                    // 0=Off, 1=On (or Mode 1), 2=Flash, 3=SOS
+                    if (settingsRegisters[27] !== undefined) {
+                        lightState = (settingsRegisters[27] > 0);
                     } else {
+                        // Fallback/Legacy
                         lightState = (stateReg & 4096) !== 0;
                     }
 
                     // Enable Dashboard if data is flowing
-                    document.getElementById('dashboard').classList.remove('disabled');
-                    document.getElementById('controls').classList.remove('disabled');
+                    const dashEl = document.getElementById('dashboard-container');
+                    const ctrlEl = document.getElementById('controls');
+                    if (dashEl) dashEl.classList.remove('disabled');
+                    if (ctrlEl) ctrlEl.classList.remove('disabled');
 
                     if (btns.usb) updateButtonState(btns.usb, usbState);
                     if (btns.dc) updateButtonState(btns.dc, dcState);
@@ -2534,6 +2531,23 @@ Example format:
                         const originalOpCode = opCode & 0x7F;
                         const hex = [...new Uint8Array(value.buffer)].map(b => b.toString(16).padStart(2, '0')).join(' ');
                         log(`Rx 0x${opCode.toString(16)} (Error): OpCode 0x11${originalOpCode.toString(16).padStart(2, '0')} Not Supported`);
+                    } else if (opCode === 0x06) {
+                        // Write Confirmation - Device echoes back the write command
+                        const regHi = value.getUint8(2);
+                        const regLo = value.getUint8(3);
+                        const reg = (regHi << 8) | regLo;
+                        const valHi = value.getUint8(4);
+                        const valLo = value.getUint8(5);
+                        const val = (valHi << 8) | valLo;
+                        log(`✅ Write Confirmed: Reg ${reg} = ${val}`);
+
+                        // Optimistically update settings registers for immediate UI feedback
+                        if (settingsRegisters[reg] !== val) {
+                            settingsRegisters[reg] = val;
+                            // Call updateSettingsUI to refresh the forms immediately
+                            // passing global getReg to maintain other status values
+                            updateSettingsUI(getReg);
+                        }
                     } else {
                         // Log unknown packets for discovery
                         const hex = [...new Uint8Array(value.buffer)].map(b => b.toString(16).padStart(2, '0')).join(' ');
@@ -2628,38 +2642,88 @@ Example format:
             // Maybe a button "Turn Off Device"
 
             // Reg 57: AC Silent
-            const acSilent = getReg(57);
-            const acSilentEl = document.getElementById('set-ac-silent');
-            if (acSilentEl) {
-                acSilentEl.checked = (acSilent === 1);
+            // Use settingsRegisters because Reg 57 is a Setting (0x1103), not Status
+            // Check for undefined to avoid resetting to 0 before first read
+            if (settingsRegisters[57] !== undefined) {
+                const acSilentEl = document.getElementById('set-ac-silent');
+                if (acSilentEl) acSilentEl.checked = (settingsRegisters[57] === 1);
             }
 
-            // Remapped AC Silent to Sound/Silent Mode.
-            // Removing separate AC Silent control for now as it maps to the same reg.
-            // Or we can keep "AC Silent" and map it to the same reg if user distinguishes them.
-            // For now, I'll hide the AC Silent specific control or just use one.
+            // Reg 27: Light Mode
+            if (settingsRegisters[27] !== undefined) {
+                const lightEl = document.getElementById('set-light-mode');
+                // Consider > 0 as ON
+                if (lightEl) lightEl.checked = (settingsRegisters[27] > 0);
+            }
 
             // Reg 67: EPS Limit (AC Charging Upper Limit)
-            const epsLim = getReg(67);
-            if (document.activeElement.id !== 'set-eps-limit') {
-                updateSelect('set-eps-limit', epsLim);
+            if (settingsRegisters[67] !== undefined) {
+                const epsLim = settingsRegisters[67];
+                if (document.activeElement.id !== 'set-eps-limit') {
+                    updateSelect('set-eps-limit', epsLim);
+                }
+                // Update EPS toggle (On if > 600)
+                const epsToggle = document.getElementById('set-eps-toggle');
+                if (epsToggle) epsToggle.checked = (epsLim > 600);
+                // Update status
+                const epsStatus = document.getElementById('status-eps');
+                if (epsStatus) epsStatus.textContent = epsLim > 600 ? '[On]' : '[Off]';
             }
-            // Update EPS toggle (On if > 600)
-            const epsToggle = document.getElementById('set-eps-toggle');
-            if (epsToggle) epsToggle.checked = (epsLim > 600);
-            // Update status
-            const epsStatus = document.getElementById('status-eps');
-            if (epsStatus) epsStatus.textContent = epsLim > 600 ? '[On]' : '[Off]';
 
             // Reg 66: Discharge Limit
-            const disLim = getReg(66);
-            if (document.activeElement.id !== 'set-discharge-limit') {
-                document.getElementById('set-discharge-limit').value = disLim;
-                updateSliderLabel('discharge_limit', disLim);
+            if (settingsRegisters[66] !== undefined) {
+                const disLim = settingsRegisters[66];
+                if (document.activeElement.id !== 'set-discharge-limit') {
+                    const el = document.getElementById('set-discharge-limit');
+                    if (el) el.value = disLim;
+                    updateSliderLabel('discharge_limit', disLim);
+                }
             }
 
-            // TIMERS NOW COME FROM SETTINGS REGISTERS (0x1103) via syncSettingsUI()
-            // Do NOT update from STATUS (0x1104) registers here as they have different meanings
+            // TIMINGS
+            const updateTimeStatus = (id, mins) => {
+                const el = document.getElementById(id);
+                if (el) {
+                    if (mins === 0) el.textContent = 'Never';
+                    else if (mins < 60) el.textContent = mins + ' min';
+                    else el.textContent = (mins / 60).toFixed(1).replace('.0', '') + 'h';
+                }
+            };
+
+            // Reg 59: Screen Timeout (Seconds -> Mins)
+            if (settingsRegisters[59] !== undefined) {
+                const mins = Math.floor(settingsRegisters[59] / 60);
+                updateSelect('set-screen-timeout', mins);
+                updateTimeStatus('status-screen-timeout', mins);
+            }
+
+            // Reg 60: AC Standby
+            if (settingsRegisters[60] !== undefined) {
+                const val = settingsRegisters[60];
+                updateSelect('set-ac-standby', val);
+                updateTimeStatus('status-ac-standby', val);
+            }
+
+            // Reg 61: DC Standby
+            if (settingsRegisters[61] !== undefined) {
+                const val = settingsRegisters[61];
+                updateSelect('set-dc-standby', val);
+                updateTimeStatus('status-dc-standby', val);
+            }
+
+            // Reg 62: USB Standby (Seconds -> Mins)
+            if (settingsRegisters[62] !== undefined) {
+                const mins = Math.floor(settingsRegisters[62] / 60);
+                updateSelect('set-usb-standby', mins);
+                updateTimeStatus('status-usb-standby', mins);
+            }
+
+            // Reg 68: Sys Standby
+            if (settingsRegisters[68] !== undefined) {
+                const val = settingsRegisters[68];
+                updateSelect('set-sys-standby', val);
+                updateTimeStatus('status-sys-standby', val);
+            }
 
             // Temps & Fans Update
             const valACFreq = getReg(16); // 500 -> 50.0 Hz
@@ -2817,13 +2881,21 @@ Example format:
 
             // Special handling for light to fix state detection
             if (type === 'light') {
-                if (manualLightOverride !== null) {
-                    isCurrentlyOn = manualLightOverride;
+                // Determine current state
+                let isCurrentlyOn = btn.classList.contains('active');
+                if (typeof settingsRegisters !== 'undefined' && settingsRegisters[27] !== undefined) {
+                    isCurrentlyOn = (settingsRegisters[27] > 0);
                 }
+
                 // Toggle the state
                 const newState = !isCurrentlyOn;
-                manualLightOverride = newState;
-                log(`Light manual override: ${newState ? 'ON' : 'OFF'}`);
+
+                // Optimistically update Settings Register
+                if (typeof settingsRegisters !== 'undefined') {
+                    settingsRegisters[27] = newState ? 1 : 0;
+                }
+
+                log(`Light Control: ${newState ? 'ON' : 'OFF'}`);
 
                 // Optimistically update UI
                 updateButtonState(btn, newState);
@@ -2899,55 +2971,8 @@ Example format:
         connectBtns.forEach(btn => btn.addEventListener('click', connect));
         disconnectBtns.forEach(btn => btn.addEventListener('click', disconnect));
 
-        // Bluetooth Toggle Logic
-        function toggleConnection() {
-            if (device && device.gatt.connected) {
-                disconnect();
-            } else {
-                connect();
-            }
-        }
+        // Service Worker Removed
 
-        function updateBtButton(isConnected) {
-            const btn = document.getElementById('bt-center-control');
-            const icon = document.getElementById('bt-icon');
-            if (!btn || !icon) return;
-            if (isConnected) {
-                btn.classList.add('connected');
-                btn.title = "Disconnect";
-                // X icon or broken chain
-                icon.innerHTML = '<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>';
-            } else {
-                btn.classList.remove('connected');
-                btn.title = "Connect";
-                // BT icon
-                icon.innerHTML = '<path d="M7 7l10 10-5 5V2l5 5L7 17"></path>';
-            }
-        }
-
-        // Hook into existing connect/disconnect
-        const originalUpdateStatus = updateStatus;
-        updateStatus = function (connected) {
-            originalUpdateStatus(connected); // Call original
-            updateBtButton(connected);
-        };
-
-        // Initial state
-        updateBtButton(false);
-
-        // Service Worker Registration
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                // Only register if http or https (avoids file:// error)
-                if (window.location.protocol.startsWith('http')) {
-                    navigator.serviceWorker.register('service-worker.js').then(registration => {
-                        console.log('SW registered: ', registration);
-                    }).catch(registrationError => {
-                        console.log('SW registration failed: ', registrationError);
-                    });
-                }
-            });
-        }
         function toggleScanner() {
             const el = document.getElementById('scanner');
             el.classList.toggle('hidden');
@@ -3175,7 +3200,6 @@ Example format:
         // View Switching
         function switchView(viewId) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-            // Nav items removed, no need to update classes
 
             const targetView = document.getElementById('view-' + viewId);
             if (targetView) targetView.classList.add('active');
@@ -4198,24 +4222,19 @@ Example format:
             // Sync Dropdown
             const sel = document.getElementById('theme-select');
             if (sel) sel.value = themeName;
-
-            // Sync Pills
-            document.querySelectorAll('.theme-pill').forEach(el => {
-                if (el.dataset.theme === themeName) el.classList.add('active');
-                else el.classList.remove('active');
-            });
         }
 
-        function selectThemePill(themeName) {
-            setTheme(themeName);
-        }
-
-        function toggleSetting(name) {
+        function toggleSetting(name, checkedState) {
             const el = document.getElementById('set-' + name.replace('_', '-'));
-            let val = el.checked ? 1 : 0;
+            // Use passed state if available (for ac_silent), otherwise read from element
+            let val = (checkedState !== undefined) ? (checkedState ? 1 : 0) : (el.checked ? 1 : 0);
 
             if (name === 'ac_silent') {
+                log(`Setting Silent Charge to ${val === 1 ? 'ON' : 'OFF'}`);
                 setRegister(57, val);
+            } else if (name === 'light_mode') {
+                log(`Setting Light to ${val === 1 ? 'ON' : 'OFF'}`);
+                setRegister(27, val);
             } else if (name === 'eps_toggle') {
                 // AC Charging On/Off
                 // On -> 1100 (Max), Off -> 10 (Standby)
@@ -4247,7 +4266,7 @@ Example format:
 
         function changeSelect(name) {
             const el = document.getElementById('set-' + name.replace('_', '-'));
-            const val = parseInt(el.value);
+            let val = parseInt(el.value);
             const map = {
                 'screen_timeout': 59,
                 'ac_standby': 60,
@@ -4256,8 +4275,22 @@ Example format:
                 'sys_standby': 68,
                 'eps_limit': 67
             };
+
+            // Special handling for USB Standby & Screen Timeout (Seconds)
+            if (name === 'usb_standby' || name === 'screen_timeout') {
+                val = val * 60;
+            }
+
             if (map[name]) {
-                setRegister(map[name], val);
+                const reg = map[name];
+                log(`Setting ${name} (Reg ${reg}) to ${val}`);
+
+                // Optimistic Update
+                if (typeof settingsRegisters !== 'undefined') {
+                    settingsRegisters[reg] = val;
+                }
+
+                setRegister(reg, val);
             } else {
                 console.log("Unknown setting: " + name);
             }
@@ -4639,6 +4672,20 @@ Example format:
             handleNotification(event);
 
             calculateRuntime();
+        }
+
+
+        function toggleSimulationUI() {
+            const el = document.getElementById('sim-ui');
+            if (el) {
+                if (el.classList.contains('hidden')) {
+                    el.classList.remove('hidden');
+                    // Initialize simulation view if needed
+                    if (typeof updateSimulation === 'function') updateSimulation();
+                } else {
+                    el.classList.add('hidden');
+                }
+            }
         }
 
         // Render appliances on load

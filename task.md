@@ -1,8 +1,22 @@
 # Project Update: UI Refinements and Documentation
 
 ## 1. UI Updates
-- **Remove Title:** Delete "Fossibot F2400" text from the header in `index.html`.
-- **Resize Icons:** Reduce the size of USB, AC, and DC icons by 75% via CSS updates in `index.html`.
+- **Remove Title:** Delete "Fossibot- [x] Merge `devindex.html` Diagnostic Mode into `index.html`
+- [x] Remove "Fossibot F2400" title
+- [x] **UI Refinements:**
+    - [x] Move "Connect" button to Top-Right of Stats/Dashboard area.
+    - [x] Move "Settings" button to Top-Left of Stats/Dashboard area.
+    - [x] Add Activity Log to Diagnostics View.
+- [x] Verify UI layout and Log functionality.
+- [x] **Fixes:**
+    - [x] Resolve `TypeError` in connection logic.
+    - [x] Fix `TypeError` in `handleNotification` (wrong ID reference).
+    - [x] Hide Bottom Navigation bar.
+    - [x] Remove blue background from Connect button.
+- **[NEW] Merge Diagnostics:**
+    - Add "Diagnostic Mode" trigger to bottom-right of stats window in `index.html`.
+    - Add "Simulation" trigger/UI to bottom-left of stats window in `index.html`.
+    - Port relevant JS/CSS from `devindex.html`.
 
 ## 2. Documentation
 - **Update README:** Rewrite `README.md` to include:
