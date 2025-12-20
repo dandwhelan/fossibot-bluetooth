@@ -1809,20 +1809,25 @@
                 Back
             </button>
             <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; flex: 1;">
+                <button class="btn-main btn-connect" onclick="connect()"
+                    style="background: var(--btn-blue); color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem; flex: 1;">Connect</button>
+                <button class="btn-main btn-disconnect hidden" onclick="disconnect()"
+                    style="background: var(--btn-red); color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem; flex: 1;">Disconnect</button>
                 <button onclick="renderDiagnostics()"
-                    style="background: var(--btn-green); color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem; flex: 1;">Refresh</button>
+                    style="background: var(--btn-green); color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem; flex: 1;">Refresh
+                    Status</button>
                 <button onclick="sendSettingsRequest()"
                     style="background: #9333ea; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem; flex: 1;">📋
-                    Settings</button>
+                    Refresh Settings</button>
                 <button id="btn-record-changes" onclick="toggleChangeRecording()"
                     style="background: #be123c; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem; flex: 1;"
                     title="Record changes to identify registers">⏺️ Record</button>
                 <button onclick="copyDiagnostics()"
                     style="background: #0891b2; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem; flex: 1;"
-                    title="Copy diagnostic data to clipboard">Copy</button>
+                    title="Copy diagnostic data to clipboard">Copy JSON</button>
                 <button onclick="openImportModal()"
                     style="background: #7c3aed; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem; flex: 1;"
-                    title="Import another user's diagnostic data">Import</button>
+                    title="Import another user's diagnostic data">Import JSON</button>
                 <button id="btn-compare" onclick="toggleCompareMode()" class="hidden"
                     style="background: #ea580c; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem; flex: 1;"
                     title="Compare with imported data">🔍 Compare</button>
@@ -1833,12 +1838,13 @@
                     <input type="checkbox" id="diag-hide-zero" onchange="renderDiagnostics()"> Hide 0s
                 </label>
                 <label style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.25rem;">
-                    <input type="checkbox" id="diag-auto-refresh" onchange="toggleDiagAutoRefresh(this.checked)"> Auto
+                    <input type="checkbox" id="diag-auto-refresh" onchange="toggleDiagAutoRefresh(this.checked)"
+                        checked> Auto
                     <select id="diag-refresh-interval" onchange="updateDiagRefreshInterval()"
                         style="padding: 0.1rem; font-size: 0.7rem; background: var(--bg-card); color: var(--text-main); border: 1px solid var(--text-muted);">
                         <option value="1000">1s</option>
-                        <option value="2000" selected>2s</option>
-                        <option value="5000">5s</option>
+                        <option value="2000">2s</option>
+                        <option value="5000" selected>5s</option>
                         <option value="10000">10s</option>
                     </select>
                 </label>
@@ -2333,38 +2339,36 @@ Example format:
             console.log("Data Handler v2 active");
             try {
                 const value = event.target.value;
-                // debug logging for the first few packets
+                const byteLen = value.byteLength;
+
+                // Debug logging for the first few packets
                 if (!window.hasLoggedData) {
                     // Log the header bytes to see what we are getting
-                    const h1 = value.getUint8(0).toString(16);
-                    const h2 = value.getUint8(1).toString(16);
-                    log(`Rx ${value.byteLength}b. Header: 0x${h1} 0x${h2}`);
+                    const h0 = byteLen > 0 ? value.getUint8(0).toString(16).padStart(2, '0') : '--';
+                    const h1 = byteLen > 1 ? value.getUint8(1).toString(16).padStart(2, '0') : '--';
+                    log(`Rx ${byteLen}b. Header: 0x${h0} 0x${h1}`);
                     console.log("Rx Data:", value);
                     window.hasLoggedData = true;
                 }
-                // Relaxed check: Just check for DataView and length. 
-                // We will trust the length 168 mostly? Or maybe the header changed?
-                // Let's attempt to parse even if header is different for now, or just log it.
-                // Relaxed check: Just check for DataView and length. 
 
                 // DATA INSPECTION TOOL
                 if (window.dumpNextPacket) {
                     const hex = [...new Uint8Array(value.buffer)].map(b => b.toString(16).padStart(2, '0')).join(' ');
-                    log(`[DUMP] OpCode 0x${value.getUint8(1).toString(16).padStart(2, '0')} (${value.byteLength}b): ${hex}`);
+                    log(`[DUMP] OpCode 0x${value.getUint8(1).toString(16).padStart(2, '0')} (${byteLen}b): ${hex}`);
                     window.dumpNextPacket = false;
                     console.log("Dumped Packet:", value);
                 }
 
-                // Keeping strict check but logging will tell us why it fails.
-
-                const opCode = value.getUint8(1);
+                // OpCode is usually at index 1
+                const opCode = byteLen > 1 ? value.getUint8(1) : 0;
+                const header = byteLen > 0 ? value.getUint8(0) : 0;
 
                 // Handle 0x1103 SETTINGS payload
-                if (value && value.byteLength >= 6 && value.getUint8(0) === 0x11 && opCode === 0x03) {
+                if (byteLen >= 6 && header === 0x11 && opCode === 0x03) {
                     log('Received 0x1103 Settings packet!');
                     for (let i = 0; i < 82; i++) {
                         const offset = 6 + (i * 2);
-                        if (offset + 1 < value.byteLength) {
+                        if (offset + 1 < byteLen) {
                             settingsRegisters[i] = value.getUint16(offset, false);
                         }
                     }
@@ -2374,20 +2378,18 @@ Example format:
                 }
 
                 // Handle 0x1104 STATUS payload
-                else if (value && value.byteLength >= 6 && value.getUint8(0) === 0x11 && opCode === 0x04) {
+                // Relaxed: Allow if header matches OR if length looks like a full status dump (>150 bytes)
+                else if ((byteLen >= 6 && header === 0x11 && opCode === 0x04) || (byteLen >= 170)) {
+
                     const getRegLocal = (idx) => {
                         const offset = 6 + (idx * 2);
-                        return (offset + 1 < value.byteLength) ? value.getUint16(offset, false) : 0;
+                        return (offset + 1 < byteLen) ? value.getUint16(offset, false) : 0;
                     };
 
                     // Populate Global Registers
                     for (let i = 0; i < 90; i++) {
                         registers[i] = getRegLocal(i);
                     }
-                    // For compatibility with existing code using local vars (if any needed below, though most use global getReg now? No, local vars used below)
-                    // We keep local gets or just use global registers? 
-                    // So we rename local to getRegLocal to avoid confusion, or just keep it.
-                    // We renamed it to getRegLocal above.
 
                     const battery = getRegLocal(56) / 10.0; // Main Battery SOC
                     const s1Raw = getRegLocal(53); // S1 SOC Raw
@@ -2397,7 +2399,8 @@ Example format:
                     const output = getRegLocal(39);
                     const sysWatts = getRegLocal(21);
                     const totalWatts = getRegLocal(20);
-                    const minutes = getRegLocal(59);
+                    const timeToFull = getRegLocal(58);  // Reg 58: Time to Full (minutes)
+                    const timeToEmpty = getRegLocal(59); // Reg 59: Time to Empty (minutes)
 
                     const stateReg = getRegLocal(41);
                     const usbState = (stateReg & 512) !== 0;
@@ -2418,13 +2421,7 @@ Example format:
                     const capacityAh = getRegLocal(54);   // Capacity 0.1Ah (e.g., 374 = 37.4Ah)
 
                     // Calc Capacity if available, else usage settings
-                    const capacityWh = (capacityAh > 0) ? (capacityAh / 10) * 51.2 : settings.mainCap; // Approximating 51.2V nominal? Or just use Ah * V?
-                    // Actually, if we have Ah, we need Voltage to get Wh. 
-                    // Let's stick to settings.mainCap if Reg 54 is not reliable, or verify scaling.
-                    // User dump: 374 (37.4Ah). F2400 is 2048Wh. 2048 / 37.4 = ~54.7V. 
-                    // Nominal is likely ~51.2V (16S LiFePO4). 37.4 * 51.2 = 1914Wh. Close to 2048?
-                    // Let's just log it for now in diagnostics.
-
+                    const capacityWh = (capacityAh > 0) ? (capacityAh / 10) * 51.2 : settings.mainCap;
 
                     if (s1Raw > 0) {
                         s1Pct = Math.max(0, (s1Raw - 10) / 10.0);
@@ -2449,12 +2446,10 @@ Example format:
                     if (hasS2) extText.push(`Ext2: ${s2Pct.toFixed(1)}%`);
                     extContainer.textContent = extText.join(' | ');
 
-                    // Light State - User confirms Reg 27 (Settings) is the source of truth
-                    // 0=Off, 1=On (or Mode 1), 2=Flash, 3=SOS
+                    // Light State
                     if (settingsRegisters[27] !== undefined) {
                         lightState = (settingsRegisters[27] > 0);
                     } else {
-                        // Fallback/Legacy
                         lightState = (stateReg & 4096) !== 0;
                     }
 
@@ -2484,14 +2479,19 @@ Example format:
 
                     document.getElementById('remainingKwh').textContent = totalKwh.toFixed(2);
 
-                    document.getElementById('remainingHours').textContent = minutes > 0 ? `${Math.floor(minutes / 60)}h ${minutes % 60}m` : "--";
+                    // Time display: Show "Time to Full" when charging, "Time to Empty" when discharging
+                    const isCharging = (inputTotal > 0 || inputRatified > 0 || inputDC > 0) && (inputTotal > output || (inputRatified + inputDC) > output);
+                    const displayMinutes = isCharging ? timeToFull : timeToEmpty;
+                    const timeLabel = isCharging ? '⚡' : '🔋'; // Lightning for charging, Battery for discharging
+                    const timeText = displayMinutes > 0 ? `${Math.floor(displayMinutes / 60)}h ${displayMinutes % 60}m` : "--";
+                    document.getElementById('remainingHours').textContent = `${timeLabel} ${timeText}`;
 
                     document.getElementById('batteryRing').setAttribute('stroke-dasharray', `${battery}, 100`);
                     document.getElementById('batteryRing').style.color = battery < 20 ? "#ef4444" : "#60a5fa";
 
                     // Labs Updates -> Settings Updates
                     updateSettingsUI(getRegLocal);
-                } else if (value && value.byteLength >= 3 && value.getUint8(0) === 0x11 && opCode === 0x07) {
+                } else if (byteLen >= 3 && header === 0x11 && opCode === 0x07) {
                     // Network Status Notification
                     // 11 07 [State] [Checksum]
                     const state = value.getUint8(2);

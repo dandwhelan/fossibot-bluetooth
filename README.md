@@ -6,13 +6,25 @@ This Progressive Web App (PWA) allows you to control and monitor your Fossibot F
 
 **🚀 [Launch Web App](https://dandwhelan.github.io/fossibot-bluetooth/)**
 
-![App Preview](icon-512.png)
+### 📱 Interface Guide
+
+![App Control Guide](img/ui_guide.png)
+
+| Area | Icon / Label | Function |
+| :--- | :--- | :--- |
+| **Top Left** | ⚙️ (Gear) | **Settings:** Open configuration menu (Charge limits, Timers, Theme). |
+| **Top Right** | ⚡ (Bluetooth) | **Connect/Disconnect:** Toggle connection to the device. |
+| **Center** | **Ring Chart** | **Battery Level:** Visual and percentage SOC. Color changes with level. |
+| **Center** | **-- W** | **Power Flow:** Input (Left) and Output (Right) wattage. |
+| **Bottom** | **-- hrs** | **Time Remaining:** Shows "Time to Empty" 🔋 or "Time to Full" ⚡ while charging. |
+| **Bottom Left** | 📖 (Book) | **Device Info:** System Summary and status flags. |
+| **Bottom Right** | 🔧 (Wrench) | **Diagnostics:** Advanced debugging, register inspector, and JSON import/export. |
 
 ## ✨ Comprehensive Features
 
 ### ⚡ Real-Time Telemetry & Monitoring
+*   **Smart Time Estimates:** Automatically switches between **"Time to Full"** (⚡) when charging and **"Time to Empty"** (🔋) when discharging.
 *   **Live Power Flow:** Visualize real-time Input (Charging) and Output (Discharging) wattage with dynamic gauges.
-*   **Battery Status:** Precise Battery SOC (State of Charge) percentage, estimated remaining runtime (time-to-empty) or charge time (time-to-full).
 *   **System Health:** Monitor system voltage, frequency, and internal temperatures (fan levels).
 *   **Battery Extensions:** Support for monitoring external battery packs (Success/Extension batteries) with individual charge levels.
 
@@ -40,11 +52,11 @@ This Progressive Web App (PWA) allows you to control and monitor your Fossibot F
     *   **DC/USB Standby:** Turn off low-voltage ports if idle.
 
 ### 🔍 Advanced Diagnostics & Reverse Engineering
-*   **Change Recorder:** Capture a baseline and automatically detect register changes after performing physical actions on the device (reverse engineering helper).
-*   **System Summary:** Get a plain-English status report of the device state (Region, Voltage, Flags) or a detailed comparison summary between two devices.
+*   **Auto-Refresh:** Live status updates every 2-10 seconds for real-time debugging.
 *   **Multi-Device Comparison:** Import JSON diagnostic files from other users to compare specifications, firmware settings, and calibration data side-by-side.
-*   **Raw Register Inspector:** View the raw data stream from the BMS (Battery Management System).
-*   **Input vs Holding Registers:** Clearly distinguished views for Read-Only Status registers (0x1104) vs Writable Settings registers (0x1103).
+*   **Change Recorder:** Capture a baseline and automatically detect register changes after performing physical actions on the device (reverse engineering helper).
+*   **Register Inspector:** View raw BMS data streams (0x1104 Status vs 0x1103 Settings).
+*   **System Summary:** Get a plain-English status report of the device state.
 *   **Visualization:** "Flash" indicators show exactly which data points are changing in real-time.
 *   **Hide Zeros:** Filter out unused registers to focus on active data.
 
@@ -90,27 +102,29 @@ For the best experience (fullscreen, offline access), install the app:
 For developers interested in the underlying communications or building their own integrations (Home Assistant, ESP32, etc.).
 
 ### Bluetooth Service UUIDs
-*   **Main Service:** `0000fff0-0000-1000-8000-00805f9b34fb`
-*   **Write Characteristic:** `0000fff1...` (Send commands)
-*   **Notify Characteristic:** `0000fff2...` (Receive data)
+*   **Main Service:** `0000a002-0000-1000-8000-00805f9b34fb`
+*   **Write Characteristic:** `0000c304-0000-1000-8000-00805f9b34fb` (Send commands)
+*   **Notify Characteristic:** `0000c305-0000-1000-8000-00805f9b34fb` (Receive data)
 
 ### Data Packets
-The device uses a Modbus-like protocol over BLE.
+The device uses a custom binary protocol wrapped in BLE GATT.
 
 #### 1. Status Packet (`0x1104`)
-Received automatically via Notify. Contains read-only telemetry.
-*   **Structure:** `[Header 2b] [Len 2b] [Data...] [CRC 2b]`
+Received automatically via Notify (UUID `...C305`). Contains read-only telemetry.
+*   **Structure:** `[Header 0x11 0x04] [Data ~170b] [CRC]` or simply raw Modbus-like register dump.
 *   **Key Registers:**
     *   `Reg 20`: Total Output Watts
     *   `Reg 21`: System Idle Load (~10W units)
     *   `Reg 56`: Main Battery SOC (0-1000, scale 10)
+    *   `Reg 58`: Time to Full (minutes)
+    *   `Reg 59`: Time to Empty (minutes)
 
 #### 2. Settings Packet (`0x1103`)
-Received upon request or when settings change. Contains read/write configuration.
+Received upon request or when settings change.
 *   **Key Registers:**
-    *   `Reg 13`: Charge Power (1-5 level or Watts)
-    *   `Reg 56`: Key Sound Toggle (1=On, 0=Off)
-    *   `Reg 57`: Silent Charging (1=On, 0=Off)
+    *   `Reg 13`: Charge Power Level
+    *   `Reg 27`: LED Light State
+    *   `Reg 57`: Silent Charging Toggle
 
 ### Writing Commands
 Commands are sent to the Write Characteristic using a specific structure:
