@@ -15,8 +15,8 @@
     - [x] Remove blue background from Connect button.
     - [x] Implement BLE Command Queue (Fix 'GATT already in progress').
 - **[NEW] Merge Diagnostics:**
-    - Add "Diagnostic Mode" trigger to bottom-right of stats window in `index.html`.
-    - Add "Simulation" trigger/UI to bottom-left of stats window in `index.html`.
+    - [x] Add "Diagnostic Mode" trigger to bottom-right of stats window in `index.html`.
+    - [x] Add "Simulation" trigger/UI to bottom-left of stats window in `index.html`.
     - [x] Port relevant JS/CSS from `devindex.html` (Implemented Copy/Import/Record).
 
 ## 2. Documentation

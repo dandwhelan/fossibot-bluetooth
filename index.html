@@ -2803,7 +2803,7 @@ Example format:
                 try {
                     await task();
                     // Small delay to prevent choking
-                    await new Promise(r => setTimeout(r, 50));
+                    await new Promise(r => setTimeout(r, 500));
                 } catch (e) {
                     console.error("Queue Task Error:", e);
                 }
