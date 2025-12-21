@@ -3249,18 +3249,15 @@ Example format:
             3: { name: 'Input Watts (AC)', format: 'watt' },
             4: { name: 'Input Watts (DC)', format: 'watt' },      // Added: Reg 4 = DC/Solar
             6: { name: 'Input Watts (Total)', format: 'watt' },
+            8: { name: 'Internal Temp?', format: 'temp' },        // New hypothesis from value 124 (12.4C?)
             13: { name: 'AC Charge Rate', format: 'level' },
-            16: { name: 'Unknown (16)', format: 'raw' },
+            14: { name: 'Max AC Input', format: 'watt' },         // Confirmed 1100
+            16: { name: 'Frequency Set', format: 'freq01' },
             18: { name: 'AC Out Voltage', format: 'volt' },
-            19: { name: 'AC Out Frequency', format: 'freq01' },
+            19: { name: 'AC Out Frequency', format: 'freq01' },   // Value 500 = 50.0Hz
             20: { name: 'Total Output', format: 'watt' },
-            21: { name: 'System State', format: 'raw' },          // Updated: Hybrid Mains/Sys
-            22: { name: 'AC In Frequency', format: 'freq001' },   // Wait, 22 is Battery Voltage in other places? Need to check. 
-            // handleNotification uses getReg(22) for BatV. 
-            // The existing map says AC In Freq? Let's check logic.
-            // Line 2404: valBatV = getReg(22). 
-            // So Reg 22 IS Battery Voltage. Protocol says Reg 22 is Battery Voltage.
-            // Fixing this label too.
+            21: { name: 'System State', format: 'raw' },
+            22: { name: 'Battery Voltage', format: 'volt' },      // Settings has 233 (23.3V?)
             24: { name: 'USB Toggle', format: 'toggle' },
             25: { name: 'DC Toggle', format: 'toggle' },
             26: { name: 'AC Toggle', format: 'toggle' },
@@ -3271,9 +3268,9 @@ Example format:
             35: { name: 'USB-C2 Out', format: 'watt01' },
             36: { name: 'USB-C3 Out', format: 'watt01' },
             37: { name: 'USB-C4 Out', format: 'watt01' },
-            39: { name: 'Total Output (Old?)', format: 'watt' },  // Reg 20 is total. 39 is often duplicate or slightly different.
+            39: { name: 'Total Output (Old?)', format: 'watt' },
             40: { name: 'Pack Config V? (x10)', format: 'volt' },
-            41: { name: 'Active Outputs', format: 'flags' },      // Updated Name
+            41: { name: 'Active Outputs', format: 'flags' },
             42: { name: 'State Flags 2', format: 'flags' },
             47: { name: 'Model/Cap Flags', format: 'flags' },
             48: { name: 'Model/Cap Flags 2', format: 'flags' },
@@ -3281,15 +3278,15 @@ Example format:
             53: { name: 'Ext1 SOC', format: 'ext_soc' },
             54: { name: 'Capacity (0.1Ah)', format: 'capacity' },
             55: { name: 'Ext2 SOC', format: 'ext_soc' },
-            56: { name: 'Main SOC', format: 'percent01' },
+            56: { name: 'Main SOC', format: 'percent01' },       // Confirmed 867 = 86.7%
             57: { name: 'AC Silent', format: 'toggle' },
             58: { name: 'Time to Full', format: 'time' },
-            59: { name: 'Screen Timeout (Counter)', format: 'time' }, // Confirmed F2400 usage
+            59: { name: 'Time to Empty', format: 'time' },        // Confirmed 3466 (~57h)
             60: { name: 'AC Standby (Counter)', format: 'mins' },
             61: { name: 'DC Standby (Counter)', format: 'mins' },
-            62: { name: 'USB Standby (Counter)', format: 'raw' },     // Confirmed F2400 usage
+            62: { name: 'USB Standby (Counter)', format: 'raw' },
             66: { name: 'Discharge Limit (%)', format: 'percent01' },
-            67: { name: 'Charge Limit (%)', format: 'percent01' },
+            67: { name: 'Charge Limit (%)', format: 'percent01' }, // Confirmed 1000 = 100.0%
             68: { name: 'Shutdown Timer?', format: 'raw' },
             69: { name: 'Fan Level', format: 'level' },
             80: { name: 'CRC Checksum', format: 'flags' }
@@ -3298,9 +3295,11 @@ Example format:
         // Settings Register Map (0x1103)
         const SETTINGS_REGS = {
             13: 'AC Charge Rate (1-5)',
-            14: 'AC Charge Max Limit (W)',
+            14: 'AC Charge Max Limit (W)',       // Confirmed 1100
             16: 'Frequency Setting (Hz/10)',
             20: 'Total Output / DC Max (A)',
+            21: 'System State',
+            22: 'Battery Voltage',
             24: 'USB Enabled',
             25: 'DC Enabled (12V)',
             26: 'AC Enabled (Inverter)',
@@ -3314,9 +3313,9 @@ Example format:
             60: 'AC Standby (mins)',
             61: 'DC Standby (mins)',
             62: 'USB Standby (Seconds)',
-            63: 'Stop Charge After (mins)', // Added Reg 63
+            63: 'Stop Charge After (mins)',
             66: 'Discharge Lower Limit (%/10)',
-            67: 'AC Upper Limit EPS (%/10)',
+            67: 'AC Upper Limit EPS (%/10)',     // Confirmed 1000
             68: 'Machine Shutdown (mins)',
             80: 'CRC Checksum'
         };
