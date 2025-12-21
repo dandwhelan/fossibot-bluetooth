@@ -19,12 +19,12 @@
     - Port relevant JS/CSS from `devindex.html`.
 
 ## 2. Documentation
-- **Update README:** Rewrite `README.md` to include:
-    - Project Overview
-    - Features (Bluetooth control, PWA, Themes, etc.)
-    - Installation/Usage Instructions
-    - Technical Details (Tech stack, file structure)
-    - Recent Updates (Psychedelic theme, optimizations)
+- [x] **Update README:** Rewrite `README.md` to include:
+    - [x] Project Overview
+    - [x] Features (Bluetooth control, PWA, Themes, etc.)
+    - [x] Installation/Usage Instructions
+    - [x] Technical Details (Tech stack, file structure)
+    - [x] Recent Updates (Psychedelic theme, optimizations)
 
 ## 3. Deployment
 - [x] **Enhance Simulation:** Replace Scanner with Van Life Appliances (Kettle, Laptop, etc.).

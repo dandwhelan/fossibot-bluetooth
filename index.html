@@ -2787,20 +2787,36 @@ Example format:
             }
         }
 
-        async function sendReadRequest() {
-            if (!writeChar) return;
-            const payload = [0x11, 0x04, 0x00, 0x00, 0x00, 0x50];
-            const checksum = calculateChecksum(payload);
-            const cmd = new Uint8Array([...payload, (checksum >> 8) & 0xff, checksum & 0xff]);
-            try {
-                await writeChar.writeValue(cmd);
-            } catch (e) {
-                log("Write error: " + e.message);
+        // sendReadRequest moved below commandQueue definition to prevent ReferenceError
+
+
+        // Command Queue to prevent "GATT operation already in progress"
+        const commandQueue = [];
+        let isProcessingQueue = false;
+
+        async function processQueue() {
+            if (isProcessingQueue || commandQueue.length === 0) return;
+            isProcessingQueue = true;
+
+            while (commandQueue.length > 0) {
+                const task = commandQueue.shift();
+                try {
+                    await task();
+                    // Small delay to prevent choking
+                    await new Promise(r => setTimeout(r, 50));
+                } catch (e) {
+                    console.error("Queue Task Error:", e);
+                }
             }
+            isProcessingQueue = false;
         }
 
+        function addToQueue(task) {
+            commandQueue.push(task);
+            processQueue();
+        }
 
-        async function sendWifiConfig() {
+        function sendWifiConfig() {
             const ssid = document.getElementById('wifi-ssid').value;
             const pass = document.getElementById('wifi-pass').value;
 
@@ -2809,57 +2825,77 @@ Example format:
                 return;
             }
 
-            if (!writeChar) {
-                alert("Not connected to device!");
-                return;
-            }
+            addToQueue(async () => {
+                if (!writeChar) {
+                    alert("Not connected to device!");
+                    return;
+                }
 
-            const encoder = new TextEncoder();
-            const ssidBytes = encoder.encode(ssid);
-            const passBytes = encoder.encode(pass);
+                const encoder = new TextEncoder();
+                const ssidBytes = encoder.encode(ssid);
+                const passBytes = encoder.encode(pass);
 
-            // Payload: 11 07 LenSSID LenPass [SSID] [PASS]
-            const payloadLen = 4 + ssidBytes.length + passBytes.length;
-            const payload = new Uint8Array(payloadLen);
+                // Payload: 11 07 LenSSID LenPass [SSID] [PASS]
+                const payloadLen = 4 + ssidBytes.length + passBytes.length;
+                const payload = new Uint8Array(payloadLen);
 
-            let ptr = 0;
-            payload[ptr++] = 0x11;
-            payload[ptr++] = 0x07; // WiFi Config OpCode
-            payload[ptr++] = ssidBytes.length;
-            payload[ptr++] = passBytes.length;
-            payload.set(ssidBytes, ptr);
-            ptr += ssidBytes.length;
-            payload.set(passBytes, ptr);
-            ptr += passBytes.length;
+                let ptr = 0;
+                payload[ptr++] = 0x11;
+                payload[ptr++] = 0x07; // WiFi Config OpCode
+                payload[ptr++] = ssidBytes.length;
+                payload[ptr++] = passBytes.length;
+                payload.set(ssidBytes, ptr);
+                ptr += ssidBytes.length;
+                payload.set(passBytes, ptr);
+                ptr += passBytes.length;
 
-            const checksum = calculateChecksum(payload);
-            const packet = new Uint8Array(payloadLen + 2);
-            packet.set(payload, 0);
-            packet[payloadLen] = (checksum >> 8) & 0xff;
-            packet[payloadLen + 1] = checksum & 0xff;
+                const checksum = calculateChecksum(payload);
+                const packet = new Uint8Array(payloadLen + 2);
+                packet.set(payload, 0);
+                packet[payloadLen] = (checksum >> 8) & 0xff;
+                packet[payloadLen + 1] = checksum & 0xff;
 
-            try {
-                log(`Sending WiFi Config: SSID=${ssid}`);
-                await writeChar.writeValue(packet);
-                alert("WiFi Configuration Sent! Device should connect and AP will disable.");
-            } catch (e) {
-                log("Error sending WiFi config: " + e.message);
-                alert("Error: " + e.message);
-            }
+                try {
+                    log(`Sending WiFi Config: SSID=${ssid}`);
+                    await writeChar.writeValue(packet);
+                    alert("WiFi Configuration Sent! Device should connect and AP will disable.");
+                } catch (e) {
+                    log("Error sending WiFi config: " + e.message);
+                    alert("Error: " + e.message);
+                }
+            });
         }
 
-        async function sendSettingsRequest() {
-            if (!writeChar) return;
-            // Request 0x1103 settings payload (same structure as status but function code 0x03)
-            const payload = [0x11, 0x03, 0x00, 0x00, 0x00, 0x50];
-            const checksum = calculateChecksum(payload);
-            const cmd = new Uint8Array([...payload, (checksum >> 8) & 0xff, checksum & 0xff]);
-            try {
-                log("Requesting settings (0x1103)...");
-                await writeChar.writeValue(cmd);
-            } catch (e) {
-                log("Settings request error: " + e.message);
-            }
+        function sendSettingsRequest() {
+            addToQueue(async () => {
+                if (!writeChar) return;
+                // Request 0x1103 settings payload (same structure as status but function code 0x03)
+                const payload = [0x11, 0x03, 0x00, 0x00, 0x00, 0x50];
+                const checksum = calculateChecksum(payload);
+                const cmd = new Uint8Array([...payload, (checksum >> 8) & 0xff, checksum & 0xff]);
+                try {
+                    log("Requesting settings (0x1103)...");
+                    await writeChar.writeValue(cmd);
+                } catch (e) {
+                    log("Settings request error: " + e.message);
+                }
+            });
+        }
+
+        function sendReadRequest() {
+            addToQueue(async () => {
+                if (!writeChar) return;
+                // Request 0x1104 Status payload
+                const payload = [0x11, 0x04, 0x00, 0x00, 0x00, 0x50];
+                const checksum = calculateChecksum(payload);
+                const cmd = new Uint8Array([...payload, (checksum >> 8) & 0xff, checksum & 0xff]);
+                try {
+                    // log("Requesting status..."); // Verbose
+                    await writeChar.writeValue(cmd);
+                } catch (e) {
+                    log("Read error: " + e.message);
+                }
+            });
         }
 
         function updateButtonState(btn, isOn) {
@@ -4199,21 +4235,31 @@ Example format:
             if (chk && chk.checked) toggleDiagAutoRefresh(true);
         }, 1000);
 
-        async function setRegister(reg, val) {
-            const cmd = generateCommandBytes(0x11, reg, val); // Address 0x11
-            if (device && writeChar) {
-                try {
-                    await writeChar.writeValue(cmd);
-                    log(`Set Reg ${reg} to ${val}`);
-                    await new Promise(r => setTimeout(r, 200));
-                    await sendReadRequest();
-                } catch (e) { log("Error: " + e); }
-            } else {
-                if (isDebug) {
-                    mockSimulate(reg, val);
+        function setRegister(reg, val) {
+            addToQueue(async () => {
+                const cmd = generateCommandBytes(0x11, reg, val); // Address 0x11
+                if (device && writeChar) {
+                    try {
+                        await writeChar.writeValue(cmd);
+                        log(`Set Reg ${reg} to ${val}`);
+                        // Wait for device to process command before reading
+                        await new Promise(r => setTimeout(r, 200));
+                        // We could trigger a read here, but let's queue it properly if needed
+                        // await sendReadRequest(); // Make sure sendReadRequest is safely queued or just do it here
+
+                        // Actually, if we want to confirm the write, we should queue a read request.
+                        // However, calling an async function inside here is fine as long as we await it.
+                        // Let's call the queued read request function.
+                        sendReadRequest();
+
+                    } catch (e) { log("Error: " + e); }
+                } else {
+                    if (isDebug) {
+                        mockSimulate(reg, val);
+                    }
+                    log(`(Sim) Set Reg ${reg} to ${val}`);
                 }
-                log(`(Sim) Set Reg ${reg} to ${val}`);
-            }
+            });
         }
 
         function setTheme(themeName) {
