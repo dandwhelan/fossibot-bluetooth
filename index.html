@@ -3684,9 +3684,195 @@ Example format:
 
         // ========== COPY / IMPORT / COMPARE FUNCTIONS ==========
 
-        // Declarations moved to top of script to avoid ReferenceError
-        // let importedDiagDataList = [];
-        // let isCompareMode = false;
+        // ========== COPY / IMPORT / COMPARE FUNCTIONS ==========
+
+        // Copy Diagnostic Data to Clipboard
+        async function copyDiagnostics() {
+            const data = {
+                version: 1,
+                device: device ? device.name : "Offline",
+                timestamp: new Date().toISOString(),
+                inputRegisters: registers,
+                settingsRegisters: settingsRegisters,
+                systemInfo: {
+                    mainCap: settings.mainCap,
+                    expCap: settings.expCap
+                }
+            };
+
+            const json = JSON.stringify(data, null, 2);
+
+            try {
+                await navigator.clipboard.writeText(json);
+                showToast("Diagnostic data copied to clipboard!", "success");
+            } catch (err) {
+                console.error("Copy failed", err);
+                // Fallback for non-secure contexts
+                const textarea = document.createElement("textarea");
+                textarea.value = json;
+                document.body.appendChild(textarea);
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                    showToast("Diagnostic data copied to clipboard!", "success");
+                } catch (e) {
+                    showToast("Failed to copy. Check console.", "error");
+                }
+                document.body.removeChild(textarea);
+            }
+        }
+
+        // Import Modal
+        function openImportModal() {
+            document.getElementById('importDiagModal').style.display = 'flex';
+        }
+
+        function closeImportModal(e, force) {
+            if (force || e.target.classList.contains('modal-overlay')) {
+                document.getElementById('importDiagModal').style.display = 'none';
+            }
+        }
+
+        // Process Imported JSON
+        function processDiagImport() {
+            const input = document.getElementById('import-diag-data').value;
+            try {
+                const data = JSON.parse(input);
+                if (!data.inputRegisters && !data.settingsRegisters) {
+                    throw new Error("Invalid format: Missing register data");
+                }
+
+                importedDiagDataList.push(data);
+                showToast(`Imported data from ${data.device || 'Unknown Device'}`, "success");
+
+                // Switch to compare mode automatically
+                isCompareMode = true;
+                const compareBtn = document.getElementById('btn-compare');
+                if (compareBtn) {
+                    compareBtn.classList.remove('hidden');
+                    compareBtn.classList.add('active'); // toggle style
+                }
+
+                renderDiagnostics();
+                closeImportModal(null, true);
+                document.getElementById('import-diag-data').value = ''; // clear
+            } catch (e) {
+                alert("Import failed: " + e.message);
+                showToast("Invalid JSON data", "error");
+            }
+        }
+
+        function toggleCompareMode() {
+            isCompareMode = !isCompareMode;
+            const btn = document.getElementById('btn-compare');
+            if (btn) {
+                if (isCompareMode) btn.classList.add('active');
+                else btn.classList.remove('active');
+            }
+            renderDiagnostics();
+        }
+
+        function clearImportedData() {
+            importedDiagDataList = [];
+            isCompareMode = false;
+            document.getElementById('btn-compare')?.classList.add('hidden');
+            renderDiagnostics();
+            showToast("Compared data cleared");
+        }
+
+        // Dump Registers to Console
+        function dumpRegisters(type) {
+            console.log(`--- Dumping ${type === 3 ? 'Settings (0x1103)' : 'Status (0x1104)'} Registers ---`);
+            const target = type === 3 ? settingsRegisters : registers;
+            console.table(target);
+
+            // Also Plain Text dump for easy copy
+            let text = "";
+            let count = 0;
+            for (let i = 0; i <= 255; i++) {
+                if (target[i] !== undefined) {
+                    text += `R${i}=${target[i]}, `;
+                    count++;
+                }
+            }
+            console.log(`Dumped ${count} registers to Console (F12).`);
+            console.log("Sample: " + text.substring(0, 100) + "...");
+            showToast(`Dumped ${count} registers to Console (F12)`);
+        }
+
+        // 0xC301 Decoder
+        async function readAndDecodeC301() {
+            if (!device || !device.gatt.connected) {
+                showToast("Not connected", "error");
+                return;
+            }
+            try {
+                const svc = await device.gatt.getPrimaryService(SERVICE_UUID);
+                const char = await svc.getCharacteristic(0xC301);
+                const val = await char.readValue();
+                // Decode floats?
+                const floatArray = new Float32Array(val.buffer);
+                console.log("0xC301 Float32:", floatArray);
+
+                // Decode Int16?
+                const i16 = new Int16Array(val.buffer);
+                console.log("0xC301 Int16:", i16);
+
+                log("0xC301 Read! Check Console (F12) for array dump.");
+                showToast("Read 0xC301 (Check Console)");
+            } catch (e) {
+                log("Read 0xC301 failed: " + e.message);
+            }
+        }
+
+        // Toggle Change Recording
+        let isRecordingChanges = false;
+        let recordingBaseline = {};
+
+        function toggleChangeRecording() {
+            isRecordingChanges = !isRecordingChanges;
+            const btn = document.getElementById('btn-record-changes');
+
+            if (isRecordingChanges) {
+                // Start Recording
+                btn.classList.add('active');
+                btn.innerHTML = '🔴 Recording...';
+                // Capture baseline
+                recordingBaseline = { ...registers }; // Shallow copy
+                showToast("Recording started. Change something on the device!", "info");
+            } else {
+                // Stop & Analyze
+                btn.classList.remove('active');
+                btn.innerHTML = '⏺️ Record';
+                analyzeChanges();
+            }
+        }
+
+        function analyzeChanges() {
+            const changes = [];
+            for (const [reg, val] of Object.entries(registers)) {
+                const oldVal = recordingBaseline[reg];
+                if (oldVal !== undefined && oldVal !== val) {
+                    changes.push({ reg, old: oldVal, new: val });
+                }
+            }
+
+            if (changes.length === 0) {
+                showToast("No changes detected.", "info");
+                return;
+            }
+
+            // Show Results
+            const list = document.getElementById('changes-list-container');
+            list.innerHTML = changes.map(c =>
+                `<div style="display:flex; justify-content:space-between; padding:0.25rem; border-bottom:1px solid #333;">
+                    <span>Reg <strong>${c.reg}</strong> (${KNOWN_REGS[c.reg]?.name || 'Unknown'})</span>
+                    <span>${c.old} ➝ <strong style="color:var(--text-green)">${c.new}</strong></span>
+                 </div>`
+            ).join('');
+
+            document.getElementById('changesModal').style.display = 'flex';
+        }
 
         // Toast notification
         function showToast(message, type = 'success') {
