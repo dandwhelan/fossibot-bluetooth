@@ -17,7 +17,7 @@
 - **[NEW] Merge Diagnostics:**
     - Add "Diagnostic Mode" trigger to bottom-right of stats window in `index.html`.
     - Add "Simulation" trigger/UI to bottom-left of stats window in `index.html`.
-    - Port relevant JS/CSS from `devindex.html`.
+    - [x] Port relevant JS/CSS from `devindex.html` (Implemented Copy/Import/Record).
 
 ## 2. Documentation
 - [x] **Update README:** Rewrite `README.md` to include:

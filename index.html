@@ -1822,7 +1822,7 @@
                 <button id="btn-record-changes" onclick="toggleChangeRecording()"
                     style="background: #be123c; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem; flex: 1;"
                     title="Record changes to identify registers">⏺️ Record</button>
-                <button onclick="copyDiagnostics()"
+                <button onclick="copyDiagnosticsV2()"
                     style="background: #0891b2; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem; flex: 1;"
                     title="Copy diagnostic data to clipboard">Copy JSON</button>
                 <button onclick="openImportModal()"
@@ -4940,6 +4940,64 @@ Example format:
             // Initial Status Log
             if (typeof log === 'function') log("System Ready. Click Connect.");
         });
+        // Robust Copy Function (V2) - Appended to bypass potential replacement issues
+        async function copyDiagnosticsV2() {
+            try {
+                console.log("Preparing diagnostic data (V2)...");
+                const data = {
+                    version: 2,
+                    device: device ? device.name : "Offline",
+                    timestamp: new Date().toISOString(),
+                    inputRegisters: registers,
+                    settingsRegisters: settingsRegisters,
+                    systemInfo: {
+                        mainCap: settings ? settings.mainCap : 0,
+                        expCap: settings ? settings.expCap : 0
+                    }
+                };
+
+                const json = JSON.stringify(data, null, 2);
+
+                // Method 1: Modern Clipboard API
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    try {
+                        await navigator.clipboard.writeText(json);
+                        console.log("Clipboard API success");
+                        showToast("Diagnostic data copied to clipboard!", "success");
+                        return;
+                    } catch (err) {
+                        console.warn("Clipboard API failed: " + err);
+                    }
+                }
+
+                // Method 2: Fallback
+                console.log("Using fallback copy...");
+                const textarea = document.createElement("textarea");
+                textarea.value = json;
+                textarea.style.position = "fixed";
+                textarea.style.opacity = "0";
+                document.body.appendChild(textarea);
+                textarea.select();
+
+                try {
+                    const successful = document.execCommand('copy');
+                    if (successful) {
+                        showToast("Diagnostic data copied to clipboard!", "success");
+                    } else {
+                        throw new Error("execCommand returned false");
+                    }
+                } catch (e) {
+                    console.error("Fallback copy failed", e);
+                    alert("Copy failed! Please check console.");
+                } finally {
+                    document.body.removeChild(textarea);
+                }
+
+            } catch (criticalErr) {
+                console.error("Critical error:", criticalErr);
+                alert("Error: " + criticalErr.message);
+            }
+        }
     </script>
 </body>
 
