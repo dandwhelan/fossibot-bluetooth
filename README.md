@@ -1,8 +1,14 @@
-# Fossibot F2400 / F3600 Pro Control PWA
+# Fossibot / AFERIY / SYDPOWER  Control PWA
 
-**Unlock the full potential of your Fossibot power station.**
+**Unlock the full potential of your portable power station.**
 
-This Progressive Web App (PWA) allows you to control and monitor your Fossibot F2400, F3600 Pro, and similar power stations directly from your browser via Bluetooth Low Energy (BLE). It bypasses the need for the official cloud-dependent app, offering a private, offline-first, and feature-rich alternative.
+This Progressive Web App (PWA) allows you to control and monitor your Fossibot F2400, F3600 Pro, and similar power stations directly from your browser via Bluetooth Low Energy (BLE). It bypasses the need for the official cloud-dependent app, offering a private, offline-first, and feature-rich alternative. This has only been fully tested on a Fossibot anf Afirty but should work on SYDPOWER and ABOK. Below is a list of Makes and Models it should work. I created this Web App with the help of Antigravity using Gemini Pro 3 and Claude Opus. I was fed up with the BrightEMS app logging me out all the time and if I was somewhere without Internet I wouldn't be able to easily control it or see the stats. Good luck. **On the app, please go into diagnostics and click Copy JSON, and paste it into the Github Repo Issues, I'm interested in see other users diagnostic data to work out some extra mappings. User interface bottom right on the stats page takes you to diag.**
+
+FOSSiBOT F3600 Pro, FOSSiBOT F2400
+SYDPOWER N052, SYDPOWER N066
+AFERIY P210, AFERIY P310
+ABOK Power Ark3600 (Probalby works, but not tested)
+
 
 **🚀 [Launch Web App](https://dandwhelan.github.io/fossibot-bluetooth/)**
 
@@ -246,3 +252,4 @@ graph LR
 
     style Queue fill:#fef08a,stroke:#ca8a04,stroke-width:2px,stroke-dasharray: 5 5
 ```
+
