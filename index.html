@@ -1854,6 +1854,11 @@
                 <label style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.25rem;">
                     <input type="checkbox" id="diag-hide-zero" onchange="renderDiagnostics()"> Hide 0s
                 </label>
+                <!-- SOH Display -->
+                <div style="font-size: 0.8rem; color: var(--text-blue); font-weight: bold; padding: 0.25rem 0.5rem; background: rgba(0,0,0,0.2); border-radius: 4px;"
+                    id="diag-soh-display">
+                    SOH: --%
+                </div>
                 <label style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.25rem;">
                     <input type="checkbox" id="diag-auto-refresh" onchange="toggleDiagAutoRefresh(this.checked)"
                         checked> Auto
@@ -2452,6 +2457,18 @@ Example format:
                     const inputDC = getRegLocal(4);       // Reg 4  (Likely DC/Solar Input)
                     const inputTotal = getRegLocal(6);    // Reg 6  (Total Input)
                     const capacityAh = getRegLocal(54);   // Capacity 0.1Ah (e.g., 374 = 37.4Ah)
+
+                    // Update SOH
+                    const sohEl = document.getElementById('diag-soh-display');
+                    if (sohEl && capacityAh > 0) {
+                        // Ref Capacity = 40.0Ah (400)
+                        const soh = (capacityAh / 400) * 100;
+                        sohEl.textContent = `SOH: ${soh.toFixed(1)}%`;
+                        // Color coding
+                        if (soh >= 90) sohEl.style.color = 'var(--text-green)';
+                        else if (soh >= 80) sohEl.style.color = 'var(--text-yellow)';
+                        else sohEl.style.color = '#ef4444';
+                    }
 
                     // Calc Capacity if available, else usage settings
                     const capacityWh = (capacityAh > 0) ? (capacityAh / 10) * 51.2 : settings.mainCap;
@@ -3291,12 +3308,11 @@ Example format:
 
         // Register definitions with format info for human-readable display
         const KNOWN_REGS = {
-            2: { name: 'Charge Level', format: 'charge_level' },  // 1=300W,2=500W,3=700W,4=900W,5=1100W
-            3: { name: 'Input Watts (AC)', format: 'watt' },
-            4: { name: 'Input Watts (DC)', format: 'watt' },      // Added: Reg 4 = DC/Solar
-            6: { name: 'Input Watts (Total)', format: 'watt' },
-            8: { name: 'Internal Temp?', format: 'temp' },        // New hypothesis from value 124 (12.4C?)
-            13: { name: 'AC Charge Rate', format: 'level' },
+            3: { name: 'AC Input Watts', unit: 'W' },
+            4: { name: 'DC Input Watts', unit: 'W' },
+            5: { name: 'Unknown (0)', unit: '' },
+            6: { name: 'Total Input', unit: 'W' },
+            13: { name: 'AC Charge Rate', format: 'charge_level' },
             14: { name: 'Max AC Input', format: 'watt' },         // Confirmed 1100
             16: { name: 'Frequency Set', format: 'freq01' },
             18: { name: 'AC Out Voltage', format: 'volt' },
@@ -3322,7 +3338,7 @@ Example format:
             48: { name: 'Temp Sensor 2?', format: 'raw' },
             49: { name: 'Temp Sensor 3?', format: 'raw' },
             50: { name: 'Temp Sensor 4?', format: 'raw' },
-            52: { name: 'Diag Temp (180=18C)', format: 'raw' },
+            52: { name: 'Inverter Temp (Case)', format: 'raw' },
             53: { name: 'Ext1 SOC', format: 'ext_soc' },
             54: { name: 'Battery Capacity (0.1Ah)', format: 'capacity' },
             55: { name: 'Ext2 SOC', format: 'ext_soc' },
@@ -3342,7 +3358,7 @@ Example format:
 
         // Settings Register Map (0x1103)
         const SETTINGS_REGS = {
-            5: 'Unknown On and Off (0/1)',
+            5: 'Unknown Switch (0/1)',
             13: 'AC Charge Rate (1-5)',
             14: 'AC Charge Max Limit (W)',       // Confirmed 1100
             16: 'Frequency Setting (Hz/10)',

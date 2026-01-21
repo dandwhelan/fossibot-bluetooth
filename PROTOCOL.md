@@ -61,24 +61,26 @@ The device uses different function codes (OpCodes) for different types of data:
 
 *Read/Write. Defines device behavior.*
 
-| Reg | Name | Format | Notes |
-|:----|:-----|:-------|:------|
-| 5   | **Device Enable** | 0/1 | Global verify/enable setting? |
-| 13  | **Set Charge Rate** | 1-5 | 1=300W, 2=500W, 3=700W, 4=900W, 5=1100W |
-| 14  | **AC Charge Limit** | Watts | Specific Wattage Limit (e.g. 300, 500, 700, 900, 1100). |
-| 24  | Enable USB | 0/1 | Toggle USB power |
+| 2 | Active Charge State | 1=Slow, 4=Const Current | 1, 4 | Correlates with Reg 13 settings |
+| 3 | AC Input Watts | Watts | 0 - 1100 | Rate at which AC is being drawn |
+| 4 | DC Input Watts | Watts | 0 - 500 | Solar / Car Input |
+| 5 | Unknown | ? | 0 | |
+| 6 | Total Input Watts | Watts | 0 - 1600 | Sum of AC + DC Input |
+| 7 | Unknown | ? | 0 | |
 | 25  | Enable DC | 0/1 | Toggle 12V DC |
 | 26  | Enable AC | 0/1 | Toggle Inverter |
 | 27  | Light Mode | 0-3 | Set Light mode |
 | 57  | Silent Charging | 0/1? | "Mute" toggle |
 | 59  | **Screen Timeout** | Minutes | 0 = Never. 0x1E = 30 mins. |
-| 60  | **AC Standby** | Minutes | 0 = Never. 480 = 8 hours. |
-| 61  | **DC Standby** | Minutes | 0 = Never. |
-| 62  | **USB Standby** | **Seconds** | **Note:** 1800 = 30 mins. 600 = 10 mins. |
-| 63  | Stop Charge After | Minutes | Stop charging after X mins? |
-| 66  | Discharge Limit | % &times; 10 | Lower SOC limit. |
-| 67  | AC Upper Limit | % &times; 10 | Target charge % (EPS) |
-| 68  | System Shutdown | Minutes | Global auto-off timer. |
+| 60 | AC Standby Time | Minutes | 0 (Never) | Auto-off timer for AC |
+| 61 | DC Standby Time | Minutes | 0 | Auto-off timer for DC |
+| 62 | USB Standby Time | Minutes | 0 | Auto-off timer for USB |
+| 63 | Booking Charge | Minutes | 0 | Scheduled charging delay |
+| 64 | Power Off | 1 | 1 | Command to shutdown device |
+| 65 | Unknown | ? | 0 | |
+| 66 | Discharge Limit | % *10 | 0 (0%) | Stop discharging at this % (Battery Preserv.) |
+| 67 | Charge Limit (EPS) | %* 10 | 1000 (100%) | Stop charging at this % (Battery Preserv.) |
+| 68 | System Shutdown | Minutes | 60 | Auto-shutdown if idle |
 
 ---
 
@@ -128,6 +130,7 @@ The device sends status updates containing the `0x07` OpCode.
 ## 5. Protocol Discovery Findings
 
 Recent analysis reveals the device stack is likely based on Espressif AT commands.
+
 * **AT Command Leak:** The device occasionally leaks raw AT command strings via the Notification characteristic (0xc305).
   * Cloud API identified: `api.app.sydpower.com`
 * **OpCode Scan (0x00 - 0x20):**
