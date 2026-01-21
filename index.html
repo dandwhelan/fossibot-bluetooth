@@ -1588,6 +1588,23 @@
                         <span class="accordion-arrow">▼</span>
                     </div>
                     <div class="accordion-content">
+
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <span class="setting-title">Charge Rate Level</span>
+                                <span class="setting-desc">Level 1-5 <span id="status-charge-profile"
+                                        class="text-blue"></span></span>
+                            </div>
+                            <select class="setting-select" id="set-charge-profile"
+                                onchange="changeSelect('charge_profile')">
+                                <option value="1">Level 1 (300W)</option>
+                                <option value="2">Level 2 (500W)</option>
+                                <option value="3">Level 3 (700W)</option>
+                                <option value="4">Level 4 (900W)</option>
+                                <option value="5">Level 5 (1100W)</option>
+                            </select>
+                        </div>
+
                         <div class="setting-row">
                             <div class="setting-info">
                                 <span class="setting-title">AC Charging On/Off</span>
@@ -1848,6 +1865,22 @@
                         <option value="10000">10s</option>
                     </select>
                 </label>
+            </div>
+        </div>
+
+        <!-- Manual Register Set -->
+        <div
+            style="margin: 0.5rem 0; padding: 0.5rem; background: var(--bg-card); border: 1px solid var(--text-muted); border-radius: 0.25rem;">
+            <div style="font-weight: bold; margin-bottom: 0.25rem; font-size: 0.8rem;">Manual Register Set (Advanced)
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                <input type="number" id="manual-reg-id" placeholder="Reg ID"
+                    style="width: 60px; padding: 0.25rem; background: #333; color: white; border: 1px solid #555;">
+                <input type="number" id="manual-reg-val" placeholder="Value"
+                    style="width: 80px; padding: 0.25rem; background: #333; color: white; border: 1px solid #555;">
+                <button
+                    onclick="(() => { const r=document.getElementById('manual-reg-id').value; const v=document.getElementById('manual-reg-val').value; if(r&&v) setRegister(parseInt(r), parseInt(v)); })()"
+                    style="background: var(--btn-blue); color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem; cursor: pointer;">Set</button>
             </div>
         </div>
 
@@ -2641,6 +2674,18 @@ Example format:
             // We won't put a simple toggle here to avoid accidental shutdown.
             // Maybe a button "Turn Off Device"
 
+
+
+            // Reg 13: Charge Profile
+            if (settingsRegisters[13] !== undefined) {
+                updateSelect('set-charge-profile', settingsRegisters[13]);
+                const watts = [0, 300, 500, 700, 900, 1100][settingsRegisters[13]] || '?';
+                const elStat = document.getElementById('status-charge-profile');
+                if (elStat) elStat.textContent = `[Lvl ${settingsRegisters[13]}]`;
+            }
+
+
+
             // Reg 57: AC Silent
             // Use settingsRegisters because Reg 57 is a Setting (0x1103), not Status
             // Check for undefined to avoid resetting to 0 before first read
@@ -2729,7 +2774,14 @@ Example format:
             const valACFreq = getReg(16); // 500 -> 50.0 Hz
             const valBatV = getReg(22); // 4988 -> 49.88 V
             const fanLvl = getReg(69);
-            const valReg20 = getReg(20); // Candidate for Temp?
+
+            // Safe Retrieval
+            const inAC = getReg(3);
+            const inDC = getReg(4);
+            const inTot = getReg(6);
+            const capAh = getReg(54); // 374 = 37.4
+            const soh = (capAh > 0) ? ((capAh / 400.0) * 100).toFixed(1) : 0;
+            const tempDiag = getReg(52); // 180 = 18.0
 
             const diagEl = document.getElementById('diagnostics');
             if (diagEl) {
@@ -2737,21 +2789,16 @@ Example format:
                     <div style="display:flex; justify-content:space-between; font-size: 0.8rem; margin-top: 0.5rem; border-top: 1px dotted #444; padding-top:0.25rem;">
                          <span>⚡ ${(valACFreq / 10).toFixed(1)}Hz</span>
                          <span>🔋 ${(valBatV / 100).toFixed(1)}V</span>
-                         <span>🔋 ${(valBatV / 100).toFixed(1)}V</span>
-                         <span>🌡️ R21: ${getReg(21)}</span>
+                         <span style="color:var(--text-green)">🏥 SOH: ${soh}%</span>
+                         <span>🌡️ ${tempDiag > 0 ? (tempDiag / 10).toFixed(1) : '--'}°C</span>
                          <span>🌀 Lvl ${fanLvl}</span>
                     </div>
                     <div style="font-size: 0.7rem; color: #aaa; margin-top: 0.25rem;">
                         <strong>New Findings:</strong><br>
-                        Inputs: AC(R3):${inputRatified}W + DC(R4):${inputDC}W = Tot(R6):${inputTotal}W <br>
-                        Cap: Reg 54 (Capacity): ${getReg(54) / 10}Ah <br>
-                        System State (R21): ${getReg(21)} (Mains V / System Load?) <br>
-                        Active Outputs (R41): ${getReg(41)} (${(getReg(41) === 26) ? 'None' :
-                        (getReg(41) === 640) ? 'USB' :
-                            (getReg(41) === 1152) ? 'DC' :
-                                (getReg(41) === 2052) ? 'AC' :
-                                    (getReg(41) === 4224) ? 'Light' : 'Mixed/Unknown'
-                    })
+                        Inputs: AC(R3):${inAC}W + DC(R4):${inDC}W = Tot(R6):${inTot}W <br>
+                        Cap: ${(capAh / 10).toFixed(1)}Ah (Ref: 40Ah) <br>
+                        AC Input V (R21): ${(getReg(21) / 10).toFixed(1)}V <br>
+                        Active Outputs (R41): ${getReg(41)}
                     </div>
                 `;
             }
@@ -3003,9 +3050,8 @@ Example format:
 
 
 
-        console.log("Connect buttons found:", connectBtns.length);
-        connectBtns.forEach(btn => btn.addEventListener('click', connect));
-        disconnectBtns.forEach(btn => btn.addEventListener('click', disconnect));
+        // Connect/Disconnect listeners are now attached in DOMContentLoaded below
+
 
         // Service Worker Removed
 
@@ -3256,7 +3302,7 @@ Example format:
             18: { name: 'AC Out Voltage', format: 'volt' },
             19: { name: 'AC Out Frequency', format: 'freq01' },   // Value 500 = 50.0Hz
             20: { name: 'Total Output', format: 'watt' },
-            21: { name: 'System State', format: 'raw' },
+            21: { name: 'AC Input Voltage', format: 'volt' },     // UPDATED: Reg 21 matches Reg 18 when bypass active
             22: { name: 'Battery Voltage', format: 'volt' },      // Settings has 233 (23.3V?)
             24: { name: 'USB Toggle', format: 'toggle' },
             25: { name: 'DC Toggle', format: 'toggle' },
@@ -3272,11 +3318,13 @@ Example format:
             40: { name: 'Pack Config V? (x10)', format: 'volt' },
             41: { name: 'Active Outputs', format: 'flags' },
             42: { name: 'State Flags 2', format: 'flags' },
-            47: { name: 'Model/Cap Flags', format: 'flags' },
-            48: { name: 'Model/Cap Flags 2', format: 'flags' },
-            52: { name: 'Unknown (180)', format: 'raw' },
+            47: { name: 'Temp Sensor 1?', format: 'raw' },
+            48: { name: 'Temp Sensor 2?', format: 'raw' },
+            49: { name: 'Temp Sensor 3?', format: 'raw' },
+            50: { name: 'Temp Sensor 4?', format: 'raw' },
+            52: { name: 'Diag Temp (180=18C)', format: 'raw' },
             53: { name: 'Ext1 SOC', format: 'ext_soc' },
-            54: { name: 'Capacity (0.1Ah)', format: 'capacity' },
+            54: { name: 'Battery Capacity (0.1Ah)', format: 'capacity' },
             55: { name: 'Ext2 SOC', format: 'ext_soc' },
             56: { name: 'Main SOC', format: 'percent01' },       // Confirmed 867 = 86.7%
             57: { name: 'AC Silent', format: 'toggle' },
@@ -3294,11 +3342,12 @@ Example format:
 
         // Settings Register Map (0x1103)
         const SETTINGS_REGS = {
+            5: 'Unknown On and Off (0/1)',
             13: 'AC Charge Rate (1-5)',
             14: 'AC Charge Max Limit (W)',       // Confirmed 1100
             16: 'Frequency Setting (Hz/10)',
             20: 'Total Output / DC Max (A)',
-            21: 'System State',
+            21: 'AC Input Voltage',
             22: 'Battery Voltage',
             24: 'USB Enabled',
             25: 'DC Enabled (12V)',
@@ -4458,7 +4507,14 @@ Example format:
         function toggleSetting(name, checkedState) {
             const el = document.getElementById('set-' + name.replace('_', '-'));
             // Use passed state if available (for ac_silent), otherwise read from element
-            let val = (checkedState !== undefined) ? (checkedState ? 1 : 0) : (el.checked ? 1 : 0);
+            let val;
+            if (checkedState !== undefined) {
+                val = checkedState ? 1 : 0;
+            } else if (el) {
+                val = el.checked ? 1 : 0;
+            } else {
+                val = 1; // Default for buttons like "Power Off" where el is null
+            }
 
             if (name === 'ac_silent') {
                 log(`Setting Silent Charge to ${val === 1 ? 'ON' : 'OFF'}`);
@@ -4470,6 +4526,7 @@ Example format:
                 // AC Charging On/Off
                 // On -> 1100 (Max), Off -> 10 (Standby)
                 setRegister(67, val ? 1100 : 10);
+
             } else if (name === 'power_off') {
                 if (confirm("Are you sure you want to turn off the device?")) {
                     setRegister(64, 1);
@@ -4504,7 +4561,8 @@ Example format:
                 'dc_standby': 61,
                 'usb_standby': 62,
                 'sys_standby': 68,
-                'eps_limit': 67
+                'eps_limit': 67,
+                'charge_profile': 13
             };
 
             // Special handling for USB Standby & Screen Timeout (Seconds)
