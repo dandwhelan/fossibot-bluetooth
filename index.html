@@ -2530,10 +2530,14 @@ Example format:
                     document.getElementById('remainingKwh').textContent = totalKwh.toFixed(2);
 
                     // Time display: Show "Time to Full" when charging, "Time to Empty" when discharging
-                    const isCharging = (inputTotal > 0 || inputRatified > 0 || inputDC > 0) && (inputTotal > output || (inputRatified + inputDC) > output);
+                    // Use Reg 20 (totalWatts) for output comparison - Reg 39 is undocumented
+                    const isCharging = (inputTotal > 0 || inputRatified > 0 || inputDC > 0) && (inputTotal > totalWatts || (inputRatified + inputDC) > totalWatts);
                     const displayMinutes = isCharging ? timeToFull : timeToEmpty;
                     const timeLabel = isCharging ? '⚡' : '🔋'; // Lightning for charging, Battery for discharging
-                    const timeText = displayMinutes > 0 ? `${Math.floor(displayMinutes / 60)}h ${displayMinutes % 60}m` : "--";
+                    // Charging: show minutes only | Discharging: show hours and minutes
+                    const timeText = displayMinutes > 0
+                        ? (isCharging ? `${displayMinutes}m` : `${Math.floor(displayMinutes / 60)}h ${displayMinutes % 60}m`)
+                        : "--";
                     document.getElementById('remainingHours').textContent = `${timeLabel} ${timeText}`;
 
                     document.getElementById('batteryRing').setAttribute('stroke-dasharray', `${battery}, 100`);
