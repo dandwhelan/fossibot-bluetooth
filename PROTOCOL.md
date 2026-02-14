@@ -1,6 +1,8 @@
-# Fossibot F2400 Bluetooth Protocol
+# Fossibot F2400 / Aferiy Bluetooth Protocol
 
-This document details the reverse-engineered Bluetooth Low Energy (BLE) protocol for the Fossibot F2400 portable power station.
+This document details the reverse-engineered Bluetooth Low Energy (BLE) protocol for Fossibot and Aferiy portable power stations (shared Sydpower/Tuya platform).
+
+> **Note:** Register map correlated across 5 devices (Fossibot + Aferiy, US 120V/60Hz + EU 230V/50Hz variants) with cross-analysis assistance from Gemini Pro.
 
 ## Connection Details
 
@@ -29,19 +31,35 @@ The device uses different function codes (OpCodes) for different types of data:
 
 *Read-only, updates frequently (~2s interval).*
 
+### Power & Input
+
 | Reg | Name | Format | Notes |
 |:----|:-----|:-------|:------|
-| 3   | **AC Input Watts** | Watts | AC Input power. |
-| 4   | **DC Input Watts** | Watts | **Solar/DC Input** power. |
+| 2   | **AC Charge Speed Status** | 1-5 | Currently active charge speed profile. Usually mirrors Settings Reg 13, unless system has throttled it. |
+| 3   | **AC Input Watts** | Watts | AC mains input power. |
+| 4   | **DC Input Watts** | Watts | Solar/DC input power. |
+| 5   | Unknown | - | Always 0 across all tested devices. |
 | 6   | **Total Input Watts** | Watts | Sum of AC (Reg 3) + DC (Reg 4). |
+| 7   | Error/Warning Code? | Flags | Observed as 0 across all tested states. Needs more data. |
+| 8   | **Error Code** | Raw | Numeric error ID corresponding to the fault bitmask in Reg 42. e.g. value `79` seen alongside Reg 42 = 0xE000. |
+
+### Inverter Output
+
+| Reg | Name | Format | Notes |
+|:----|:-----|:-------|:------|
 | 13  | AC Charge Rate | 1-5 | Level 1 (~300W) to 5 (~1100W). |
-| 14  | **Max AC Input** | Watts | Max AC charge limit. Confirmed 1100W. |
-| 16  | Frequency Setting | Hz &times; 10 | e.g., 500 = 50.0 Hz. |
-| 18  | AC Out Voltage | V &times; 10 | e.g., 2300 = 230.0 V. |
-| 19  | AC Out Frequency | Hz &times; 10 | e.g., 500 = 50.0 Hz. |
+| 14  | **Max AC Input** | Watts | Max AC charge limit. 1100W (EU), 1500W (US). |
+| 16  | Frequency Setting | Hz &times; 10 | e.g., 500 = 50.0 Hz, 600 = 60.0 Hz. |
+| 18  | AC Out Voltage | V &times; 10 | e.g., 2306 = 230.6V (EU), 1198 = 119.8V (US). |
+| 19  | AC Out Frequency | Hz &times; 10 | e.g., 500 = 50.0 Hz, 600 = 60.0 Hz. |
 | 20  | **Total Output Power** | Watts | Sum of all outputs. **Use this for charging detection.** |
-| 21  | **AC Input Voltage** | V &times; 10 | e.g. 2317 = 231.7V. Measures Grid Voltage. **Note:** Matches Reg 18 (AC Out) when Bypass Relays are closed during charging. |
-| 22  | Battery Voltage | V &times; 10 | e.g., 233 = 23.3V. |
+| 21  | **AC Input Voltage** | V &times; 10 | Measures grid voltage when AC connected. e.g. 2319 = 231.9V. **Dual-purpose:** shows small state codes (9, 15, 18, 21) when no AC input. Value 15 observed during cold temp protection (thermometer+L icon). |
+| 22  | Battery Voltage | V &times; 10 | e.g., 4999 = 499.9V, 6002 = 600.2V. Only populated on some device models. |
+
+### Output Ports
+
+| Reg | Name | Format | Notes |
+|:----|:-----|:-------|:------|
 | 24  | USB Toggle State | 0/1 | Status of USB ports. |
 | 25  | DC Toggle State | 0/1 | Status of DC ports (12V/Car). |
 | 26  | AC Toggle State | 0/1 | Status of Inverter. |
@@ -53,24 +71,40 @@ The device uses different function codes (OpCodes) for different types of data:
 | 36  | USB-C3 Output | Watts &times; 10 | Third USB-C port output. |
 | 37  | USB-C4 Output | Watts &times; 10 | Fourth USB-C port output. |
 | 39  | Output Watts (Legacy) | Watts | **Deprecated.** Use Reg 20 instead. |
+
+### System Flags & Protection
+
+| Reg | Name | Format | Notes |
+|:----|:-----|:-------|:------|
 | 40  | Pack Config Voltage | V &times; 10 | Pack voltage calibration value. |
-| 41  | **Active Outputs** | Bitmask | **State Flags**: None=26, USB=640, DC=1152, AC=2052, Light=4224. |
-| 42  | State Flags 2 | Bitmask | Additional state flags. |
-| 47  | Temp Sensor 1 | Celsius | Component temperature (likely Inverter). |
-| 48  | Temp Sensor 2 | Celsius | Component temperature (likely Rectifier). |
-| 49  | Temp Sensor 3 | Celsius | Component temperature. |
-| 50  | Temp Sensor 4 | Celsius | Component temperature. |
-| 52  | Inverter Temp (Case) | Celsius | Case/inverter temperature. |
+| 41  | **Capability Flags** | Bitmask | Active output/capability flags. Bit 9=USB, Bit 10=DC, Bit 11=AC. Varies significantly by device state. |
+| 42  | **Protection Flags (Critical)** | Bitmask | **0 = OK.** Non-zero = active system fault. `0xE000` (bits 13,14,15) = Critical Hardware Failure. Correlates with Error Code in Reg 8. **Dashboard shows warning when non-zero.** |
+| 47  | Hardware Constant | Flags | Always 0x3000 (12288) across all 5 tested devices. Not a sensor. |
+| 48  | **System Status Flags** | Bitmask | `0x8000` = AC Charging, `0x4000` = Inverter Standby/Ready, `0x0008` = Error Pending. |
+| 49  | Unknown Reg 49 | Raw | Always 0 across tested devices. |
+| 50  | Unknown Reg 50 | Raw | Always 0 across tested devices. |
+| 52  | Device Specific (Model?) | Raw | Value 180 on Aferiy devices, 0 on Fossibot. Not temperature. |
+
+### Battery & SOC
+
+| Reg | Name | Format | Notes |
+|:----|:-----|:-------|:------|
 | 53  | **Ext1 SOC** | Special | Extension Battery 1 SOC. 0=Missing, else (val-10)/10 = %. |
-| 54  | **Battery Capacity** | 0.1Ah | Battery Full Capacity. e.g. 374 = 37.4Ah. Used to calc SOH. |
+| 54  | **Battery Full Capacity** | 0.1Ah | e.g. 374 = 37.4Ah (Aferiy), 762 = 76.2Ah (Fossibot). Used to calculate SOH. |
 | 55  | **Ext2 SOC** | Special | Extension Battery 2 SOC. 0=Missing, else (val-10)/10 = %. |
 | 56  | **Main SOC** | 0.1% | State of Charge. e.g. 830 = 83.0%. |
+
+### Timers & Limits
+
+| Reg | Name | Format | Notes |
+|:----|:-----|:-------|:------|
 | 57  | AC Silent Mode | 0/1 | Silent charging status. |
 | 58  | **Time to Full** | Minutes | Estimated minutes until battery is full (when charging). |
 | 59  | **Time to Empty** | Minutes | Estimated minutes until battery is empty (when discharging). |
 | 60  | AC Standby Counter | Minutes | Current AC standby countdown. |
 | 61  | DC Standby Counter | Minutes | Current DC standby countdown. |
-| 62  | USB Standby Counter | Raw | Current USB standby countdown. |
+| 62  | USB Standby | Raw | Always 255 (0xFF) across all tested devices. Likely "disabled" sentinel. |
+| 63  | Unused | Raw | Always 65535 (0xFFFF) across all tested devices. Padding/sentinel. |
 | 66  | Discharge Limit | 0.1% | Current discharge limit setting. e.g. 100 = 10%. |
 | 67  | Charge Limit | 0.1% | Current charge limit setting. e.g. 1000 = 100%. |
 | 68  | Shutdown Timer | Raw | Machine shutdown countdown. |
@@ -83,16 +117,30 @@ The device uses different function codes (OpCodes) for different types of data:
 
 *Read/Write. Defines device behavior.*
 
+### System & Hardware
+
 | Reg | Name | Format | Notes |
 |:----|:-----|:-------|:------|
 | 2   | Active Charge State | 1-4 | 1=Slow, 4=Const Current. Correlates with Reg 13. |
 | 3   | AC Input Watts | Watts | 0-1100. Rate at which AC is being drawn. |
 | 4   | DC Input Watts | Watts | 0-500. Solar/Car Input. |
-| 5   | Unknown Switch | 0/1 | Purpose unknown. |
+| 5   | **Master System Enable** | 0/1 | 0=Off/Fault, 1=On. **Forced to 0 during Critical Faults** (Input Reg 42). |
 | 6   | Total Input Watts | Watts | 0-1600. Sum of AC + DC Input. |
-| 13  | AC Charge Rate | 1-5 | Charge level setting. |
-| 14  | AC Charge Max Limit | Watts | Max AC input limit. Confirmed 1100W. |
+| 11  | **Hardware/Model ID** | Hex | Identifies regional hardware variant. `0x0600` = US, `0x0200` = EU Type A, `0x0D00` = EU Type B. |
+
+### Charging & Power
+
+| Reg | Name | Format | Notes |
+|:----|:-----|:-------|:------|
+| 13  | **AC Charge Speed Setting** | 1-5 | User's preferred charge speed dial position. Mirrored in Input Reg 2 (unless throttled). |
+| 14  | **Max Charge Wattage** | Watts | Power cap for Charge Speed "5". 1500W (US), 1100W (EU). |
 | 16  | Frequency Setting | Hz &times; 10 | Output frequency (500 = 50Hz, 600 = 60Hz). |
+| 19  | **Max AC Input Current** | Deci-Amps | Hardcoded safety limit. `1600` = 16.0A (120V US), `500` = 5.0A (230V EU). |
+
+### Readings & Toggles
+
+| Reg | Name | Format | Notes |
+|:----|:-----|:-------|:------|
 | 20  | Total Output / DC Max | Amps | DC output max current setting. |
 | 21  | AC Input Voltage | V &times; 10 | Measured AC input voltage. |
 | 22  | Battery Voltage | V &times; 10 | Measured battery voltage. |
@@ -103,6 +151,11 @@ The device uses different function codes (OpCodes) for different types of data:
 | 32  | Firmware Version | Raw | Device firmware version identifier. |
 | 40  | Pack Voltage Calib 1 | Raw | Battery pack calibration value 1. |
 | 41  | Pack Voltage Calib 2 | Raw | Battery pack calibration value 2. |
+
+### Timers & Limits
+
+| Reg | Name | Format | Notes |
+|:----|:-----|:-------|:------|
 | 56  | Key Sound | 0/1 | Button beep toggle. |
 | 57  | Silent Charging | 0/1 | Mute charging sounds. |
 | 59  | **Screen Timeout** | Minutes | 0 = Never. e.g. 30 = 30 mins. |
@@ -111,8 +164,8 @@ The device uses different function codes (OpCodes) for different types of data:
 | 62  | USB Standby Time | Seconds | Auto-off timer for USB. 0 = Never. |
 | 63  | Booking Charge | Minutes | Scheduled charging delay. |
 | 64  | Power Off | 1 | Command to shutdown device. |
-| 66  | Discharge Limit | 0.1% | Stop discharging at this %. e.g. 100 = 10%. |
-| 67  | Charge Limit (EPS) | 0.1% | Stop charging at this %. e.g. 1000 = 100%. |
+| 66  | **Discharge Limit (Min SoC)** | 0.1% | System stops discharging when Main SOC (Input Reg 56) hits this value. e.g. 100 = 10%. |
+| 67  | **Charge Limit (Max SoC)** | 0.1% | System stops charging when Main SOC hits this value. e.g. 900 = 90%, 1000 = 100%. |
 | 68  | Machine Shutdown | Minutes | Auto-shutdown if idle. |
 | 80  | CRC Checksum | Hex | Packet checksum. |
 
@@ -215,16 +268,44 @@ The presence of `Y_DHK` and `LOCAL_KEY` in `0xC301` confirms this is a **Tuya-ba
 | `0xC306` | ? | ? | - |
 | `0xC307` | Read | ? | Static Value: `0x30` ("0") |
 
-## 8. Candidate Registers for Investigation
+## 8. Cross-Device Analysis (5 Devices)
 
-Based on recent "Dump" analysis, these registers show interesting activity:
+Register map validated across 5 devices in different states:
 
-| Register | Value (Idle) | Value (Load) | Hypothesis | Test to Verify |
-| :--- | :--- | :--- | :--- | :--- |
-| `R18` | 33 | 115? | **Temp?** / Power? | Watch while heating up. |
-| `R50` | 0 | 42 | **Inverter Temp?** | Watch during AC use. |
-| `R60` | 0 | 480 | **Fan Speed?** | Watch when fan spins up. |
-| `R19` | 500 | 500 | **Frequency?** | 50.0 Hz? |
+| Device | Type | Region | SOC | Capacity | State |
+|:-------|:-----|:-------|:----|:---------|:------|
+| POWER-7E83v2 | Fossibot | US (60Hz) | 15.9% | 78.6Ah | DC input 15W, outputting 51W |
+| POWER-0084 | Aferiy | EU (50Hz) | 64.2% | 37.4Ah | Idle, 11W output, **Reg 42 = 0xE000** |
+| POWER-7E83 | Fossibot? | US (60Hz) | 95.1% | 76.2Ah | Unusual state (AC Out = 22?) |
+| POWER-0343 | Aferiy | EU (50Hz) | 27.2% | 39.7Ah | Charging at 1099W AC |
+| POWER-0084-clear | Aferiy | EU (50Hz) | 31.3% | 37.4Ah | Discharging 190W |
+
+### Key Findings
+
+**Two device families by capacity:** Fossibot ~76-79Ah, Aferiy ~37-40Ah.
+
+**Reg 42 (Protection Flags):** Only POWER-0084 showed non-zero (0xE000 = bits 13,14,15). All other devices showed 0. Non-zero indicates active critical fault requiring user attention. Correlated with Reg 8 Error Code.
+
+**Reg 48 (System Status Flags):** Decoded as bitmask — `0x8000` = AC Charging active (seen on POWER-0343), `0x4000` = Inverter Standby/Ready, `0x0008` = Error Pending. Previously misidentified as temperature sensor.
+
+**Reg 21 (AC Input Voltage):** Confirmed as grid voltage when AC connected (2319 = 231.9V on charging device, 1229 = 122.9V on US device). Shows small state codes (9, 15, 18, 21) when no AC input — value 15 observed during cold temperature protection event (thermometer+L icon on display).
+
+**Reg 47:** Constant 0x3000 (12288) across all 5 devices — hardware identifier, not a sensor.
+
+**Reg 52:** Value 180 only on Aferiy devices, 0 on Fossibot. Model-specific, not temperature.
+
+**Settings Reg 11 (Hardware/Model ID):** Identifies regional variant. US and EU devices have different values, correlating with different Max Charge Wattage (Reg 14) and Max AC Input Current (Reg 19).
+
+### Cold Temperature Warning Event
+
+Discovered during real-world cold weather testing. Fossibot displayed thermometer + "L" icon, BMS blocked all charging input. Key register changes:
+
+| Register | Cold Warning | Normal | Interpretation |
+|:---------|:------------|:-------|:---------------|
+| Reg 8 | 0 | 0 | No error code for temp warning |
+| Reg 21 | 15 | 21 | State code 15 = cold protection |
+| Reg 41 | 0x0804 | 0x0CA4 | Capability bits cleared (input disabled) |
+| Reg 42 | 0 | 0 | Not a critical fault, handled by BMS |
 
 ### Service `0xA003` (Auxiliary?)
 
