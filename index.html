@@ -1447,7 +1447,7 @@
                     </div>
 
                     <div class="dash-col center">
-                        <div class="dash-sub" style="margin-bottom: 0.25rem;">Sys: <span id="sysWatts">--</span>W</div>
+                        <div class="dash-sub" style="margin-bottom: 0.25rem;">Sys: <span id="sysWatts">--</span></div>
                         <div class="battery-ring-container">
                             <svg width="100%" height="100%" viewBox="0 0 36 36" style="transform: rotate(-90deg);">
                                 <path class="ring-bg"
@@ -1474,6 +1474,15 @@
                                 style="font-size:0.75rem;">W</span></div>
                         <div class="dash-sub">Tot: <span id="totalWatts">--</span>W</div>
                     </div>
+                </div>
+
+                <!-- Protection Fault Warning Banner -->
+                <div id="protectionWarning" class="hidden"
+                    style="position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 25;
+                           background: #ef4444; color: #fff; padding: 6px 16px; border-radius: 8px;
+                           font-size: 0.75rem; font-weight: bold; text-align: center; width: 85%;
+                           box-shadow: 0 2px 8px rgba(239,68,68,0.4); animation: toast-in 0.3s ease;">
+                    Protection Fault Active (Reg 42) - Check Device
                 </div>
             </div>
 
@@ -2435,7 +2444,7 @@ Example format:
 
                     const input = getRegLocal(3);
                     const output = getRegLocal(39);
-                    const sysWatts = getRegLocal(21);
+                    const statusFlags = getRegLocal(48);  // Reg 48: System Status Flags
                     const totalWatts = getRegLocal(20);
                     const timeToFull = getRegLocal(58);  // Reg 58: Time to Full (minutes)
                     const timeToEmpty = getRegLocal(59); // Reg 59: Time to Empty (minutes)
@@ -2518,13 +2527,16 @@ Example format:
 
                     document.getElementById('outputWatts').textContent = output;
 
-                    // Calculate System Watts (Reg 21 is ~768 which implies ~76W idle if scaled /10)
-                    const calcSysWatts = (sysWatts > 0) ? (sysWatts / 10).toFixed(1) : 0;
-                    document.getElementById('sysWatts').textContent = calcSysWatts;
+                    // System Status from Reg 48 flags (0x8000=AC Charging, 0x4000=Inverter Standby, 0x0008=Error)
+                    let sysStatus = '';
+                    if (statusFlags & 0x8000) sysStatus = 'Charging';
+                    else if (statusFlags & 0x4000) sysStatus = 'Standby';
+                    else if (statusFlags & 0x0008) sysStatus = 'Error';
+                    else if (statusFlags > 0) sysStatus = '0x' + statusFlags.toString(16).toUpperCase();
+                    else sysStatus = '--';
+                    document.getElementById('sysWatts').textContent = sysStatus;
 
-                    // Total Watts = Output + System Override
-                    const combinedTotal = totalWatts + parseFloat(calcSysWatts);
-                    document.getElementById('totalWatts').textContent = Math.round(combinedTotal);
+                    document.getElementById('totalWatts').textContent = totalWatts;
                     document.getElementById('batteryPercent').textContent = Math.floor(battery);
 
                     document.getElementById('remainingKwh').textContent = totalKwh.toFixed(2);
@@ -2542,6 +2554,18 @@ Example format:
 
                     document.getElementById('batteryRing').setAttribute('stroke-dasharray', `${battery}, 100`);
                     document.getElementById('batteryRing').style.color = battery < 20 ? "#ef4444" : "#60a5fa";
+
+                    // Protection Fault Warning (Reg 42: 0 = OK, non-zero = Critical Fault)
+                    const protFlags = getRegLocal(42);
+                    const protWarn = document.getElementById('protectionWarning');
+                    if (protWarn) {
+                        if (protFlags !== 0) {
+                            protWarn.textContent = `Protection Fault Active (0x${protFlags.toString(16).toUpperCase()}) - Check Device`;
+                            protWarn.classList.remove('hidden');
+                        } else {
+                            protWarn.classList.add('hidden');
+                        }
+                    }
 
                     // Labs Updates -> Settings Updates
                     updateSettingsUI(getRegLocal);
@@ -2666,8 +2690,8 @@ Example format:
             registers[39] = output;
             // Reg 20: Total Output
             registers[20] = total;
-            // Reg 21: System Watts (scaled * 10)
-            registers[21] = sys * 10;
+            // Reg 48: System Status Flags (simulate standby)
+            registers[48] = input > output ? 0x8000 : 0x4000;
             // Reg 56: Battery SOC (* 10)
             registers[56] = battery * 10;
             registers[22] = 4800 + (battery * 10); // Rough voltage sim
@@ -2675,7 +2699,7 @@ Example format:
             // Manually update the DOM elements for simulation
             const elIn = document.getElementById('inputWatts'); if (elIn) elIn.textContent = input;
             const elOut = document.getElementById('outputWatts'); if (elOut) elOut.textContent = output;
-            const elSys = document.getElementById('sysWatts'); if (elSys) elSys.textContent = sys;
+            const elSys = document.getElementById('sysWatts'); if (elSys) elSys.textContent = input > output ? 'Charging' : 'Standby';
             const elTot = document.getElementById('totalWatts'); if (elTot) elTot.textContent = total;
             const elBat = document.getElementById('batteryPercent'); if (elBat) elBat.textContent = Math.floor(battery);
 
@@ -3312,12 +3336,13 @@ Example format:
 
         // Register definitions with format info for human-readable display
         const KNOWN_REGS = {
+            2: { name: 'AC Charge Speed Status', format: 'charge_level' }, // Mirrors Settings Reg 13 unless throttled (1-5)
             3: { name: 'AC Input Watts', unit: 'W' },
             4: { name: 'DC Input Watts', unit: 'W' },
             5: { name: 'Unknown (0)', unit: '' },
             6: { name: 'Total Input', unit: 'W' },
             7: { name: 'Error/Warning Code?', format: 'flags' },     // 0 during cold temp warning, needs more data
-            8: { name: 'Input Power?', format: 'raw' },              // 0 during cold temp warning, 79 normal - input blocked?
+            8: { name: 'Error Code', format: 'raw' },                // Numeric error ID (e.g. 79) corresponding to Reg 42 bitmask
             13: { name: 'AC Charge Rate', format: 'charge_level' },
             14: { name: 'Max AC Input', format: 'watt' },         // Confirmed 1100
             16: { name: 'Frequency Set', format: 'freq01' },
@@ -3339,14 +3364,14 @@ Example format:
             39: { name: 'Total Output (Old?)', format: 'watt' },
             40: { name: 'Pack Config V? (x10)', format: 'volt' },
             41: { name: 'Capability Flags?', format: 'flags' },       // 0x0804 during cold warning, 0x0CA4 normal - bits 5,7,10 = input/charge capabilities?
-            42: { name: 'Protection Flags?', format: 'flags' },      // 0=Cold temp protection active, 0xE000=Normal - bits 13,14,15 = charge/discharge/system OK?
-            47: { name: 'Temp Sensor 1?', format: 'raw' },
-            48: { name: 'Temp Sensor 2?', format: 'raw' },
-            49: { name: 'Temp Sensor 3?', format: 'raw' },
-            50: { name: 'Temp Sensor 4?', format: 'raw' },
-            52: { name: 'Inverter Temp (Case)', format: 'raw' },
+            42: { name: 'Protection Flags (Critical)', format: 'flags' }, // 0xE000 (bits 13,14,15) = Critical Hardware Failure. 0 = OK. Correlates with Reg 8 error code
+            47: { name: 'Hardware Constant (0x3000)', format: 'flags' }, // Identical across all 5 devices - not a sensor
+            48: { name: 'System Status Flags', format: 'flags' },    // 0x8000=AC Charging, 0x4000=Inverter Standby, 0x0008=Error Pending
+            49: { name: 'Unknown Reg 49', format: 'raw' },
+            50: { name: 'Unknown Reg 50', format: 'raw' },
+            52: { name: 'Device Specific (Model?)', format: 'raw' }, // 180 on Aferiy, 0 on Fossibot - not case temp
             53: { name: 'Ext1 SOC', format: 'ext_soc' },
-            54: { name: 'Battery Capacity (0.1Ah)', format: 'capacity' },
+            54: { name: 'Battery Full Capacity (0.1Ah)', format: 'capacity' }, // 374=37.4Ah (Aferiy), 762=76.2Ah (Fossibot)
             55: { name: 'Ext2 SOC', format: 'ext_soc' },
             56: { name: 'Main SOC', format: 'percent01' },       // Confirmed 867 = 86.7%
             57: { name: 'AC Silent', format: 'toggle' },
@@ -3364,10 +3389,12 @@ Example format:
 
         // Settings Register Map (0x1103)
         const SETTINGS_REGS = {
-            5: 'Unknown Switch (0/1)',
-            13: 'AC Charge Rate (1-5)',
-            14: 'AC Charge Max Limit (W)',       // Confirmed 1100
+            5: 'Master System Enable (0/1)',      // Forced to 0 during Critical Faults (Reg 42)
+            11: 'Hardware/Model ID',              // 0x0600=US, 0x0200=EU Type A, 0x0D00=EU Type B
+            13: 'AC Charge Speed Setting (1-5)',
+            14: 'Max Charge Wattage (W)',         // 1500 (US), 1100 (EU)
             16: 'Frequency Setting (Hz/10)',
+            19: 'Max AC Input Current (dA)',      // 1600=16.0A (120V US), 500=5.0A (230V EU)
             20: 'Total Output / DC Max (A)',
             21: 'AC Input Voltage',
             22: 'Battery Voltage',
@@ -3385,8 +3412,8 @@ Example format:
             61: 'DC Standby (mins)',
             62: 'USB Standby (Seconds)',
             63: 'Stop Charge After (mins)',
-            66: 'Discharge Lower Limit (%/10)',
-            67: 'AC Upper Limit EPS (%/10)',     // Confirmed 1000
+            66: 'Discharge Limit Min SoC (%/10)', // System stops discharging at this SOC
+            67: 'Charge Limit Max SoC (%/10)',    // System stops charging at this SOC
             68: 'Machine Shutdown (mins)',
             80: 'CRC Checksum'
         };
