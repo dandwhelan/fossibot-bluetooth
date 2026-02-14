@@ -3316,13 +3316,15 @@ Example format:
             4: { name: 'DC Input Watts', unit: 'W' },
             5: { name: 'Unknown (0)', unit: '' },
             6: { name: 'Total Input', unit: 'W' },
+            7: { name: 'Error/Warning Code?', format: 'flags' },     // 0 during cold temp warning, needs more data
+            8: { name: 'Input Power?', format: 'raw' },              // 0 during cold temp warning, 79 normal - input blocked?
             13: { name: 'AC Charge Rate', format: 'charge_level' },
             14: { name: 'Max AC Input', format: 'watt' },         // Confirmed 1100
             16: { name: 'Frequency Set', format: 'freq01' },
             18: { name: 'AC Out Voltage', format: 'volt' },
             19: { name: 'AC Out Frequency', format: 'freq01' },   // Value 500 = 50.0Hz
             20: { name: 'Total Output', format: 'watt' },
-            21: { name: 'AC Input Voltage', format: 'volt' },     // UPDATED: Reg 21 matches Reg 18 when bypass active
+            21: { name: 'System State?', format: 'raw' },            // 15=Cold temp protection?, 21=Normal operation? - thermometer+L icon when 15
             22: { name: 'Battery Voltage', format: 'volt' },      // Settings has 233 (23.3V?)
             24: { name: 'USB Toggle', format: 'toggle' },
             25: { name: 'DC Toggle', format: 'toggle' },
@@ -3336,8 +3338,8 @@ Example format:
             37: { name: 'USB-C4 Out', format: 'watt01' },
             39: { name: 'Total Output (Old?)', format: 'watt' },
             40: { name: 'Pack Config V? (x10)', format: 'volt' },
-            41: { name: 'Active Outputs', format: 'flags' },
-            42: { name: 'State Flags 2', format: 'flags' },
+            41: { name: 'Capability Flags?', format: 'flags' },       // 0x0804 during cold warning, 0x0CA4 normal - bits 5,7,10 = input/charge capabilities?
+            42: { name: 'Protection Flags?', format: 'flags' },      // 0=Cold temp protection active, 0xE000=Normal - bits 13,14,15 = charge/discharge/system OK?
             47: { name: 'Temp Sensor 1?', format: 'raw' },
             48: { name: 'Temp Sensor 2?', format: 'raw' },
             49: { name: 'Temp Sensor 3?', format: 'raw' },
