@@ -1482,7 +1482,7 @@
                            background: #ef4444; color: #fff; padding: 6px 16px; border-radius: 8px;
                            font-size: 0.75rem; font-weight: bold; text-align: center; width: 85%;
                            box-shadow: 0 2px 8px rgba(239,68,68,0.4); animation: toast-in 0.3s ease;">
-                    Protection Fault Active (Reg 42) - Check Device
+                    System Alert
                 </div>
             </div>
 
@@ -2527,11 +2527,19 @@ Example format:
 
                     document.getElementById('outputWatts').textContent = output;
 
-                    // System Status from Reg 48 flags (0x8000=AC Charging, 0x4000=Inverter Standby, 0x0008=Error)
+                    // System Status: Error > Charging > Standby
+                    // Reg 48 flags: 0x8000=Charging, 0x4000=Standby, 0x0008=Error
+                    // Reg 8: 0=Normal, 78=Inverter Fault, 79=Safety Lockout
                     let sysStatus = '';
-                    if (statusFlags & 0x8000) sysStatus = 'Charging';
+                    if ((statusFlags & 0x0008) || errorCode > 0) {
+                        const isCritHW = (protFlags & 0x6000) > 0;
+                        if (errorCode === 79 && !isCritHW) sysStatus = 'Temp Protection';
+                        else if (errorCode === 78) sysStatus = 'Inverter Fault';
+                        else if (errorCode > 0) sysStatus = `Error ${errorCode}`;
+                        else sysStatus = 'Error';
+                    }
+                    else if (statusFlags & 0x8000) sysStatus = 'Charging';
                     else if (statusFlags & 0x4000) sysStatus = 'Standby';
-                    else if (statusFlags & 0x0008) sysStatus = 'Error';
                     else if (statusFlags > 0) sysStatus = '0x' + statusFlags.toString(16).toUpperCase();
                     else sysStatus = '--';
                     document.getElementById('sysWatts').textContent = sysStatus;
@@ -2555,12 +2563,28 @@ Example format:
                     document.getElementById('batteryRing').setAttribute('stroke-dasharray', `${battery}, 100`);
                     document.getElementById('batteryRing').style.color = battery < 20 ? "#ef4444" : "#60a5fa";
 
-                    // Protection Fault Warning (Reg 42: 0 = OK, non-zero = Critical Fault)
+                    // Protection Fault Warning (Reg 42 bitmask + Reg 8 error code)
+                    // Reg 42: Bits 13-14 (0x6000) = Critical Fault. Bits 0-12 = normal MOSFET status.
+                    // Reg 8: 0=Normal, 78=Inverter Fault, 79=Safety Lockout
                     const protFlags = getRegLocal(42);
+                    const errorCode = getRegLocal(8);
+                    const isCriticalFault = (protFlags & 0x6000) > 0;
                     const protWarn = document.getElementById('protectionWarning');
                     if (protWarn) {
-                        if (protFlags !== 0) {
-                            protWarn.textContent = `Protection Fault Active (0x${protFlags.toString(16).toUpperCase()}) - Check Device`;
+                        if (errorCode === 79 && !isCriticalFault) {
+                            // Error 79 + no critical HW bits = Environmental protection (Cold/Hot)
+                            protWarn.textContent = 'Temp/Safety Protection Active';
+                            protWarn.style.background = '#d97706';
+                            protWarn.classList.remove('hidden');
+                        } else if (isCriticalFault) {
+                            // Critical hardware fault (bits 13/14 set)
+                            protWarn.textContent = `Hardware Fault (0x${protFlags.toString(16).toUpperCase()}) - Check Device`;
+                            protWarn.style.background = '#ef4444';
+                            protWarn.classList.remove('hidden');
+                        } else if (errorCode === 78) {
+                            // Inverter fault - solar still works
+                            protWarn.textContent = 'Inverter Fault (DC/Solar OK)';
+                            protWarn.style.background = '#d97706';
                             protWarn.classList.remove('hidden');
                         } else {
                             protWarn.classList.add('hidden');
@@ -2826,7 +2850,7 @@ Example format:
             const inTot = getReg(6);
             const capAh = getReg(54); // 374 = 37.4
             const soh = (capAh > 0) ? ((capAh / 400.0) * 100).toFixed(1) : 0;
-            const tempDiag = getReg(52); // 180 = 18.0
+            const modelConst = getReg(52); // Model Constant: 180=Fossibot, 0=Aferiy (NOT temperature)
 
             const diagEl = document.getElementById('diagnostics');
             if (diagEl) {
@@ -2835,14 +2859,14 @@ Example format:
                          <span>⚡ ${(valACFreq / 10).toFixed(1)}Hz</span>
                          <span>🔋 ${(valBatV / 100).toFixed(1)}V</span>
                          <span style="color:var(--text-green)">🏥 SOH: ${soh}%</span>
-                         <span>🌡️ ${tempDiag > 0 ? (tempDiag / 10).toFixed(1) : '--'}°C</span>
+                         <span>Model: ${modelConst}</span>
                          <span>🌀 Lvl ${fanLvl}</span>
                     </div>
                     <div style="font-size: 0.7rem; color: #aaa; margin-top: 0.25rem;">
                         <strong>New Findings:</strong><br>
                         Inputs: AC(R3):${inAC}W + DC(R4):${inDC}W = Tot(R6):${inTot}W <br>
                         Cap: ${(capAh / 10).toFixed(1)}Ah (Ref: 40Ah) <br>
-                        AC Input V (R21): ${(getReg(21) / 10).toFixed(1)}V <br>
+                        Bus/AC V (R21): ${(getReg(21) / 10).toFixed(1)}V <br>
                         Active Outputs (R41): ${getReg(41)}
                     </div>
                 `;
@@ -3342,14 +3366,14 @@ Example format:
             5: { name: 'Unknown (0)', unit: '' },
             6: { name: 'Total Input', unit: 'W' },
             7: { name: 'Error/Warning Code?', format: 'flags' },     // 0 during cold temp warning, needs more data
-            8: { name: 'Error Code', format: 'raw' },                // Numeric error ID (e.g. 79) corresponding to Reg 42 bitmask
+            8: { name: 'Active Error Code', format: 'raw' },         // 0=Normal, 78=Inverter Fault, 79=Safety Lockout (Cold/Hot/HW)
             13: { name: 'AC Charge Rate', format: 'charge_level' },
             14: { name: 'Max AC Input', format: 'watt' },         // Confirmed 1100
             16: { name: 'Frequency Set', format: 'freq01' },
             18: { name: 'AC Out Voltage', format: 'volt' },
             19: { name: 'AC Out Frequency', format: 'freq01' },   // Value 500 = 50.0Hz
             20: { name: 'Total Output', format: 'watt' },
-            21: { name: 'System State?', format: 'raw' },            // 15=Cold temp protection?, 21=Normal operation? - thermometer+L icon when 15
+            21: { name: 'Multiplexed Voltage', format: 'volt' },       // Charging: AC Input V (x10). Discharging: Internal DC Bus Voltage
             22: { name: 'Battery Voltage', format: 'volt' },      // Settings has 233 (23.3V?)
             24: { name: 'USB Toggle', format: 'toggle' },
             25: { name: 'DC Toggle', format: 'toggle' },
@@ -3363,13 +3387,13 @@ Example format:
             37: { name: 'USB-C4 Out', format: 'watt01' },
             39: { name: 'Total Output (Old?)', format: 'watt' },
             40: { name: 'Pack Config V? (x10)', format: 'volt' },
-            41: { name: 'Capability Flags?', format: 'flags' },       // 0x0804 during cold warning, 0x0CA4 normal - bits 5,7,10 = input/charge capabilities?
-            42: { name: 'Protection Flags (Critical)', format: 'flags' }, // 0xE000 (bits 13,14,15) = Critical Hardware Failure. 0 = OK. Correlates with Reg 8 error code
+            41: { name: 'Active Port Flags', format: 'flags' },        // Bit9=USB, Bit10=DC, Bit11=AC, Bit12=LED
+            42: { name: 'HW GPIO & Fault Mask', format: 'flags' },    // Bit15=Warning latch, Bits13-14(0x6000)=CRITICAL FAULT, Bits0-12=MOSFET status
             47: { name: 'Hardware Constant (0x3000)', format: 'flags' }, // Identical across all 5 devices - not a sensor
             48: { name: 'System Status Flags', format: 'flags' },    // 0x8000=AC Charging, 0x4000=Inverter Standby, 0x0008=Error Pending
             49: { name: 'Unknown Reg 49', format: 'raw' },
             50: { name: 'Unknown Reg 50', format: 'raw' },
-            52: { name: 'Device Specific (Model?)', format: 'raw' }, // 180 on Aferiy, 0 on Fossibot - not case temp
+            52: { name: 'Model Constant', format: 'raw' },            // Fixed: 180=Fossibot, 0=Aferiy. NOT temperature. Ignore for thermal.
             53: { name: 'Ext1 SOC', format: 'ext_soc' },
             54: { name: 'Battery Full Capacity (0.1Ah)', format: 'capacity' }, // 374=37.4Ah (Aferiy), 762=76.2Ah (Fossibot)
             55: { name: 'Ext2 SOC', format: 'ext_soc' },
@@ -3389,13 +3413,13 @@ Example format:
 
         // Settings Register Map (0x1103)
         const SETTINGS_REGS = {
-            5: 'Master System Enable (0/1)',      // Forced to 0 during Critical Faults (Reg 42)
-            11: 'Hardware/Model ID',              // 0x0600=US, 0x0200=EU Type A, 0x0D00=EU Type B
+            5: 'Master System Enable (0/1)',      // Forced to 0 during Critical Faults (Reg 42 bits 13-14)
+            11: 'Hardware ID',                     // 1536(0x0600)=US Aferiy, 512(0x0200)=EU Fossibot
             13: 'AC Charge Speed Setting (1-5)',
             14: 'Max Charge Wattage (W)',         // 1500 (US), 1100 (EU)
             16: 'Frequency Setting (Hz/10)',
             19: 'Max AC Input Current (dA)',      // 1600=16.0A (120V US), 500=5.0A (230V EU)
-            20: 'Total Output / DC Max (A)',
+            20: 'Max Charging Current (1-20A)',
             21: 'AC Input Voltage',
             22: 'Battery Voltage',
             24: 'USB Enabled',
