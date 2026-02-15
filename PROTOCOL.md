@@ -18,6 +18,8 @@ All data is Big-Endian. Packets generally follow this structure:
 |:-------|:-------|:--------|:--------|:--------|:---------|
 | `11`   | `04`   | `00`    | `00`    | ...     | `CRC`    |
 
+Header byte `0x11` is the Modbus slave address (Register 17). Always `0x11` over BLE.
+
 ### Payload Types
 
 The device uses different function codes (OpCodes) for different types of data:
@@ -99,8 +101,6 @@ The device uses different function codes (OpCodes) for different types of data:
 | Reg | Name | Format | Notes |
 |:----|:-----|:-------|:------|
 | 57  | AC Silent Mode | 0/1 | Silent charging status. |
-| 58  | **Time to Full** | Minutes | Estimated minutes until battery is full (when charging). |
-| 59  | **Time to Empty** | Minutes | Estimated minutes until battery is empty (when discharging). |
 | 60  | AC Standby Counter | Minutes | Current AC standby countdown. |
 | 61  | DC Standby Counter | Minutes | Current DC standby countdown. |
 | 62  | USB Standby | Raw | Always 255 (0xFF) across all tested devices. Likely "disabled" sentinel. |
@@ -158,16 +158,37 @@ The device uses different function codes (OpCodes) for different types of data:
 |:----|:-----|:-------|:------|
 | 56  | Key Sound | 0/1 | Button beep toggle. |
 | 57  | Silent Charging | 0/1 | Mute charging sounds. |
-| 59  | **Screen Timeout** | Minutes | 0 = Never. e.g. 30 = 30 mins. |
+| 59  | Screen Timeout | Minutes | 0 = Never. e.g. 30 = 30 mins. |
 | 60  | AC Standby Time | Minutes | Auto-off timer for AC. 0 = Never. |
 | 61  | DC Standby Time | Minutes | Auto-off timer for DC. 0 = Never. |
 | 62  | USB Standby Time | Seconds | Auto-off timer for USB. 0 = Never. |
 | 63  | Booking Charge | Minutes | Scheduled charging delay. |
 | 64  | Power Off | 1 | Command to shutdown device. |
-| 66  | **Discharge Limit (Min SoC)** | 0.1% | System stops discharging when Main SOC (Input Reg 56) hits this value. e.g. 100 = 10%. |
-| 67  | **Charge Limit (Max SoC)** | 0.1% | System stops charging when Main SOC hits this value. e.g. 900 = 90%, 1000 = 100%. |
+| 66  | **Discharge Limit** | 0.1% | Min SoC %. Stop discharging at this %. e.g. 100 = 10%. |
+| 67  | **Charge Limit** | 0.1% | Max SoC %. Stop charging at this %. e.g. 1000 = 100%. |
 | 68  | Machine Shutdown | Minutes | Auto-shutdown if idle. |
 | 80  | CRC Checksum | Hex | Packet checksum. |
+
+### Writable Register Safety Whitelist
+
+**WARNING: Fossibot firmware does NOT validate register write values. Writing an out-of-range value can permanently brick a device.**
+
+| Register | Allowed Values |
+|:---------|:---------------|
+| 20 (Max Charging Current) | 1-20 (integers) |
+| 24 (USB Output) | 0 or 1 |
+| 25 (DC Output) | 0 or 1 |
+| 26 (AC Output) | 0 or 1 |
+| 27 (LED) | 0, 1, 2, 3 |
+| 57 (AC Silent Charging) | 0 or 1 |
+| 59 (USB Standby Time) | 0, 3, 5, 10, 30 |
+| 60 (AC Standby Time) | 0, 480, 960, 1440 |
+| 61 (DC Standby Time) | 0, 480, 960, 1440 |
+| 62 (Screen Rest Time) | 0, 180, 300, 600, 1800 |
+| 63 (Stop Charge After) | 0-1440 (minutes) |
+| 66 (Discharge Limit) | 0-1000 (0.1% units) |
+| 67 (Charging Limit) | 0-1000 (0.1% units) |
+| 68 (Sleep Time) | 5, 10, 30, 480 |
 
 ---
 
@@ -178,6 +199,8 @@ The device uses different function codes (OpCodes) for different types of data:
 | Reg | Name | Value | Description |
 |:----|:-----|:------|:------------|
 | 64  | Power Off | 1 | Shuts down the entire machine. |
+
+---
 
 ## 4. Network Configuration (0x1107)
 
@@ -214,6 +237,8 @@ The device sends status updates containing the `0x07` OpCode.
 * `11 07 01 ...` -> Connected
 * `11 07 01 ...` -> Connected
 
+---
+
 ## 5. Protocol Discovery Findings
 
 Recent analysis reveals the device stack is likely based on Espressif AT commands.
@@ -248,6 +273,49 @@ Structure: `Header(11) Op(06) RegHi RegLo ValHi ValLo CRC_Hi CRC_Lo`.
 The correct CRC byte order is **Hi-Byte First** (Modbus Standard), e.g., `0xAA 0xBB`.
 Legacy code/findings suggesting `Lo-Hi` were incorrect and caused packet rejection.
 
+---
+
+## 6. Error Code Logic (Reg 8 + Reg 42)
+
+### Error Codes (Reg 8)
+
+| Code | Meaning | Notes |
+|:-----|:--------|:------|
+| 0    | **Normal** | No error. |
+| 78   | **Inverter Fault** | AC inverter offline. DC Charging via Solar still works. |
+| 79   | **AC Charging Interrupted** | Safety Lockout. Triggers for BOTH critical hardware failures AND environmental protection (Cold/Hot). |
+
+### Fault Detection (Reg 42)
+
+Reg 42 is a **mixed-purpose bitmask** containing both status bits and fault bits. You **cannot** simply check `if (Reg42 > 0)` — the lower bits reflect normal MOSFET state.
+
+**Bitmask Layout:**
+
+| Bits | Mask | Meaning |
+|:-----|:-----|:--------|
+| Bit 15 | 0x8000 | System Warning / Non-Critical Latch (often always on) |
+| Bits 13-14 | **0x6000** | **CRITICAL FAULT MASK** |
+| Bits 0-12 | 0x1FFF | Output MOSFET Status (e.g., +984 when USB/DC is on) |
+
+**Implementation:**
+
+```javascript
+const isCriticalFault = (Reg42 & 0x6000) > 0;
+```
+
+### Combined Logic (Error Classification)
+
+When Reg 8 reports Error 79:
+- **IF `(Reg42 & 0x6000) > 0`:** Hardware Failure (critical).
+- **IF `(Reg42 & 0x6000) == 0`:** Environmental Protection (Cold/Hot Temperature).
+
+### UI Display Rules
+
+- **Status Text Priority:** Error (Reg 48 bit 3) > Charging (Reg 48 bit 15) > Standby (Reg 48 bit 14).
+- If Error 79 is present with NO critical bits in Reg 42, display **"Temp/Safety Protection"** instead of "System Failure".
+
+---
+
 ## 7. BLE Service Map (Discovered)
 
 Based on exploration of `0xA002` and `0xA003`.
@@ -268,45 +336,6 @@ The presence of `Y_DHK` and `LOCAL_KEY` in `0xC301` confirms this is a **Tuya-ba
 | `0xC306` | ? | ? | - |
 | `0xC307` | Read | ? | Static Value: `0x30` ("0") |
 
-## 8. Cross-Device Analysis (5 Devices)
-
-Register map validated across 5 devices in different states:
-
-| Device | Type | Region | SOC | Capacity | State |
-|:-------|:-----|:-------|:----|:---------|:------|
-| POWER-7E83v2 | Fossibot | US (60Hz) | 15.9% | 78.6Ah | DC input 15W, outputting 51W |
-| POWER-0084 | Aferiy | EU (50Hz) | 64.2% | 37.4Ah | Idle, 11W output, **Reg 42 = 0xE000** |
-| POWER-7E83 | Fossibot? | US (60Hz) | 95.1% | 76.2Ah | Unusual state (AC Out = 22?) |
-| POWER-0343 | Aferiy | EU (50Hz) | 27.2% | 39.7Ah | Charging at 1099W AC |
-| POWER-0084-clear | Aferiy | EU (50Hz) | 31.3% | 37.4Ah | Discharging 190W |
-
-### Key Findings
-
-**Two device families by capacity:** Fossibot ~76-79Ah, Aferiy ~37-40Ah.
-
-**Reg 42 (Protection Flags):** Only POWER-0084 showed non-zero (0xE000 = bits 13,14,15). All other devices showed 0. Non-zero indicates active critical fault requiring user attention. Correlated with Reg 8 Error Code.
-
-**Reg 48 (System Status Flags):** Decoded as bitmask — `0x8000` = AC Charging active (seen on POWER-0343), `0x4000` = Inverter Standby/Ready, `0x0008` = Error Pending. Previously misidentified as temperature sensor.
-
-**Reg 21 (AC Input Voltage):** Confirmed as grid voltage when AC connected (2319 = 231.9V on charging device, 1229 = 122.9V on US device). Shows small state codes (9, 15, 18, 21) when no AC input — value 15 observed during cold temperature protection event (thermometer+L icon on display).
-
-**Reg 47:** Constant 0x3000 (12288) across all 5 devices — hardware identifier, not a sensor.
-
-**Reg 52:** Value 180 only on Aferiy devices, 0 on Fossibot. Model-specific, not temperature.
-
-**Settings Reg 11 (Hardware/Model ID):** Identifies regional variant. US and EU devices have different values, correlating with different Max Charge Wattage (Reg 14) and Max AC Input Current (Reg 19).
-
-### Cold Temperature Warning Event
-
-Discovered during real-world cold weather testing. Fossibot displayed thermometer + "L" icon, BMS blocked all charging input. Key register changes:
-
-| Register | Cold Warning | Normal | Interpretation |
-|:---------|:------------|:-------|:---------------|
-| Reg 8 | 0 | 0 | No error code for temp warning |
-| Reg 21 | 15 | 21 | State code 15 = cold protection |
-| Reg 41 | 0x0804 | 0x0CA4 | Capability bits cleared (input disabled) |
-| Reg 42 | 0 | 0 | Not a critical fault, handled by BMS |
-
 ### Service `0xA003` (Auxiliary?)
 
 | UUID | Props | Description | Notes |
@@ -314,6 +343,8 @@ Discovered during real-world cold weather testing. Fossibot displayed thermomete
 | `0xC400` | Read | ? | Static Value: `0x30` ("0") |
 | `0xC401` | Read | ? | Static Value: `0x30` ("0") |
 
+---
+
 ## CRC Calculation
 
-The protocol uses a custom CRC-16 checksum. See `calculateChecksum()` in `index.html` for implementation details.
+The protocol uses a custom CRC-16 checksum with polynomial 0xA001 (Modbus standard). See `calculateChecksum()` in `index.html` for implementation details.
