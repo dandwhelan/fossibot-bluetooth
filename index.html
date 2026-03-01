@@ -2527,6 +2527,10 @@ Example format:
 
                     document.getElementById('outputWatts').textContent = output;
 
+                    // Protection/Error registers (needed for status + fault display)
+                    const protFlags = getRegLocal(42);
+                    const errorCode = getRegLocal(8);
+
                     // System Status: Error > Charging > Standby
                     // Reg 48 flags: 0x8000=Charging, 0x4000=Standby, 0x0008=Error
                     // Reg 8: 0=Normal, 78=Inverter Fault, 79=Safety Lockout
@@ -2566,8 +2570,6 @@ Example format:
                     // Protection Fault Warning (Reg 42 bitmask + Reg 8 error code)
                     // Reg 42: Bits 13-14 (0x6000) = Critical Fault. Bits 0-12 = normal MOSFET status.
                     // Reg 8: 0=Normal, 78=Inverter Fault, 79=Safety Lockout
-                    const protFlags = getRegLocal(42);
-                    const errorCode = getRegLocal(8);
                     const isCriticalFault = (protFlags & 0x6000) > 0;
                     const protWarn = document.getElementById('protectionWarning');
                     if (protWarn) {
