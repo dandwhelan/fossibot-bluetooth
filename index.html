@@ -2532,15 +2532,16 @@ Example format:
                     const errorCode = getRegLocal(8);
 
                     // System Status: Error > Charging > Standby
-                    // Reg 48 flags: 0x8000=Charging, 0x4000=Standby, 0x0008=Error
+                    // Reg 48 flags: 0x8000=Charging, 0x4000=Standby, 0x0008=Error Pending (transient)
                     // Reg 8: 0=Normal, 78=Inverter Fault, 79=Safety Lockout
+                    // NOTE: Reg 48 bit 0x0008 is set transiently during AC inverter state changes
+                    // and is not a reliable error indicator. Use Reg 8 (errorCode) as authoritative source.
                     let sysStatus = '';
-                    if ((statusFlags & 0x0008) || errorCode > 0) {
+                    if (errorCode > 0) {
                         const isCritHW = (protFlags & 0x6000) > 0;
                         if (errorCode === 79 && !isCritHW) sysStatus = 'Temp Protection';
                         else if (errorCode === 78) sysStatus = 'Inverter Fault';
-                        else if (errorCode > 0) sysStatus = `Error ${errorCode}`;
-                        else sysStatus = 'Error';
+                        else sysStatus = `Error ${errorCode}`;
                     }
                     else if (statusFlags & 0x8000) sysStatus = 'Charging';
                     else if (statusFlags & 0x4000) sysStatus = 'Standby';
