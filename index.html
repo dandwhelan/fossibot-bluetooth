@@ -2571,18 +2571,20 @@ Example format:
                     // Protection Fault Warning (Reg 42 bitmask + Reg 8 error code)
                     // Reg 42: Bits 13-14 (0x6000) = Critical Fault. Bits 0-12 = normal MOSFET status.
                     // Reg 8: 0=Normal, 78=Inverter Fault, 79=Safety Lockout
+                    // NOTE: Bits 13-14 can be set during normal operation (e.g. 0xE3D8).
+                    // Only treat as fault when errorCode === 79 confirms an actual error.
                     const isCriticalFault = (protFlags & 0x6000) > 0;
                     const protWarn = document.getElementById('protectionWarning');
                     if (protWarn) {
-                        if (errorCode === 79 && !isCriticalFault) {
+                        if (errorCode === 79 && isCriticalFault) {
+                            // Error 79 + critical HW bits = Hardware Failure
+                            protWarn.textContent = `Hardware Fault (0x${protFlags.toString(16).toUpperCase()}) - Check Device`;
+                            protWarn.style.background = '#ef4444';
+                            protWarn.classList.remove('hidden');
+                        } else if (errorCode === 79 && !isCriticalFault) {
                             // Error 79 + no critical HW bits = Environmental protection (Cold/Hot)
                             protWarn.textContent = 'Temp/Safety Protection Active';
                             protWarn.style.background = '#d97706';
-                            protWarn.classList.remove('hidden');
-                        } else if (isCriticalFault) {
-                            // Critical hardware fault (bits 13/14 set)
-                            protWarn.textContent = `Hardware Fault (0x${protFlags.toString(16).toUpperCase()}) - Check Device`;
-                            protWarn.style.background = '#ef4444';
                             protWarn.classList.remove('hidden');
                         } else if (errorCode === 78) {
                             // Inverter fault - solar still works

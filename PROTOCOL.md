@@ -297,6 +297,8 @@ Reg 42 is a **mixed-purpose bitmask** containing both status bits and fault bits
 | Bits 13-14 | **0x6000** | **CRITICAL FAULT MASK** |
 | Bits 0-12 | 0x1FFF | Output MOSFET Status (e.g., +984 when USB/DC is on) |
 
+**Important:** Bits 13-14 can be set during normal device operation (e.g., Reg 42 = `0xE3D8` while healthy). Do **not** use `isCriticalFault` alone as an error indicator — it must be combined with Reg 8.
+
 **Implementation:**
 
 ```javascript
@@ -308,6 +310,8 @@ const isCriticalFault = (Reg42 & 0x6000) > 0;
 When Reg 8 reports Error 79:
 - **IF `(Reg42 & 0x6000) > 0`:** Hardware Failure (critical).
 - **IF `(Reg42 & 0x6000) == 0`:** Environmental Protection (Cold/Hot Temperature).
+
+If Reg 8 = 0 (Normal), do **not** show any fault — even if bits 13-14 are set in Reg 42.
 
 ### UI Display Rules
 
