@@ -645,6 +645,27 @@
             margin-left: 1px;
         }
 
+        /* Layout presets — hide widgets per layout. Default shows everything. */
+        [data-layout="compact"] [data-widget="battery-ring"],
+        [data-layout="compact"] [data-widget="ext-batteries"],
+        [data-layout="numeric"] [data-widget="battery-ring"],
+        [data-layout="numeric"] [data-widget="ext-batteries"],
+        [data-layout="numeric"] [data-widget="remaining-time"] {
+            display: none;
+        }
+        [data-layout="compact"] .battery-ring-container,
+        [data-layout="numeric"] .battery-ring-container {
+            width: auto;
+            height: auto;
+            margin: 0.25rem auto;
+        }
+        [data-layout="compact"] .battery-text,
+        [data-layout="numeric"] .battery-text {
+            position: static;
+            transform: none;
+            justify-content: center;
+        }
+
         [data-theme="terminal"] .dash-label {
             color: #008800;
         }
@@ -1449,7 +1470,7 @@
                     <div class="dash-col center">
                         <div class="dash-sub" style="margin-bottom: 0.25rem;">Sys: <span id="sysWatts">--</span></div>
                         <div class="battery-ring-container">
-                            <svg width="100%" height="100%" viewBox="0 0 36 36" style="transform: rotate(-90deg);">
+                            <svg data-widget="battery-ring" width="100%" height="100%" viewBox="0 0 36 36" style="transform: rotate(-90deg);">
                                 <path class="ring-bg"
                                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                                     fill="none" stroke="currentColor" stroke-width="3" />
@@ -1461,11 +1482,11 @@
                                     class="battery-unit">%</span>
                             </div>
                         </div>
-                        <div class="dash-sub" style="margin-top: 0.25rem;">
+                        <div class="dash-sub" data-widget="remaining-time" style="margin-top: 0.25rem;">
                             <div><span id="remainingHours">--</span></div>
                             <div><span id="remainingKwh">--</span> kWh</div>
                         </div>
-                        <div id="extBatteries" class="ext-battery-info"></div>
+                        <div id="extBatteries" data-widget="ext-batteries" class="ext-battery-info"></div>
                     </div>
 
                     <div class="dash-col right">
@@ -1727,7 +1748,7 @@
                             <span>mins</span>
                         </div>
                     </div>
-                    <div class="setting-row">
+                    <div class="setting-row" title="WARNING: writing 0 / Never to this register (Reg 68) has been reported to permanently brick Fossibot devices. The Never option has been removed.">
                         <div class="setting-info">
                             <span class="setting-title">System Idle Shutdown</span>
                             <span class="setting-desc">Whole Device <span id="status-sys-standby"
@@ -1791,11 +1812,18 @@
                 <div class="accordion-header" onclick="toggleAccordion('acc-theme')">
                     <div class="accordion-title">
                         <span class="accordion-icon">🎨</span>
-                        Theme
+                        Theme &amp; Layout
                     </div>
                     <span class="accordion-arrow">▼</span>
                 </div>
                 <div class="accordion-content">
+                    <div class="setting-desc" style="margin-bottom:0.25rem;">Dashboard layout</div>
+                    <div class="theme-pills" id="layout-pills" style="margin-bottom:0.75rem;">
+                        <span class="theme-pill active" data-layout="default" onclick="selectLayoutPill('default')">📊 Default</span>
+                        <span class="theme-pill" data-layout="compact" onclick="selectLayoutPill('compact')">📱 Compact</span>
+                        <span class="theme-pill" data-layout="numeric" onclick="selectLayoutPill('numeric')">🔢 Numeric</span>
+                    </div>
+                    <div class="setting-desc" style="margin-bottom:0.25rem;">Theme</div>
                     <div class="theme-pills" id="theme-pills">
                         <span class="theme-pill" data-theme="pipboy" onclick="selectThemePill('pipboy')">☢️
                             Pipboy</span>
@@ -2043,10 +2071,22 @@ Example format:
 
         // Theme pill selection function
         function selectThemePill(themeName) {
-            document.querySelectorAll('.theme-pill').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.theme-pill[data-theme]').forEach(p => p.classList.remove('active'));
             const pill = document.querySelector(`.theme-pill[data-theme="${themeName}"]`);
             if (pill) pill.classList.add('active');
             setTheme(themeName);
+        }
+
+        // Layout preset functions
+        function setLayout(layoutName) {
+            document.documentElement.setAttribute('data-layout', layoutName);
+            localStorage.setItem('POWER-layout', layoutName);
+        }
+        function selectLayoutPill(layoutName) {
+            document.querySelectorAll('.theme-pill[data-layout]').forEach(p => p.classList.remove('active'));
+            const pill = document.querySelector(`.theme-pill[data-layout="${layoutName}"]`);
+            if (pill) pill.classList.add('active');
+            setLayout(layoutName);
         }
 
         // Settings
@@ -2076,6 +2116,10 @@ Example format:
             // Default to Ocean
             setTheme('ocean');
         }
+
+        // Initialize Layout
+        const savedLayout = localStorage.getItem('POWER-layout') || 'default';
+        selectLayoutPill(savedLayout);
 
         // Debug Mode
         let isDebug = false;
@@ -4544,6 +4588,12 @@ Example format:
         }, 1000);
 
         function setRegister(reg, val) {
+            if (reg === 68 && Number(val) === 0) {
+                log('BLOCKED: Reg 68 = 0 has been reported to permanently brick devices. Write refused.');
+                console.error('Refusing to write 0 to Reg 68 (whole-device shutdown timer) — known brick risk.');
+                alert('Blocked: writing 0 to register 68 has been reported to permanently brick Fossibot devices. The write was refused.');
+                return;
+            }
             addToQueue(async () => {
                 const cmd = generateCommandBytes(0x11, reg, val); // Address 0x11
                 if (device && writeChar) {
