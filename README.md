@@ -53,7 +53,7 @@ ABOK Power Ark3600 (Probalby works, but not tested)
 *   **EPS / UPS Settings:** Configure Entry Power Supply (UPS mode) behavior and upper charge limits.
 *   **Standby Timers:** detailed control over auto-shutdown timers to save power:
     *   **Screen Timeout:** 1 min, 5 min, Never.
-    *   **System Standby:** Auto-shutdown after inactivity.
+    *   **System Idle Shutdown (Whole Device):** Auto-shutdown the entire device after inactivity (5 min – 8 hr). "Never" is not supported.
     *   **AC Standby:** Turn off inverter if no load detected.
     *   **DC/USB Standby:** Turn off low-voltage ports if idle.
 

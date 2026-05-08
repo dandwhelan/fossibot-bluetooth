@@ -166,7 +166,7 @@ The device uses different function codes (OpCodes) for different types of data:
 | 64  | Power Off | 1 | Command to shutdown device. |
 | 66  | **Discharge Limit** | 0.1% | Min SoC %. Stop discharging at this %. e.g. 100 = 10%. |
 | 67  | **Charge Limit** | 0.1% | Max SoC %. Stop charging at this %. e.g. 1000 = 100%. |
-| 68  | Machine Shutdown | Minutes | Auto-shutdown if idle. |
+| 68  | Machine Shutdown | Minutes | Auto-shutdown whole device if idle. No "Never" option; minimum 5 min. |
 | 80  | CRC Checksum | Hex | Packet checksum. |
 
 ### Writable Register Safety Whitelist

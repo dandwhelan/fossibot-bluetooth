@@ -1738,9 +1738,7 @@
                             <option value="10">10 min</option>
                             <option value="30">30 min</option>
                             <option value="60">1 hr</option>
-                            <option value="480">480 min (8h)</option>
-                            <option value="1440">24 hr</option>
-                            <option value="0">Never</option>
+                            <option value="480">8 hr</option>
                         </select>
                     </div>
                     <div class="setting-row">
@@ -2158,9 +2156,7 @@ Example format:
             const machineShutdown = settingsRegisters[68] || 0;
             const sysStandbyStatus = document.getElementById('status-sys-standby');
             if (sysStandbyStatus) {
-                if (machineShutdown === 0) {
-                    sysStandbyStatus.textContent = 'Never';
-                } else if (machineShutdown < 60) {
+                if (machineShutdown < 60) {
                     sysStandbyStatus.textContent = machineShutdown + ' min';
                 } else {
                     sysStandbyStatus.textContent = Math.round(machineShutdown / 60) + 'h';
