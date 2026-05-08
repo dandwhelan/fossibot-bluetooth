@@ -166,12 +166,14 @@ The device uses different function codes (OpCodes) for different types of data:
 | 64  | Power Off | 1 | Command to shutdown device. |
 | 66  | **Discharge Limit** | 0.1% | Min SoC %. Stop discharging at this %. e.g. 100 = 10%. |
 | 67  | **Charge Limit** | 0.1% | Max SoC %. Stop charging at this %. e.g. 1000 = 100%. |
-| 68  | Machine Shutdown | Minutes | Auto-shutdown if idle. |
+| 68  | Machine Shutdown | Minutes | Auto-shutdown whole device if idle. **DO NOT WRITE 0** — confirmed to permanently brick devices in the field (issue #1, 2026-05-02) and per [`schauveau/sydpower-mqtt`](https://github.com/schauveau/sydpower-mqtt) `MQTT-MODBUS.md`. Allowed: 5, 10, 30, 60, 480. |
 | 80  | CRC Checksum | Hex | Packet checksum. |
 
 ### Writable Register Safety Whitelist
 
 **WARNING: Fossibot firmware does NOT validate register write values. Writing an out-of-range value can permanently brick a device.**
+
+> **CONFIRMED BRICK — Reg 68 = 0:** Writing `0` to register 68 (Machine Shutdown / Whole Machine Unused Time) has been confirmed to permanently brick Fossibot devices in the field. A user (issue #1, 2026-05-02) lost a Fossibot F2400W this way; the unit could not be recovered with the standard DC+Light+USB factory-reset chord. The community-maintained [`schauveau/sydpower-mqtt`](https://github.com/schauveau/sydpower-mqtt) project documents the same risk. Forks must keep this register out of any user-writable code path with a value of 0.
 
 | Register | Allowed Values |
 |:---------|:---------------|
@@ -188,7 +190,7 @@ The device uses different function codes (OpCodes) for different types of data:
 | 63 (Stop Charge After) | 0-1440 (minutes) |
 | 66 (Discharge Limit) | 0-1000 (0.1% units) |
 | 67 (Charging Limit) | 0-1000 (0.1% units) |
-| 68 (Sleep Time) | 5, 10, 30, 480 |
+| 68 (Machine Shutdown) | 5, 10, 30, 60, 480 — **NEVER 0 (bricks device)** |
 
 ---
 
