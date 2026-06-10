@@ -109,6 +109,16 @@ For the best experience (fullscreen, offline access), install the app:
 
 ---
 
+## 🔄 Battery Factory Reset
+
+If you want to remove your battery's Wi-Fi connection to the cloud (or recover
+after sending bogus credentials with the "Disable WiFi Access Point" button),
+you can factory-reset the battery. Press and hold the **DC**, **Light**, and
+**USB** buttons simultaneously for about 5 seconds. You will hear a beep when
+the reset completes.
+
+---
+
 ## 🔧 Technical Protocol Documentation
 
 For developers interested in the underlying communications or building their own integrations (Home Assistant, ESP32, etc.).
