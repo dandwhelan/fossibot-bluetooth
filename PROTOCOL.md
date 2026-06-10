@@ -286,6 +286,7 @@ Legacy code/findings suggesting `Lo-Hi` were incorrect and caused packet rejecti
 | 0    | **Normal** | No error. |
 | 78   | **Inverter Fault** | AC inverter offline. DC Charging via Solar still works. |
 | 79   | **AC Charging Interrupted** | Safety Lockout. Triggers for BOTH critical hardware failures AND environmental protection (Cold/Hot). |
+| Other | **Normal (unknown meaning)** | Some firmware reports other non-zero values during normal operation (e.g. 136 / 0x88 observed on a healthy device with Reg 42 = 0xE3D8). Do **not** treat `Reg 8 > 0` as an error — only codes 78 and 79 are confirmed faults. |
 
 ### Fault Detection (Reg 42)
 
@@ -313,7 +314,7 @@ When Reg 8 reports Error 79:
 - **IF `(Reg42 & 0x6000) > 0`:** Hardware Failure (critical).
 - **IF `(Reg42 & 0x6000) == 0`:** Environmental Protection (Cold/Hot Temperature).
 
-If Reg 8 = 0 (Normal), do **not** show any fault — even if bits 13-14 are set in Reg 42.
+If Reg 8 is anything other than 78 or 79 (Normal), do **not** show any fault — even if bits 13-14 are set in Reg 42.
 
 ### UI Display Rules
 
