@@ -33,7 +33,8 @@ ABOK Power Ark3600 (Probalby works, but not tested)
 *   **Live Power Flow:** Visualize real-time Input (Charging) and Output (Discharging) wattage with dynamic gauges.
 *   **System Health:** Monitor system voltage, frequency, and internal temperatures (fan levels).
 *   **Battery Extensions:** Support for monitoring external battery packs (Success/Extension batteries) with individual charge levels.
-*   **Power History Chart:** Live graph of Input/Output wattage and battery % on the dashboard, with one-click **CSV export** of up to ~6 hours of samples.
+*   **Power History Chart:** Live graph of Input/Output wattage and battery % on the dashboard. Selectable time ranges (5m / 10m / 30m / 1h / 24h), tap the graph to read exact values at any point, and one-click **CSV export**.
+*   **OLED Saver Theme:** Pure-black theme that switches OLED pixels off — the most power-efficient way to leave the dashboard on overnight with "Keep Screen Awake".
 *   **Auto-Reconnect:** Automatically retries the Bluetooth connection (with backoff) if the link drops unexpectedly.
 *   **Keep Screen Awake:** Optional Wake Lock so your phone screen stays on while monitoring.
 *   **Alerts:** Optional browser notifications for low battery (&lt;20%) and device faults.

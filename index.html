@@ -187,6 +187,57 @@
             --btn-green: #008000;
         }
 
+        /* OLED Theme — maximum battery efficiency on OLED/AMOLED screens.
+           Pure black (#000) means those pixels are physically OFF; text is
+           dimmed and desaturated to keep lit-pixel power draw minimal. */
+        [data-theme="oled"] {
+            --bg-body: #000000;
+            --bg-card: #000000;
+            --bg-log: #000000;
+            --text-main: #9a9a9a;
+            --text-muted: #4f4f4f;
+            --text-green: #3f8f4d;
+            --text-blue: #3f6f9f;
+            --text-red: #9f3f3f;
+            --btn-blue: #102a40;
+            --btn-blue-hover: #16374f;
+            --btn-red: #401010;
+            --btn-red-hover: #501616;
+            --btn-green: #103a1a;
+        }
+
+        /* Cards share the black background, so use hairline borders to delineate */
+        [data-theme="oled"] .dashboard,
+        [data-theme="oled"] .setting-row,
+        [data-theme="oled"] .control-tile,
+        [data-theme="oled"] .accordion-header,
+        [data-theme="oled"] .accordion-content,
+        [data-theme="oled"] .modal-content,
+        [data-theme="oled"] .eff-card,
+        [data-theme="oled"] .list-col,
+        [data-theme="oled"] #history-panel {
+            border: 1px solid #1c1c1c;
+            box-shadow: none;
+            background: #000;
+        }
+
+        [data-theme="oled"] .control-tile.active {
+            background: #0a2412;
+            color: #3f8f4d;
+            border-color: #2a5a36;
+        }
+
+        [data-theme="oled"] .accordion.open .accordion-header {
+            background: #0a2412;
+            color: #9a9a9a;
+        }
+
+        [data-theme="oled"] .toast {
+            background: #0a2412;
+            color: #9a9a9a;
+            border: 1px solid #2a5a36;
+        }
+
         [data-theme="pipboy"] {
             --bg-body: #000000;
             --bg-card: #0a2e0a;
@@ -1050,6 +1101,23 @@
             color: #008800;
         }
 
+        /* History chart range buttons */
+        .hist-range-btn {
+            background: none;
+            border: 1px solid var(--text-muted);
+            color: var(--text-muted);
+            border-radius: 0.25rem;
+            font-size: 0.65rem;
+            padding: 0.05rem 0.35rem;
+            cursor: pointer;
+        }
+
+        .hist-range-btn.active {
+            border-color: var(--text-blue);
+            color: var(--text-blue);
+            font-weight: bold;
+        }
+
         .debug-console {
             position: fixed;
             bottom: 0;
@@ -1521,17 +1589,28 @@
 
             <!-- Power History Chart -->
             <div id="history-panel"
-                style="width: 100%; background: var(--bg-card); border-radius: var(--border-radius); padding: 0.75rem; box-sizing: border-box; margin-bottom: 2rem;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                style="position: relative; width: 100%; background: var(--bg-card); border-radius: var(--border-radius); padding: 0.75rem; box-sizing: border-box; margin-bottom: 2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.25rem;">
                     <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Power History</span>
+                    <div id="history-ranges" style="display: flex; gap: 0.25rem;">
+                        <button class="hist-range-btn" data-ms="300000" onclick="setHistoryRange(300000, this)">5m</button>
+                        <button class="hist-range-btn" data-ms="600000" onclick="setHistoryRange(600000, this)">10m</button>
+                        <button class="hist-range-btn" data-ms="1800000" onclick="setHistoryRange(1800000, this)">30m</button>
+                        <button class="hist-range-btn" data-ms="3600000" onclick="setHistoryRange(3600000, this)">1h</button>
+                        <button class="hist-range-btn" data-ms="86400000" onclick="setHistoryRange(86400000, this)">24h</button>
+                    </div>
                     <button onclick="exportHistoryCsv()" title="Download history as CSV"
                         style="background: none; border: 1px solid var(--text-muted); color: var(--text-muted); border-radius: 0.25rem; font-size: 0.7rem; padding: 0.1rem 0.4rem; cursor: pointer;">⬇ CSV</button>
                 </div>
-                <canvas id="historyChart" width="600" height="120" style="width: 100%; height: 120px; display: block;"></canvas>
+                <canvas id="historyChart" width="600" height="120" style="width: 100%; height: 120px; display: block; cursor: crosshair;"
+                    onclick="handleChartClick(event)"></canvas>
+                <div id="chartTooltip"
+                    style="display: none; position: absolute; top: 2.4rem; left: 0; background: var(--bg-log); color: var(--text-main); border: 1px solid var(--text-muted); border-radius: 0.4rem; padding: 0.4rem 0.6rem; font-size: 0.7rem; font-family: monospace; line-height: 1.4; z-index: 15; pointer-events: none; box-shadow: 0 2px 8px rgba(0,0,0,0.5);"></div>
                 <div style="display: flex; gap: 1rem; font-size: 0.65rem; color: var(--text-muted); margin-top: 0.25rem;">
                     <span style="color: var(--text-green);">▬ Input W</span>
                     <span style="color: var(--text-blue);">▬ Output W</span>
                     <span>┄ Battery %</span>
+                    <span style="margin-left: auto; opacity: 0.7;">tap graph for values</span>
                 </div>
             </div>
 
@@ -1862,6 +1941,8 @@
                     </div>
                     <div class="setting-desc" style="margin-bottom:0.25rem;">Theme</div>
                     <div class="theme-pills" id="theme-pills">
+                        <span class="theme-pill" data-theme="oled" onclick="selectThemePill('oled')">🌑
+                            OLED Saver</span>
                         <span class="theme-pill" data-theme="pipboy" onclick="selectThemePill('pipboy')">☢️
                             Pipboy</span>
                         <span class="theme-pill" data-theme="terminal" onclick="selectThemePill('terminal')">🖥️
@@ -5045,7 +5126,20 @@ Example format:
 
         // ========== POWER HISTORY + CHART + CSV EXPORT ==========
         const powerHistory = []; // { t, soc, in: watts, out: watts }
-        const HISTORY_MAX = 10800; // ~6h at 2s polling
+        const HISTORY_MAX = 86400; // 24h at 1s polling
+
+        // Selected time window for the chart (persisted)
+        let historyRangeMs = parseInt(localStorage.getItem('POWER-histrange')) || 600000; // default 10 min
+        let chartDrawnPoints = []; // points as drawn (downsampled), for tap lookup
+
+        function setHistoryRange(ms, btn) {
+            historyRangeMs = ms;
+            localStorage.setItem('POWER-histrange', ms);
+            document.querySelectorAll('#history-ranges .hist-range-btn').forEach(b =>
+                b.classList.toggle('active', b === btn || parseInt(b.dataset.ms) === ms));
+            hideChartTooltip();
+            drawHistoryChart();
+        }
 
         function recordHistory(soc, inW, outW) {
             powerHistory.push({ t: Date.now(), soc, in: inW, out: outW });
@@ -5060,14 +5154,42 @@ Example format:
             const ctx = canvas.getContext('2d');
             const w = canvas.width, h = canvas.height;
             ctx.clearRect(0, 0, w, h);
-            if (powerHistory.length < 2) {
+
+            const now = Date.now();
+            const windowStart = now - historyRangeMs;
+            const pts = powerHistory.filter(p => p.t >= windowStart);
+            chartDrawnPoints = [];
+
+            if (pts.length < 2) {
                 ctx.fillStyle = 'rgba(255,255,255,0.3)';
                 ctx.font = '12px monospace';
                 ctx.fillText('Collecting data...', 10, h / 2);
                 return;
             }
 
-            const maxW = Math.max(100, ...powerHistory.map(p => Math.max(p.in, p.out)));
+            // X domain: stretch the data we actually have across the full width,
+            // so a freshly opened app doesn't squeeze into a sliver on the right.
+            const domainStart = Math.max(windowStart, pts[0].t);
+            const domainLen = Math.max(now - domainStart, 1000);
+
+            // Downsample to one point per pixel column. Keep the per-bucket MAX
+            // for watts so short spikes (kettle, hob) survive long ranges.
+            const buckets = [];
+            for (const p of pts) {
+                const x = Math.round(((p.t - domainStart) / domainLen) * (w - 1));
+                const b = buckets[x];
+                if (!b) buckets[x] = { x, t: p.t, soc: p.soc, in: p.in, out: p.out };
+                else {
+                    b.in = Math.max(b.in, p.in);
+                    b.out = Math.max(b.out, p.out);
+                    b.soc = p.soc;
+                    b.t = p.t;
+                }
+            }
+            const drawPts = buckets.filter(Boolean);
+            chartDrawnPoints = drawPts;
+
+            const maxW = Math.max(100, ...drawPts.map(p => Math.max(p.in, p.out)));
             const styles = getComputedStyle(document.body);
 
             const drawLine = (getVal, maxVal, color, dashed) => {
@@ -5075,10 +5197,9 @@ Example format:
                 ctx.strokeStyle = color;
                 ctx.lineWidth = 1.5;
                 ctx.setLineDash(dashed ? [4, 3] : []);
-                powerHistory.forEach((p, i) => {
-                    const x = (i / (powerHistory.length - 1)) * w;
-                    const y = h - (getVal(p) / maxVal) * (h - 6) - 3;
-                    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+                drawPts.forEach((p, i) => {
+                    const y = h - (getVal(p) / maxVal) * (h - 18) - 14;
+                    i === 0 ? ctx.moveTo(p.x, y) : ctx.lineTo(p.x, y);
                 });
                 ctx.stroke();
                 ctx.setLineDash([]);
@@ -5088,10 +5209,48 @@ Example format:
             drawLine(p => p.out, maxW, styles.getPropertyValue('--text-blue').trim() || '#60a5fa', false);
             drawLine(p => p.soc, 100, styles.getPropertyValue('--text-muted').trim() || '#9ca3af', true);
 
-            // Peak-watts scale marker
+            // Scale marker + time axis labels
             ctx.fillStyle = 'rgba(255,255,255,0.4)';
             ctx.font = '10px monospace';
             ctx.fillText(`${Math.round(maxW)}W`, 4, 12);
+            const fmt = (t) => new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            ctx.fillText(fmt(domainStart), 4, h - 2);
+            const endLabel = fmt(now);
+            ctx.fillText(endLabel, w - ctx.measureText(endLabel).width - 4, h - 2);
+        }
+
+        // Tap/click the chart to read off exact values at that time
+        function handleChartClick(e) {
+            const canvas = document.getElementById('historyChart');
+            if (!canvas || chartDrawnPoints.length === 0) return;
+            const rect = canvas.getBoundingClientRect();
+            const clickX = ((e.clientX - rect.left) / rect.width) * canvas.width;
+
+            let nearest = chartDrawnPoints[0];
+            for (const p of chartDrawnPoints) {
+                if (Math.abs(p.x - clickX) < Math.abs(nearest.x - clickX)) nearest = p;
+            }
+            showChartTooltip(e.clientX - rect.left, nearest);
+        }
+
+        function showChartTooltip(panelX, p) {
+            const tip = document.getElementById('chartTooltip');
+            if (!tip) return;
+            tip.innerHTML = `<b>${new Date(p.t).toLocaleTimeString()}</b><br>
+                In: <span style="color:var(--text-green)">${Math.round(p.in)}W</span><br>
+                Out: <span style="color:var(--text-blue)">${Math.round(p.out)}W</span><br>
+                Bat: ${p.soc.toFixed(1)}%`;
+            tip.style.display = 'block';
+            const panel = tip.parentElement;
+            const maxLeft = panel.clientWidth - tip.offsetWidth - 4;
+            tip.style.left = Math.max(4, Math.min(maxLeft, panelX - tip.offsetWidth / 2)) + 'px';
+            clearTimeout(window.chartTipTimer);
+            window.chartTipTimer = setTimeout(hideChartTooltip, 4000);
+        }
+
+        function hideChartTooltip() {
+            const tip = document.getElementById('chartTooltip');
+            if (tip) tip.style.display = 'none';
         }
 
         function exportHistoryCsv() {
@@ -5170,6 +5329,10 @@ Example format:
             if (alertsEl) alertsEl.checked = (localStorage.getItem('POWER-alerts') === '1');
             const pollEl = document.getElementById('set-poll-rate');
             if (pollEl) pollEl.value = String(pollRateMs);
+
+            // Highlight the persisted history range button
+            document.querySelectorAll('#history-ranges .hist-range-btn').forEach(b =>
+                b.classList.toggle('active', parseInt(b.dataset.ms) === historyRangeMs));
 
             // Robust Listener Attachment
             const cBtns = document.querySelectorAll('.btn-connect');
