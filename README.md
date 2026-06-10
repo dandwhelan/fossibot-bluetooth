@@ -33,13 +33,18 @@ ABOK Power Ark3600 (Probalby works, but not tested)
 *   **Live Power Flow:** Visualize real-time Input (Charging) and Output (Discharging) wattage with dynamic gauges.
 *   **System Health:** Monitor system voltage, frequency, and internal temperatures (fan levels).
 *   **Battery Extensions:** Support for monitoring external battery packs (Success/Extension batteries) with individual charge levels.
+*   **Power History Chart:** Live graph of Input/Output wattage and battery % on the dashboard, with one-click **CSV export** of up to ~6 hours of samples.
+*   **Auto-Reconnect:** Automatically retries the Bluetooth connection (with backoff) if the link drops unexpectedly.
+*   **Keep Screen Awake:** Optional Wake Lock so your phone screen stays on while monitoring.
+*   **Alerts:** Optional browser notifications for low battery (&lt;20%) and device faults.
+*   **Adjustable Poll Rate:** Choose how often the app reads device status (1–10 s).
 
 ### 🔋 Power Simulator
 *   **Runtime Calculator:** Estimate how long your power station will run with selected appliances.
 *   **Split AC/DC Lists:** Clearly organized appliance management with separate AC and DC columns.
 *   **Editable Wattages:** Click any appliance wattage to customize its power draw.
 *   **Efficiency Modeling:** Card-based AC (88%) and DC (96%) efficiency toggles to account for real-world conversion losses.
-*   **Custom Appliances:** Add your own devices with custom names, wattages, and AC/DC type.
+*   **Custom Appliances:** Add your own devices with custom names, wattages, and AC/DC type — saved across sessions and removable.
 
 ### 🛠️ Advanced Control Dashboard
 *   **Power Toggle:** Remotely toggle AC Inverter, DC (12V) Output, and USB Ports.

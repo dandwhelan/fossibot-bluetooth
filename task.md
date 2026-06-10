@@ -35,4 +35,4 @@
 ## 4. Reverse Engineering Toolkit
 - [x] **Record Changes Tool:** Implement snapshot/compare feature for registers.
 - [x] **System Summary:** Add plain-text status summary and comparison logic.
-- [ ] **Bit Inspector:** UI to visualize individual bits of flag registers.
+- [x] **Bit Inspector:** UI to visualize individual bits of flag registers (click 🔬 rows in Diagnostics).
