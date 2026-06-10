@@ -1803,10 +1803,19 @@
                         <span class="accordion-arrow">▼</span>
                     </div>
                     <div class="accordion-content">
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <span class="setting-title">Network Status</span>
+                                <span class="setting-desc">Reported by the device (updates live).</span>
+                            </div>
+                            <span id="wifi-status" style="font-weight: bold;">Unknown</span>
+                        </div>
                         <div class="setting-row" style="flex-direction: column; align-items: stretch; gap: 0.5rem;">
                             <div class="setting-info">
                                 <span class="setting-title">Connect to Network</span>
-                                <span class="setting-desc">Connecting will disable the local AP.</span>
+                                <span class="setting-desc">Connecting will disable the local AP. Note: credentials
+                                    are sent over Bluetooth unencrypted, and once online the device contacts the
+                                    vendor cloud (api.app.sydpower.com).</span>
                             </div>
                             <input type="text" id="wifi-ssid" class="setting-input" placeholder="SSID (Network Name)"
                                 style="width: 100%; box-sizing: border-box;">
@@ -1816,6 +1825,17 @@
                         <div style="margin-top: 1rem;">
                             <button class="btn-main" onclick="sendWifiConfig()"
                                 style="width: 100%; display: flex !important; background-color: var(--btn-blue);">Connect to WiFi</button>
+                        </div>
+                        <div class="setting-row" style="flex-direction: column; align-items: stretch; gap: 0.5rem; margin-top: 1rem;">
+                            <div class="setting-info">
+                                <span class="setting-title">Disable Access Point</span>
+                                <span class="setting-desc">When WiFi is not configured, the device broadcasts an
+                                    open, password-free hotspot (ESP_xxxxxx). This sends random bogus credentials
+                                    so the AP turns off and the device never reaches the cloud — good for privacy
+                                    and saves a little power.</span>
+                            </div>
+                            <button class="btn-main" onclick="disableWifiAP()"
+                                style="width: 100%; display: flex !important; background-color: #be123c;">Disable WiFi Access Point</button>
                         </div>
                     </div>
                 </div>
@@ -2783,6 +2803,7 @@ Example format:
                     networkStatus.state = NETWORK_STATES[state] || `Unknown (${state})`;
                     networkStatus.lastUpdate = Date.now();
                     log(`Network Status: ${networkStatus.state}`);
+                    updateWifiStatusUI();
                     if (document.getElementById('view-diagnostics').classList.contains('active')) {
                         renderDiagnostics();
                     }
@@ -3126,15 +3147,7 @@ Example format:
             });
         }
 
-        function sendWifiConfig() {
-            const ssid = document.getElementById('wifi-ssid').value;
-            const pass = document.getElementById('wifi-pass').value;
-
-            if (!ssid || !pass) {
-                alert("Please enter both SSID and Password.");
-                return;
-            }
-
+        function sendWifiCredentials(ssid, pass, logLabel) {
             addToQueue(async () => {
                 if (!writeChar) {
                     alert("Not connected to device!");
@@ -3166,14 +3179,48 @@ Example format:
                 packet[payloadLen + 1] = checksum & 0xff;
 
                 try {
-                    log(`Sending WiFi Config: SSID=${ssid}`);
+                    log(logLabel);
                     await writeChar.writeValue(packet);
-                    alert("WiFi Configuration Sent! Device should connect and AP will disable.");
+                    networkStatus.state = 'Configuration Sent...';
+                    networkStatus.lastUpdate = Date.now();
+                    updateWifiStatusUI();
                 } catch (e) {
                     log("Error sending WiFi config: " + e.message);
                     alert("Error: " + e.message);
                 }
             });
+        }
+
+        function sendWifiConfig() {
+            const ssid = document.getElementById('wifi-ssid').value;
+            const pass = document.getElementById('wifi-pass').value;
+
+            if (!ssid || !pass) {
+                alert("Please enter both SSID and Password.");
+                return;
+            }
+
+            sendWifiCredentials(ssid, pass, `Sending WiFi Config: SSID=${ssid}`);
+        }
+
+        function disableWifiAP() {
+            if (!confirm("This sends random bogus WiFi credentials so the device's open access point " +
+                "(ESP_xxxxxx) turns off and it never connects to the cloud.\n\n" +
+                "To use WiFi again later, just send real credentials or factory reset the device " +
+                "(hold DC + Light + USB for ~5 seconds).\n\nContinue?")) {
+                return;
+            }
+            // Random SSID/pass so the device tries to join a network that doesn't exist
+            const rand = () => Math.random().toString(36).slice(2, 12);
+            sendWifiCredentials(`x${rand()}`, rand() + rand(), "Disabling WiFi AP (sending bogus credentials)");
+        }
+
+        function updateWifiStatusUI() {
+            const el = document.getElementById('wifi-status');
+            if (!el) return;
+            el.textContent = networkStatus.state;
+            el.style.color = networkStatus.state.includes('Connected') ? 'var(--text-green)'
+                : networkStatus.state.includes('Failed') ? '#ef4444' : 'var(--text-main)';
         }
 
         function sendSettingsRequest() {
