@@ -2701,15 +2701,17 @@ Example format:
 
                     // System Status: Error > Charging > Standby
                     // Reg 48 flags: 0x8000=Charging, 0x4000=Standby, 0x0008=Error Pending (transient)
-                    // Reg 8: 0=Normal, 78=Inverter Fault, 79=Safety Lockout
+                    // Reg 8: 78=Inverter Fault, 79=Safety Lockout. Other non-zero values
+                    // (e.g. 136) appear on healthy devices and must NOT be treated as errors.
                     // NOTE: Reg 48 bit 0x0008 is set transiently during AC inverter state changes
                     // and is not a reliable error indicator. Use Reg 8 (errorCode) as authoritative source.
+                    const isKnownError = (errorCode === 78 || errorCode === 79);
                     let sysStatus = '';
-                    if (errorCode > 0) {
+                    if (isKnownError) {
                         const isCritHW = (protFlags & 0x6000) > 0;
                         if (errorCode === 79 && !isCritHW) sysStatus = 'Temp Protection';
-                        else if (errorCode === 78) sysStatus = 'Inverter Fault';
-                        else sysStatus = `Error ${errorCode}`;
+                        else if (errorCode === 79) sysStatus = `Error ${errorCode}`;
+                        else sysStatus = 'Inverter Fault';
                     }
                     else if (statusFlags & 0x8000) sysStatus = 'Charging';
                     else if (statusFlags & 0x4000) sysStatus = 'Standby';
@@ -2730,7 +2732,7 @@ Example format:
                     if (!isDebug) {
                         const effectiveInput = (inputTotal > 0) ? inputTotal : (inputRatified + inputDC);
                         recordHistory(battery, effectiveInput, output);
-                        checkAlerts(battery, isCharging, errorCode, sysStatus);
+                        checkAlerts(battery, isCharging, isKnownError ? errorCode : 0, sysStatus);
                     }
 
                     const displayMinutes = isCharging ? timeToFull : timeToEmpty;
@@ -3587,7 +3589,7 @@ Example format:
             5: { name: 'Unknown (0)', unit: '' },
             6: { name: 'Total Input', unit: 'W' },
             7: { name: 'Error/Warning Code?', format: 'flags' },     // 0 during cold temp warning, needs more data
-            8: { name: 'Active Error Code', format: 'raw' },         // 0=Normal, 78=Inverter Fault, 79=Safety Lockout (Cold/Hot/HW)
+            8: { name: 'Active Error Code', format: 'raw' },         // 78=Inverter Fault, 79=Safety Lockout (Cold/Hot/HW). Other values (0, 136, ...) seen on healthy devices = Normal
             13: { name: 'AC Charge Rate', format: 'charge_level' },
             14: { name: 'Max AC Input', format: 'watt' },         // Confirmed 1100
             16: { name: 'Frequency Set', format: 'freq01' },
