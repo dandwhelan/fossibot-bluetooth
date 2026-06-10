@@ -90,22 +90,6 @@
             --btn-green: #00ffff;
         }
 
-        [data-theme="ocean"] {
-            --bg-body: #0c1929;
-            --bg-card: #1e3a5f;
-            --bg-log: #051525;
-            --text-main: #e0f2fe;
-            --text-muted: #7dd3fc;
-            --text-green: #2dd4bf;
-            --text-blue: #38bdf8;
-            --text-red: #f472b6;
-            --btn-blue: #0284c7;
-            --btn-blue-hover: #0369a1;
-            --btn-red: #db2777;
-            --btn-red-hover: #be185d;
-            --btn-green: #14b8a6;
-        }
-
         [data-theme="sunset"] {
             --bg-body: #1c0a00;
             --bg-card: #3d1500;
@@ -1404,14 +1388,15 @@
                 </div>
 
                 <!-- Connect/Disconnect Triggers (Top Right) -->
-                <div class="btn-connect" onclick="connect()"
+                <!-- click handler attached via .btn-connect listener in DOMContentLoaded -->
+                <div class="btn-connect"
                     style="position: absolute; top: 10px; right: 10px; cursor: pointer; z-index: 20; color: var(--text-muted); opacity: 0.8; background: transparent !important; box-shadow: none;">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">
                         <path d="M7 7l10 10-5 5V2l5 5L7 17" />
                     </svg>
                 </div>
-                <div class="btn-disconnect hidden" onclick="window.location.reload()"
+                <div class="btn-disconnect hidden" onclick="disconnect()"
                     style="position: absolute; top: 10px; right: 10px; cursor: pointer; z-index: 20; color: var(--text-green); opacity: 1;">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">
@@ -1534,6 +1519,22 @@
                 </div>
             </div>
 
+            <!-- Power History Chart -->
+            <div id="history-panel"
+                style="width: 100%; background: var(--bg-card); border-radius: var(--border-radius); padding: 0.75rem; box-sizing: border-box; margin-bottom: 2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                    <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Power History</span>
+                    <button onclick="exportHistoryCsv()" title="Download history as CSV"
+                        style="background: none; border: 1px solid var(--text-muted); color: var(--text-muted); border-radius: 0.25rem; font-size: 0.7rem; padding: 0.1rem 0.4rem; cursor: pointer;">⬇ CSV</button>
+                </div>
+                <canvas id="historyChart" width="600" height="120" style="width: 100%; height: 120px; display: block;"></canvas>
+                <div style="display: flex; gap: 1rem; font-size: 0.65rem; color: var(--text-muted); margin-top: 0.25rem;">
+                    <span style="color: var(--text-green);">▬ Input W</span>
+                    <span style="color: var(--text-blue);">▬ Output W</span>
+                    <span>┄ Battery %</span>
+                </div>
+            </div>
+
             <!-- Activity Log moved to Diagnostics view -->
 
             <div class="terminal-prompt">
@@ -1562,7 +1563,7 @@
                         <div class="accordion-title">
                             <span class="accordion-icon">⚡</span>
                             Quick Actions
-                            <span class="accordion-count">3</span>
+                            <span class="accordion-count">6</span>
                         </div>
                         <span class="accordion-arrow">▼</span>
                     </div>
@@ -1592,6 +1593,42 @@
                                     <span class="slider"></span>
                                 </label>
                             </div>
+                        </div>
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <span class="setting-title">Keep Screen Awake</span>
+                                <span class="setting-desc">Stop phone screen sleeping while monitoring</span>
+                            </div>
+                            <div class="setting-control">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="set-wake-lock" onchange="toggleWakeLock(this.checked)">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <span class="setting-title">Alerts</span>
+                                <span class="setting-desc">Notify on low battery (&lt;20%) and faults</span>
+                            </div>
+                            <div class="setting-control">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="set-alerts" onchange="toggleAlerts(this.checked)">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <span class="setting-title">App Poll Rate</span>
+                                <span class="setting-desc">How often the app reads device status</span>
+                            </div>
+                            <select class="setting-select" id="set-poll-rate" onchange="setPollRate(this.value)">
+                                <option value="1000">1 second</option>
+                                <option value="2000" selected>2 seconds</option>
+                                <option value="5000">5 seconds</option>
+                                <option value="10000">10 seconds</option>
+                            </select>
                         </div>
                         <div class="setting-row">
                             <div class="setting-info">
@@ -1698,8 +1735,8 @@
                                 style="width: 100%; box-sizing: border-box;">
                         </div>
                         <div style="margin-top: 1rem;">
-                            <button class="btn-main btn-connect" onclick="sendWifiConfig()"
-                                style="width: 100%; display: flex !important;">Connect to WiFi</button>
+                            <button class="btn-main" onclick="sendWifiConfig()"
+                                style="width: 100%; display: flex !important; background-color: var(--btn-blue);">Connect to WiFi</button>
                         </div>
                     </div>
                 </div>
@@ -1861,7 +1898,7 @@
                 Back
             </button>
             <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; flex: 1;">
-                <button class="btn-main btn-connect" onclick="connect()"
+                <button class="btn-main btn-connect"
                     style="background: var(--btn-blue); color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem; flex: 1;">Connect</button>
                 <button class="btn-main btn-disconnect hidden" onclick="disconnect()"
                     style="background: var(--btn-red); color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem; flex: 1;">Disconnect</button>
@@ -2148,10 +2185,10 @@ Example format:
             const chargeRateEl = document.getElementById('status-charge-rate');
             if (chargeRateEl) chargeRateEl.textContent = chargeRateWatts + 'W';
 
-            // Reg 59: Screen Timeout (index or minutes - scaling unclear)
+            // Reg 59: Screen Timeout (seconds)
             const screenTimeout = settingsRegisters[59] || 0;
             const screenTimeoutStatus = document.getElementById('status-screen-timeout');
-            if (screenTimeoutStatus) screenTimeoutStatus.textContent = screenTimeout > 0 ? screenTimeout + ' min' : 'Never';
+            if (screenTimeoutStatus) screenTimeoutStatus.textContent = screenTimeout > 0 ? Math.round(screenTimeout / 60) + ' min' : 'Never';
 
             // Reg 60: AC Standby (mins)
             const acStandby = settingsRegisters[60] || 0;
@@ -2245,22 +2282,27 @@ Example format:
         let chaosLevel = 0;
         let meltMap = document.getElementById('meltMap');
 
+        // The melt animation loop only runs while the psychedelic theme is active;
+        // setTheme() restarts it via startMeltLoop() when the theme is selected.
         function updateMelt() {
-            if (document.body.getAttribute('data-theme') === 'psychedelic') {
-                // Decay chaos
-                chaosLevel = Math.max(0, chaosLevel - 0.5);
-
-                // Update SVG filter
-                if (meltMap) {
-                    meltMap.scale.baseVal = chaosLevel;
-                }
-            } else {
+            if (document.body.getAttribute('data-theme') !== 'psychedelic') {
                 chaosLevel = 0;
                 if (meltMap) meltMap.scale.baseVal = 0;
+                window.meltLoopRunning = false;
+                return;
             }
+            // Decay chaos
+            chaosLevel = Math.max(0, chaosLevel - 0.5);
+            if (meltMap) meltMap.scale.baseVal = chaosLevel;
             requestAnimationFrame(updateMelt);
         }
-        requestAnimationFrame(updateMelt);
+
+        function startMeltLoop() {
+            if (window.meltLoopRunning) return;
+            window.meltLoopRunning = true;
+            requestAnimationFrame(updateMelt);
+        }
+        if (document.body.getAttribute('data-theme') === 'psychedelic') startMeltLoop();
 
         function flashPsyImage() {
             if (document.body.getAttribute('data-theme') !== 'psychedelic') return;
@@ -2302,11 +2344,14 @@ Example format:
             });
         });
 
+        const LOG_MAX_LINES = 300;
         function log(msg) {
+            const box = document.getElementById('log');
             const line = document.createElement('div');
             line.textContent = `> ${msg}`;
-            document.getElementById('log').appendChild(line);
-            document.getElementById('log').scrollTop = document.getElementById('log').scrollHeight;
+            box.appendChild(line);
+            while (box.childNodes.length > LOG_MAX_LINES) box.removeChild(box.firstChild);
+            box.scrollTop = box.scrollHeight;
         }
 
         function updateStatus(connected) {
@@ -2345,6 +2390,7 @@ Example format:
         }
 
         async function connect() {
+            userDisconnected = false;
             try {
                 if (!device) {
                     log("Requesting Bluetooth Device...");
@@ -2408,6 +2454,7 @@ Example format:
                 log("Connected! Starting polling on c304...");
                 // Reset override on connect
                 manualLightOverride = null;
+                reconnectAttempts = 0;
                 updateStatus(true);
                 startPolling();
 
@@ -2597,6 +2644,14 @@ Example format:
                     // Time display: Show "Time to Full" when charging, "Time to Empty" when discharging
                     // Use Reg 20 (totalWatts) for output comparison - Reg 39 is undocumented
                     const isCharging = (inputTotal > 0 || inputRatified > 0 || inputDC > 0) && (inputTotal > totalWatts || (inputRatified + inputDC) > totalWatts);
+
+                    // Power history + alert checks (only for real device data, not the simulator)
+                    if (!isDebug) {
+                        const effectiveInput = (inputTotal > 0) ? inputTotal : (inputRatified + inputDC);
+                        recordHistory(battery, effectiveInput, output);
+                        checkAlerts(battery, isCharging, errorCode, sysStatus);
+                    }
+
                     const displayMinutes = isCharging ? timeToFull : timeToEmpty;
                     const timeLabel = isCharging ? '⚡' : '🔋'; // Lightning for charging, Battery for discharging
                     // Charging: show minutes only | Discharging: show hours and minutes
@@ -2849,11 +2904,11 @@ Example format:
                 }
             };
 
-            // Reg 59: Screen Timeout (Seconds -> Mins)
+            // Reg 59: Screen Timeout (register and option values are both seconds)
             if (settingsRegisters[59] !== undefined) {
-                const mins = Math.floor(settingsRegisters[59] / 60);
-                updateSelect('set-screen-timeout', mins);
-                updateTimeStatus('status-screen-timeout', mins);
+                const secs = settingsRegisters[59];
+                updateSelect('set-screen-timeout', secs);
+                updateTimeStatus('status-screen-timeout', Math.floor(secs / 60));
             }
 
             // Reg 60: AC Standby
@@ -2964,7 +3019,7 @@ Example format:
                 try {
                     await task();
                     // Small delay to prevent choking
-                    await new Promise(r => setTimeout(r, 500));
+                    await new Promise(r => setTimeout(r, 200));
                 } catch (e) {
                     console.error("Queue Task Error:", e);
                 }
@@ -2972,9 +3027,20 @@ Example format:
             isProcessingQueue = false;
         }
 
+        // Returns a promise that resolves when the task has actually run, so callers
+        // can await completion. Task errors are logged and resolve to undefined.
         function addToQueue(task) {
-            commandQueue.push(task);
-            processQueue();
+            return new Promise((resolve) => {
+                commandQueue.push(async () => {
+                    try {
+                        resolve(await task());
+                    } catch (e) {
+                        console.error("Queue Task Error:", e);
+                        resolve(undefined);
+                    }
+                });
+                processQueue();
+            });
         }
 
         function sendWifiConfig() {
@@ -3132,28 +3198,45 @@ Example format:
 
             const data = new Uint8Array(arr);
 
-            try {
-                // Detailed log
+            // Route through the command queue so we never collide with the polling reads
+            await addToQueue(async () => {
                 const hex = [...data].map(b => b.toString(16).padStart(2, '0')).join(' ');
                 log(`Sending ${cmdName}: ${hex}`);
-                await writeChar.writeValue(data);
-                log("Command sent");
-                await new Promise(r => setTimeout(r, 200));
-                await sendReadRequest();
-            } catch (error) {
-                log("Send failed: " + error);
-            }
+                try {
+                    await writeChar.writeValue(data);
+                    log("Command sent");
+                } catch (error) {
+                    log("Send failed: " + error);
+                }
+            });
+            sendReadRequest();
         }
+
+        // Auto-reconnect: retry with backoff after an unexpected link drop,
+        // but not when the user explicitly disconnected.
+        let userDisconnected = false;
+        let reconnectAttempts = 0;
+        const RECONNECT_MAX_ATTEMPTS = 5;
 
         function onDisconnected() {
             log("Disconnected");
             stopPolling();
             manualLightOverride = null; // Reset override
             updateStatus(false);
+
+            if (!userDisconnected && device && reconnectAttempts < RECONNECT_MAX_ATTEMPTS) {
+                const delay = Math.min(30000, 2000 * Math.pow(2, reconnectAttempts));
+                reconnectAttempts++;
+                log(`Auto-reconnect in ${delay / 1000}s (attempt ${reconnectAttempts}/${RECONNECT_MAX_ATTEMPTS})...`);
+                setTimeout(() => {
+                    if (device && !device.gatt.connected && !userDisconnected) connect();
+                }, delay);
+            }
         }
 
 
         function disconnect() {
+            userDisconnected = true;
             if (device && device.gatt.connected) {
                 device.gatt.disconnect();
             } else {
@@ -3176,14 +3259,22 @@ Example format:
 
         let pollingActive = false; // Tracks if the loop is actually running
         let isPolling = false; // Control flag for the async polling loop
+        let pollRateMs = parseInt(localStorage.getItem('POWER-pollrate')) || 2000;
+
+        function setPollRate(val) {
+            pollRateMs = parseInt(val) || 2000;
+            localStorage.setItem('POWER-pollrate', pollRateMs);
+            log(`Poll rate set to ${pollRateMs / 1000}s`);
+        }
 
         async function startPolling() {
             if (isPolling) return;
             isPolling = true;
             pollingActive = true;
             while (isPolling && device && device.gatt.connected) {
-                await sendReadRequest();
-                await new Promise(r => setTimeout(r, 2000));
+                // Skip a beat if the queue is backed up (slow BLE link or active scan)
+                if (commandQueue.length < 3) await sendReadRequest();
+                await new Promise(r => setTimeout(r, pollRateMs));
             }
             pollingActive = false;
         }
@@ -3312,11 +3403,15 @@ Example format:
         }
 
         // Theme Handling
+        // Sets data-theme on both <html> (for CSS) and <body> (for JS checks like the
+        // psychedelic effects), and keeps the theme pills in sync.
         function setTheme(themeName) {
+            document.documentElement.setAttribute('data-theme', themeName);
             document.body.setAttribute('data-theme', themeName);
-            const el = document.getElementById('themeSelect');
-            if (el) el.value = themeName;
             localStorage.setItem('POWER-theme', themeName);
+            document.querySelectorAll('.theme-pill[data-theme]').forEach(p =>
+                p.classList.toggle('active', p.getAttribute('data-theme') === themeName));
+            if (themeName === 'psychedelic') startMeltLoop();
         }
 
         // Info Modal Logic
@@ -3476,7 +3571,7 @@ Example format:
             41: 'Pack Voltage Calib 2',
             56: 'Key Sound (0/1)',
             57: 'Silent Charging (0/1)',
-            59: 'Screen Timeout (mins)',
+            59: 'Screen Timeout (Seconds)',
             60: 'AC Standby (mins)',
             61: 'DC Standby (mins)',
             62: 'USB Standby (Seconds)',
@@ -3531,14 +3626,14 @@ Example format:
             // Compare mode header - shows all imported devices
             const hasImports = importedDiagDataList.length > 0;
             if (isCompareMode && hasImports) {
-                const currentDevice = device?.name || 'Current Device';
+                const currentDevice = escapeHtml(device?.name || 'Current Device');
                 html += `<div class="compare-header">
                             <div class="compare-device current">📱 ${currentDevice}</div>`;
 
                 // List all imported devices with remove buttons
                 importedDiagDataList.forEach((d, idx) => {
                     html += `<div class="compare-device imported" style="font-size:0.75rem;">
-                                📥 ${d.device || 'Unknown'}
+                                📥 ${escapeHtml(d.device || 'Unknown')}
                                 <button onclick="removeImportedDevice(${idx})" 
                                     style="background:none;border:none;color:#f00;cursor:pointer;margin-left:0.25rem;" title="Remove">✕</button>
                             </div>`;
@@ -3558,7 +3653,7 @@ Example format:
             // Table header - different for compare mode
             if (isCompareMode && hasImports) {
                 // Build dynamic headers for each imported device
-                let importHeaders = importedDiagDataList.map(d => `<th style="text-align:right; border-bottom:1px solid #444; color:var(--btn-green); font-size:0.7rem;">${d.device || 'Imp'}</th>`).join('');
+                let importHeaders = importedDiagDataList.map(d => `<th style="text-align:right; border-bottom:1px solid #444; color:var(--btn-green); font-size:0.7rem;">${escapeHtml(d.device || 'Imp')}</th>`).join('');
                 html += `<tr><th style="text-align:left; border-bottom:1px solid #444;">Reg</th><th style="text-align:left; border-bottom:1px solid #444;">Name</th><th style="text-align:right; border-bottom:1px solid #444; color:var(--btn-blue);">Current</th>${importHeaders}</tr>`;
             } else {
                 html += '<tr><th style="text-align:left; border-bottom:1px solid #444;">Reg</th><th style="text-align:left; border-bottom:1px solid #444;">Name</th><th style="text-align:right; border-bottom:1px solid #444;">Data</th><th style="text-align:right; border-bottom:1px solid #444;">Raw</th></tr>';
@@ -3613,15 +3708,17 @@ Example format:
                                 ${importedCells}
                             </tr>`;
                 } else {
-                    // Normal mode row
+                    // Normal mode row. Flags registers open the Bit Inspector on click.
+                    const isFlags = regInfo?.format === 'flags' && val !== undefined;
+                    const clickAttr = isFlags ? ` onclick="showBitInspector(${i}, ${val})" title="Click to inspect bits"` : '';
                     html += `<tr style="background:${rowColor}; color:${color}">
                                 <td style="padding:0.25rem;">${i}</td>
-                                <td style="padding:0.25rem; color:#aaa;">${name}</td>
+                                <td style="padding:0.25rem; color:#aaa;${isFlags ? ' cursor:pointer;' : ''}"${clickAttr}>${name}${isFlags ? ' 🔬' : ''}</td>
                                 <td style="padding:0.25rem; text-align:right; color:var(--text-green); font-weight:bold;">
                                     <span class="${valClass}">${dataStr}</span>
                                 </td>
                                 <td style="padding:0.25rem; text-align:right;">
-                                    <span class="${valClass}">${valStr}</span> 
+                                    <span class="${valClass}">${valStr}</span>
                                     <span style="font-size:0.7rem; color:#444;">${hexStr}</span>
                                 </td>
                             </tr>`;
@@ -3639,7 +3736,7 @@ Example format:
 
                 // Table header - different for compare mode
                 if (isCompareMode && hasImports) {
-                    let importHeaders = importedDiagDataList.map(d => `<th style="text-align:right; border-bottom:1px solid #444; color:var(--btn-green); font-size:0.7rem;">${d.device || 'Imp'}</th>`).join('');
+                    let importHeaders = importedDiagDataList.map(d => `<th style="text-align:right; border-bottom:1px solid #444; color:var(--btn-green); font-size:0.7rem;">${escapeHtml(d.device || 'Imp')}</th>`).join('');
                     html += `<tr><th style="text-align:left; border-bottom:1px solid #444;">Reg</th><th style="text-align:left; border-bottom:1px solid #444;">Name</th><th style="text-align:right; border-bottom:1px solid #444; color:var(--btn-blue);">Current</th>${importHeaders}</tr>`;
                 } else {
                     html += '<tr><th style="text-align:left; border-bottom:1px solid #444;">Reg</th><th style="text-align:left; border-bottom:1px solid #444;">Name</th><th style="text-align:right; border-bottom:1px solid #444;">Value</th></tr>';
@@ -3785,12 +3882,11 @@ Example format:
                 </div>
             </div>`;
 
-            html += `</table></div>`;
             div.innerHTML = html;
+
+            // Keep the plain-text System Summary in sync with the table
+            updateSystemSummary();
         }
-        // Update the plain-text System Summary
-        // Update the plain-text System Summary
-        updateSystemSummary();
 
         let diagAutoRefreshInterval = null;
         let diagRefreshMs = 2000;  // Default 2 seconds
@@ -3798,6 +3894,11 @@ Example format:
         const SETTINGS_REFRESH_INTERVAL = 60000;  // Request settings once per minute
 
         async function diagFullRefresh() {
+            // Don't rebuild the tables when the tab is hidden or the user isn't
+            // looking at the diagnostics view
+            if (document.hidden) return;
+            const diagView = document.getElementById('view-diagnostics');
+            if (!diagView || !diagView.classList.contains('active')) return;
             renderDiagnostics();
 
             // Only request settings once per minute (not every refresh)
@@ -3815,12 +3916,14 @@ Example format:
             const payload = [0x11, 0x07, 0x00, 0x00];
             const checksum = calculateChecksum(payload);
             const cmd = new Uint8Array([...payload, (checksum >> 8) & 0xff, checksum & 0xff]);
-            try {
-                log("Querying network status (Caution: might reset)...");
-                await writeChar.writeValue(cmd);
-            } catch (e) {
-                log("Network status request error: " + e.message);
-            }
+            await addToQueue(async () => {
+                try {
+                    log("Querying network status (Caution: might reset)...");
+                    await writeChar.writeValue(cmd);
+                } catch (e) {
+                    log("Network status request error: " + e.message);
+                }
+            });
         }
 
         function toggleDiagAutoRefresh(enabled) {
@@ -3848,196 +3951,13 @@ Example format:
             }
         }
 
-        // ========== COPY / IMPORT / COMPARE FUNCTIONS ==========
 
-        // ========== COPY / IMPORT / COMPARE FUNCTIONS ==========
-
-        // Copy Diagnostic Data to Clipboard
-        async function copyDiagnostics() {
-            const data = {
-                version: 1,
-                device: device ? device.name : "Offline",
-                timestamp: new Date().toISOString(),
-                inputRegisters: registers,
-                settingsRegisters: settingsRegisters,
-                systemInfo: {
-                    mainCap: settings.mainCap,
-                    expCap: settings.expCap
-                }
-            };
-
-            const json = JSON.stringify(data, null, 2);
-
-            try {
-                await navigator.clipboard.writeText(json);
-                showToast("Diagnostic data copied to clipboard!", "success");
-            } catch (err) {
-                console.error("Copy failed", err);
-                // Fallback for non-secure contexts
-                const textarea = document.createElement("textarea");
-                textarea.value = json;
-                document.body.appendChild(textarea);
-                textarea.select();
-                try {
-                    document.execCommand('copy');
-                    showToast("Diagnostic data copied to clipboard!", "success");
-                } catch (e) {
-                    showToast("Failed to copy. Check console.", "error");
-                }
-                document.body.removeChild(textarea);
-            }
-        }
-
-        // Import Modal
-        function openImportModal() {
-            document.getElementById('importDiagModal').style.display = 'flex';
-        }
-
-        function closeImportModal(e, force) {
-            if (force || e.target.classList.contains('modal-overlay')) {
-                document.getElementById('importDiagModal').style.display = 'none';
-            }
-        }
-
-        // Process Imported JSON
-        function processDiagImport() {
-            const input = document.getElementById('import-diag-data').value;
-            try {
-                const data = JSON.parse(input);
-                if (!data.inputRegisters && !data.settingsRegisters) {
-                    throw new Error("Invalid format: Missing register data");
-                }
-
-                importedDiagDataList.push(data);
-                showToast(`Imported data from ${data.device || 'Unknown Device'}`, "success");
-
-                // Switch to compare mode automatically
-                isCompareMode = true;
-                const compareBtn = document.getElementById('btn-compare');
-                if (compareBtn) {
-                    compareBtn.classList.remove('hidden');
-                    compareBtn.classList.add('active'); // toggle style
-                }
-
-                renderDiagnostics();
-                closeImportModal(null, true);
-                document.getElementById('import-diag-data').value = ''; // clear
-            } catch (e) {
-                alert("Import failed: " + e.message);
-                showToast("Invalid JSON data", "error");
-            }
-        }
-
-        function toggleCompareMode() {
-            isCompareMode = !isCompareMode;
-            const btn = document.getElementById('btn-compare');
-            if (btn) {
-                if (isCompareMode) btn.classList.add('active');
-                else btn.classList.remove('active');
-            }
-            renderDiagnostics();
-        }
-
-        function clearImportedData() {
-            importedDiagDataList = [];
-            isCompareMode = false;
-            document.getElementById('btn-compare')?.classList.add('hidden');
-            renderDiagnostics();
-            showToast("Compared data cleared");
-        }
-
-        // Dump Registers to Console
-        function dumpRegisters(type) {
-            console.log(`--- Dumping ${type === 3 ? 'Settings (0x1103)' : 'Status (0x1104)'} Registers ---`);
-            const target = type === 3 ? settingsRegisters : registers;
-            console.table(target);
-
-            // Also Plain Text dump for easy copy
-            let text = "";
-            let count = 0;
-            for (let i = 0; i <= 255; i++) {
-                if (target[i] !== undefined) {
-                    text += `R${i}=${target[i]}, `;
-                    count++;
-                }
-            }
-            console.log(`Dumped ${count} registers to Console (F12).`);
-            console.log("Sample: " + text.substring(0, 100) + "...");
-            showToast(`Dumped ${count} registers to Console (F12)`);
-        }
-
-        // 0xC301 Decoder
-        async function readAndDecodeC301() {
-            if (!device || !device.gatt.connected) {
-                showToast("Not connected", "error");
-                return;
-            }
-            try {
-                const svc = await device.gatt.getPrimaryService(SERVICE_UUID);
-                const char = await svc.getCharacteristic(0xC301);
-                const val = await char.readValue();
-                // Decode floats?
-                const floatArray = new Float32Array(val.buffer);
-                console.log("0xC301 Float32:", floatArray);
-
-                // Decode Int16?
-                const i16 = new Int16Array(val.buffer);
-                console.log("0xC301 Int16:", i16);
-
-                log("0xC301 Read! Check Console (F12) for array dump.");
-                showToast("Read 0xC301 (Check Console)");
-            } catch (e) {
-                log("Read 0xC301 failed: " + e.message);
-            }
-        }
-
-        // Toggle Change Recording
-        let isRecordingChanges = false;
-        let recordingBaseline = {};
-
-        function toggleChangeRecording() {
-            isRecordingChanges = !isRecordingChanges;
-            const btn = document.getElementById('btn-record-changes');
-
-            if (isRecordingChanges) {
-                // Start Recording
-                btn.classList.add('active');
-                btn.innerHTML = '🔴 Recording...';
-                // Capture baseline
-                recordingBaseline = { ...registers }; // Shallow copy
-                showToast("Recording started. Change something on the device!", "info");
-            } else {
-                // Stop & Analyze
-                btn.classList.remove('active');
-                btn.innerHTML = '⏺️ Record';
-                analyzeChanges();
-            }
-        }
-
-        function analyzeChanges() {
-            const changes = [];
-            for (const [reg, val] of Object.entries(registers)) {
-                const oldVal = recordingBaseline[reg];
-                if (oldVal !== undefined && oldVal !== val) {
-                    changes.push({ reg, old: oldVal, new: val });
-                }
-            }
-
-            if (changes.length === 0) {
-                showToast("No changes detected.", "info");
-                return;
-            }
-
-            // Show Results
-            const list = document.getElementById('changes-list-container');
-            list.innerHTML = changes.map(c =>
-                `<div style="display:flex; justify-content:space-between; padding:0.25rem; border-bottom:1px solid #333;">
-                    <span>Reg <strong>${c.reg}</strong> (${KNOWN_REGS[c.reg]?.name || 'Unknown'})</span>
-                    <span>${c.old} ➝ <strong style="color:var(--text-green)">${c.new}</strong></span>
-                 </div>`
-            ).join('');
-
-            document.getElementById('changesModal').style.display = 'flex';
+        // Escape user-provided strings (imported device names, appliance names)
+        // before they are interpolated into innerHTML.
+        function escapeHtml(str) {
+            return String(str ?? '').replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
         }
 
         // Toast notification
@@ -4057,9 +3977,10 @@ Example format:
             }
             // Standard Read Request format: 11 [OpCode] 00 00 00 50 [CRC]
             const arr = [0x11, opCode, 0x00, 0x00, 0x00, 0x50];
+            // CRC hi byte first, matching every other sender in this file
             const crc = calculateChecksum(arr);
-            arr.push(crc & 0xff);
             arr.push((crc >> 8) & 0xff);
+            arr.push(crc & 0xff);
 
             try {
                 const data = new Uint8Array(arr);
@@ -4094,12 +4015,17 @@ Example format:
                 return;
             }
             log("Starting Scan 0x1100 - 0x1120...");
+            // Pause polling so probes don't collide with the 2s status reads
+            stopPolling();
+            let waits = 0;
+            while (pollingActive && waits++ < 10) await new Promise(r => setTimeout(r, 200));
             for (let i = 0; i <= 0x20; i++) {
                 await sendProbe(i);
                 // Delay to prevent flood
                 await new Promise(r => setTimeout(r, 5000));
             }
             log("Scan Complete.");
+            if (device && device.gatt.connected) startPolling();
         }
 
         // Scan Services Range
@@ -4238,48 +4164,6 @@ Example format:
             // Also log first 5 and specific interesting ones to UI
             log(`Sample: R0=${target[0] || 0}, R1=${target[1] || 0}, R21=${target[21] || 0} (Watts)`);
             console.log(buffer); // Flush remainder
-        }
-
-        // Copy diagnostics to clipboard
-        function copyDiagnostics() {
-            const exportData = {
-                version: 1,
-                timestamp: new Date().toISOString(),
-                device: device?.name || 'Unknown Device',
-                inputRegisters: { ...registers },
-                settingsRegisters: { ...settingsRegisters }
-            };
-
-            const json = JSON.stringify(exportData, null, 2);
-
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(json).then(() => {
-                    showToast('📋 Diagnostics copied to clipboard!');
-                    log('Diagnostics exported to clipboard');
-                }).catch(err => {
-                    // Fallback
-                    copyToClipboardFallback(json);
-                });
-            } else {
-                copyToClipboardFallback(json);
-            }
-        }
-
-        // Fallback copy method
-        function copyToClipboardFallback(text) {
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            textarea.style.position = 'fixed';
-            textarea.style.opacity = '0';
-            document.body.appendChild(textarea);
-            textarea.select();
-            try {
-                document.execCommand('copy');
-                showToast('📋 Diagnostics copied to clipboard!');
-            } catch (e) {
-                showToast('Failed to copy. Try again.', 'error');
-            }
-            document.body.removeChild(textarea);
         }
 
         // Open import modal
@@ -4620,14 +4504,6 @@ Example format:
             });
         }
 
-        function setTheme(themeName) {
-            document.documentElement.setAttribute('data-theme', themeName);
-            localStorage.setItem('POWER-theme', themeName);
-            // Sync Dropdown
-            const sel = document.getElementById('theme-select');
-            if (sel) sel.value = themeName;
-        }
-
         function toggleSetting(name, checkedState) {
             const el = document.getElementById('set-' + name.replace('_', '-'));
             // Use passed state if available (for ac_silent), otherwise read from element
@@ -4654,9 +4530,8 @@ Example format:
             } else if (name === 'power_off') {
                 if (confirm("Are you sure you want to turn off the device?")) {
                     setRegister(64, 1);
-                } else {
-                    el.checked = !el.checked; // Revert
                 }
+                // Power Off is a button, not a toggle — nothing to revert on cancel
             }
         }
 
@@ -4689,8 +4564,9 @@ Example format:
                 'charge_profile': 13
             };
 
-            // Special handling for USB Standby & Screen Timeout (Seconds)
-            if (name === 'usb_standby' || name === 'screen_timeout') {
+            // USB Standby options are minutes but the register stores seconds.
+            // Screen Timeout option values are ALREADY seconds — do not convert.
+            if (name === 'usb_standby') {
                 val = val * 60;
             }
 
@@ -4827,8 +4703,16 @@ Example format:
             { id: 'blender', name: 'Electric Fan', watts: 25, type: 'DC', enabled: false }
         ];
 
-        // Custom appliances added by user
+        // Custom appliances added by user (persisted across sessions)
         let customAppliances = [];
+        try {
+            customAppliances = JSON.parse(localStorage.getItem('POWER-customApps')) || [];
+        } catch (e) { customAppliances = []; }
+
+        function saveCustomAppliances() {
+            localStorage.setItem('POWER-customApps', JSON.stringify(customAppliances));
+        }
+
         let useAcEff = true;
         let useDcEff = true;
 
@@ -4870,16 +4754,18 @@ Example format:
             const renderItem = (app) => `
                 <div class="app-item">
                     <div class="app-info">
-                        <span class="app-name">${app.name}</span>
+                        <span class="app-name">${escapeHtml(app.name)}</span>
                     </div>
                     <div class="app-control">
-                        <input type="number" class="app-input" value="${app.watts}" 
-                            onclick="event.stopPropagation()" 
+                        <input type="number" class="app-input" value="${app.watts}"
+                            onclick="event.stopPropagation()"
                             onchange="updateAppWatts('${app.id}', this.value)">
                         <label class="switch">
                             <input type="checkbox" ${app.enabled ? 'checked' : ''} onchange="toggleSimApp('${app.id}')">
                             <span class="slider"></span>
                         </label>
+                        ${app.id.startsWith('custom_') ? `<button onclick="removeCustomAppliance('${app.id}')" title="Remove"
+                            style="background:none; border:none; color:var(--text-red); cursor:pointer; font-size:0.9rem; padding:0 0.25rem;">✕</button>` : ''}
                     </div>
                 </div>
             `;
@@ -4899,7 +4785,10 @@ Example format:
             } else {
                 // Check custom appliances
                 const custom = customAppliances.find(a => a.id === id);
-                if (custom) custom.enabled = !custom.enabled;
+                if (custom) {
+                    custom.enabled = !custom.enabled;
+                    saveCustomAppliances();
+                }
             }
             // No need to re-render full list on toggle if we trust the switch visual state
             // But to be safe and ensure sync:
@@ -4913,6 +4802,7 @@ Example format:
             let app = SIM_APPLIANCES.find(a => a.id === id) || customAppliances.find(a => a.id === id);
             if (app) {
                 app.watts = parseInt(val) || 0;
+                if (customAppliances.includes(app)) saveCustomAppliances();
                 updateSimDashboard();
             }
         }
@@ -4939,6 +4829,7 @@ Example format:
 
             const id = 'custom_' + Date.now();
             customAppliances.push({ id, name, watts, type, enabled: true });
+            saveCustomAppliances();
 
             // Clear inputs
             nameEl.value = '';
@@ -4947,6 +4838,14 @@ Example format:
             renderSimAppliances();
             updateSimDashboard();
         }
+
+        function removeCustomAppliance(id) {
+            customAppliances = customAppliances.filter(a => a.id !== id);
+            saveCustomAppliances();
+            renderSimAppliances();
+            updateSimDashboard();
+        }
+
         function updateSimDashboard() {
             // Get input values
             const batteryPct = parseFloat(document.getElementById('sim-battery-input')?.value) || 100;
@@ -5021,7 +4920,7 @@ Example format:
                     loadsEl.innerHTML = '<span style="color: var(--text-muted);">No appliances selected.</span>';
                 } else {
                     loadsEl.innerHTML = enabledApps.map(a =>
-                        `<span style="display: inline-block; background: var(--bg-log); padding: 0.25rem 0.5rem; margin: 0.1rem; border-radius: 0.25rem;">${a.name} (${a.watts}W ${a.type})</span>`
+                        `<span style="display: inline-block; background: var(--bg-log); padding: 0.25rem 0.5rem; margin: 0.1rem; border-radius: 0.25rem;">${escapeHtml(a.name)} (${a.watts}W ${a.type})</span>`
                     ).join('') + `<div style="margin-top: 0.5rem; font-weight: bold; color: var(--text-blue);">Total: ${rawOutputWatts}W | Draw: ${Math.round(effectiveOutputWatts)}W</div>`;
                 }
             }
@@ -5048,46 +4947,6 @@ Example format:
             updateSimDashboard();
         }
 
-        function updateSimulation() {
-            if (!isDebug) return;
-
-            const battery = parseInt(document.getElementById('sim-battery').value) || 0;
-            const input = parseInt(document.getElementById('sim-input').value) || 0;
-            const output = parseInt(document.getElementById('sim-output').value) || 0;
-            const sys = parseInt(document.getElementById('sim-sys').value) || 0;
-
-            // Calculate total watts and remaining minutes
-            const totalWatts = output + sys;
-            let minutes = 0;
-            if (totalWatts > 0) {
-                const availableWh = (battery / 100) * settings.mainCap * 0.85;
-                minutes = Math.round((availableWh / totalWatts) * 60);
-            }
-
-            // Update mock registers
-            mockRegs[6 + 56 * 2] = (battery * 10 >> 8) & 0xff;
-            mockRegs[6 + 56 * 2 + 1] = (battery * 10) & 0xff;
-            mockRegs[6 + 3 * 2] = (input >> 8) & 0xff;
-            mockRegs[6 + 3 * 2 + 1] = input & 0xff;
-            mockRegs[6 + 39 * 2] = (output >> 8) & 0xff;
-            mockRegs[6 + 39 * 2 + 1] = output & 0xff;
-            mockRegs[6 + 21 * 2] = (sys >> 8) & 0xff;
-            mockRegs[6 + 21 * 2 + 1] = sys & 0xff;
-            // Register 20: Total Watts
-            mockRegs[6 + 20 * 2] = (totalWatts >> 8) & 0xff;
-            mockRegs[6 + 20 * 2 + 1] = totalWatts & 0xff;
-            // Register 59: Minutes remaining
-            mockRegs[6 + 59 * 2] = (minutes >> 8) & 0xff;
-            mockRegs[6 + 59 * 2 + 1] = minutes & 0xff;
-
-            // Trigger UI update
-            const event = { target: { value: createMockPacket() } };
-            handleNotification(event);
-
-            calculateRuntime();
-        }
-
-
         function toggleSimulationUI() {
             const el = document.getElementById('sim-ui');
             if (el) {
@@ -5101,6 +4960,194 @@ Example format:
             }
         }
 
+        // ========== SCREEN WAKE LOCK ==========
+        let wakeLock = null;
+
+        async function toggleWakeLock(on) {
+            if (!('wakeLock' in navigator)) {
+                showToast('Wake Lock not supported in this browser', 'error');
+                const el = document.getElementById('set-wake-lock');
+                if (el) el.checked = false;
+                return;
+            }
+            try {
+                if (on) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    wakeLock.addEventListener('release', () => { wakeLock = null; });
+                    showToast('Screen will stay awake');
+                } else if (wakeLock) {
+                    await wakeLock.release();
+                    wakeLock = null;
+                }
+                localStorage.setItem('POWER-wakelock', on ? '1' : '0');
+            } catch (e) {
+                showToast('Wake Lock failed: ' + e.message, 'error');
+                const el = document.getElementById('set-wake-lock');
+                if (el) el.checked = false;
+            }
+        }
+
+        // Wake locks are auto-released when the tab is hidden; re-acquire on return
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' &&
+                localStorage.getItem('POWER-wakelock') === '1' && !wakeLock) {
+                toggleWakeLock(true);
+            }
+        });
+
+        // ========== ALERTS (Notifications API) ==========
+        let lowBattNotified = false;
+        let faultNotified = false;
+        const LOW_BATT_THRESHOLD = 20;
+
+        async function toggleAlerts(on) {
+            if (on) {
+                if (!('Notification' in window)) {
+                    showToast('Notifications not supported', 'error');
+                    const el = document.getElementById('set-alerts');
+                    if (el) el.checked = false;
+                    return;
+                }
+                const perm = await Notification.requestPermission();
+                if (perm !== 'granted') {
+                    showToast('Notifications blocked by browser', 'error');
+                    const el = document.getElementById('set-alerts');
+                    if (el) el.checked = false;
+                    return;
+                }
+                showToast(`Alerts on: low battery (<${LOW_BATT_THRESHOLD}%) and faults`);
+            }
+            localStorage.setItem('POWER-alerts', on ? '1' : '0');
+        }
+
+        function notifyUser(title, body) {
+            if (localStorage.getItem('POWER-alerts') !== '1') return;
+            if (!('Notification' in window) || Notification.permission !== 'granted') return;
+            try {
+                new Notification(title, { body, icon: 'icon-512.png' });
+            } catch (e) { console.warn('Notification failed:', e); }
+        }
+
+        // Called from the status packet handler with fresh telemetry
+        function checkAlerts(battery, isCharging, errorCode, sysStatus) {
+            if (battery > 0 && battery <= LOW_BATT_THRESHOLD && !isCharging && !lowBattNotified) {
+                lowBattNotified = true;
+                notifyUser('⚠️ Low Battery', `Power station at ${battery.toFixed(0)}%`);
+            }
+            if (battery > LOW_BATT_THRESHOLD + 5 || isCharging) lowBattNotified = false;
+
+            if (errorCode > 0 && !faultNotified) {
+                faultNotified = true;
+                notifyUser('🚨 Device Fault', sysStatus);
+            }
+            if (errorCode === 0) faultNotified = false;
+        }
+
+        // ========== POWER HISTORY + CHART + CSV EXPORT ==========
+        const powerHistory = []; // { t, soc, in: watts, out: watts }
+        const HISTORY_MAX = 10800; // ~6h at 2s polling
+
+        function recordHistory(soc, inW, outW) {
+            powerHistory.push({ t: Date.now(), soc, in: inW, out: outW });
+            if (powerHistory.length > HISTORY_MAX) powerHistory.shift();
+            drawHistoryChart();
+        }
+
+        function drawHistoryChart() {
+            if (document.hidden) return;
+            const canvas = document.getElementById('historyChart');
+            if (!canvas || canvas.offsetParent === null) return; // not visible
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width, h = canvas.height;
+            ctx.clearRect(0, 0, w, h);
+            if (powerHistory.length < 2) {
+                ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                ctx.font = '12px monospace';
+                ctx.fillText('Collecting data...', 10, h / 2);
+                return;
+            }
+
+            const maxW = Math.max(100, ...powerHistory.map(p => Math.max(p.in, p.out)));
+            const styles = getComputedStyle(document.body);
+
+            const drawLine = (getVal, maxVal, color, dashed) => {
+                ctx.beginPath();
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash(dashed ? [4, 3] : []);
+                powerHistory.forEach((p, i) => {
+                    const x = (i / (powerHistory.length - 1)) * w;
+                    const y = h - (getVal(p) / maxVal) * (h - 6) - 3;
+                    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+                });
+                ctx.stroke();
+                ctx.setLineDash([]);
+            };
+
+            drawLine(p => p.in, maxW, styles.getPropertyValue('--text-green').trim() || '#4ade80', false);
+            drawLine(p => p.out, maxW, styles.getPropertyValue('--text-blue').trim() || '#60a5fa', false);
+            drawLine(p => p.soc, 100, styles.getPropertyValue('--text-muted').trim() || '#9ca3af', true);
+
+            // Peak-watts scale marker
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.font = '10px monospace';
+            ctx.fillText(`${Math.round(maxW)}W`, 4, 12);
+        }
+
+        function exportHistoryCsv() {
+            if (powerHistory.length === 0) {
+                showToast('No history recorded yet', 'error');
+                return;
+            }
+            let csv = 'timestamp,soc_percent,input_watts,output_watts\n';
+            powerHistory.forEach(p => {
+                csv += `${new Date(p.t).toISOString()},${p.soc},${p.in},${p.out}\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `power-history-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.csv`;
+            a.click();
+            URL.revokeObjectURL(a.href);
+            showToast(`Exported ${powerHistory.length} samples`);
+        }
+
+        // ========== BIT INSPECTOR ==========
+        // Known bit meanings for flag registers (status / 0x1104)
+        const BIT_LABELS = {
+            41: { 9: 'USB Output', 10: 'DC Output', 11: 'AC Output', 12: 'LED Light' },
+            42: { 13: 'Critical Fault (A)', 14: 'Critical Fault (B)', 15: 'Warning Latch' },
+            48: { 3: 'Error Pending', 14: 'Inverter Standby', 15: 'AC Charging' }
+        };
+
+        function showBitInspector(reg, val) {
+            const name = KNOWN_REGS[reg]?.name || `Register ${reg}`;
+            const labels = BIT_LABELS[reg] || {};
+            let rows = '';
+            for (let bit = 15; bit >= 0; bit--) {
+                const set = (val >> bit) & 1;
+                const label = labels[bit] || '';
+                rows += `<tr>
+                    <td style="padding:0.15rem 0.5rem; color:#888;">${bit}</td>
+                    <td style="padding:0.15rem 0.5rem; font-weight:bold; color:${set ? 'var(--text-green)' : '#555'};">${set}</td>
+                    <td style="padding:0.15rem 0.5rem; color:${set ? 'var(--text-main)' : '#666'};">${label}</td>
+                </tr>`;
+            }
+            document.getElementById('modalTitle').textContent = `🔬 Reg ${reg}: ${name}`;
+            document.getElementById('modalText').innerHTML = `
+                <div style="font-family:monospace; font-size:0.85rem; margin-bottom:0.5rem;">
+                    Value: ${val} (0x${val.toString(16).toUpperCase().padStart(4, '0')})<br>
+                    Binary: ${val.toString(2).padStart(16, '0').replace(/(.{4})/g, '$1 ').trim()}
+                </div>
+                <table style="width:100%; border-collapse:collapse; font-size:0.8rem;">
+                    <tr><th style="text-align:left; padding:0.15rem 0.5rem; border-bottom:1px solid #444;">Bit</th>
+                        <th style="text-align:left; padding:0.15rem 0.5rem; border-bottom:1px solid #444;">Val</th>
+                        <th style="text-align:left; padding:0.15rem 0.5rem; border-bottom:1px solid #444;">Meaning</th></tr>
+                    ${rows}
+                </table>`;
+            document.getElementById('infoModal').style.display = 'flex';
+        }
+
         // Render appliances on load
         document.addEventListener('DOMContentLoaded', () => {
             // Initialize Power Simulator
@@ -5112,6 +5159,17 @@ Example format:
             if (!savedTheme) {
                 setTheme('ocean');
             }
+
+            // Restore persisted feature preferences
+            const wakeEl = document.getElementById('set-wake-lock');
+            if (wakeEl && localStorage.getItem('POWER-wakelock') === '1') {
+                wakeEl.checked = true;
+                toggleWakeLock(true);
+            }
+            const alertsEl = document.getElementById('set-alerts');
+            if (alertsEl) alertsEl.checked = (localStorage.getItem('POWER-alerts') === '1');
+            const pollEl = document.getElementById('set-poll-rate');
+            if (pollEl) pollEl.value = String(pollRateMs);
 
             // Robust Listener Attachment
             const cBtns = document.querySelectorAll('.btn-connect');
