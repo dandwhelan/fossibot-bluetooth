@@ -29,6 +29,7 @@ ABOK Power Ark3600 (Probalby works, but not tested)
 ## ✨ Comprehensive Features
 
 ### ⚡ Real-Time Telemetry & Monitoring
+*   **Switchable Dashboard Layouts:** Pick the dashboard that suits you in Settings → Theme & Layout: **Classic**, **Energy Flow** (animated power-flow diagram with tappable output nodes), **Gauges** (cockpit-style radial dials), or **Pro Monitor** (data-dense table with a full-size chart on top).
 *   **Smart Time Estimates:** Automatically switches between **"Time to Full"** (⚡) when charging and **"Time to Empty"** (🔋) when discharging.
 *   **Live Power Flow:** Visualize real-time Input (Charging) and Output (Discharging) wattage with dynamic gauges.
 *   **System Health:** Monitor system voltage, frequency, and internal temperatures (fan levels).

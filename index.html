@@ -680,63 +680,491 @@
             margin-left: 1px;
         }
 
-        /* Layout presets — hide widgets per layout. Default shows everything. */
-        [data-layout="compact"] [data-widget="battery-ring"],
-        [data-layout="compact"] [data-widget="ext-batteries"],
-        [data-layout="numeric"] [data-widget="battery-ring"],
-        [data-layout="numeric"] [data-widget="ext-batteries"],
-        [data-layout="numeric"] [data-widget="remaining-time"] {
-            display: none;
-        }
-        [data-layout="compact"] .battery-ring-container,
-        [data-layout="numeric"] .battery-ring-container {
-            width: auto;
-            height: auto;
-            margin: 0.25rem auto;
-        }
-        [data-layout="compact"] .battery-text,
-        [data-layout="numeric"] .battery-text {
-            position: static;
-            transform: none;
-            justify-content: center;
+        /* ===== Dashboard layouts =====
+           data-layout on <html>: default (classic) | flow | gauges | promon.
+           Each layout is its own panel; the corner triggers live in #dash-main
+           so they overlay whichever panel is active. */
+        #dash-area {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
         }
 
-        /* Focus layout — large glanceable battery, no chart */
-        [data-layout="focus"] .battery-ring-container {
-            width: 10rem;
-            height: 10rem;
+        /* #dash-main is a flex item (no margin collapse), so the bottom gap
+           lives on it rather than on the cards inside it — otherwise the
+           bottom corner triggers land in the margin band below the card */
+        #dash-main {
+            position: relative;
+            margin-bottom: 2rem;
         }
-        [data-layout="focus"] .battery-text {
-            font-size: 2.25rem;
+
+        #dash-main .dashboard,
+        #dash-main .dash-panel {
+            margin-bottom: 0;
         }
-        [data-layout="focus"] .battery-unit {
-            font-size: 1.1rem;
+
+        .dash-panel {
+            display: none;
+            position: relative;
+            background-color: var(--bg-card);
+            border-radius: var(--border-radius);
+            padding: 2.5rem 1rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            transition: opacity 0.3s;
         }
-        [data-layout="focus"] .dash-val {
-            font-size: 1.5rem;
+
+        [data-theme="terminal"] .dash-panel {
+            border: 1px solid #00ff00;
+            box-shadow: none;
+            background: #000;
         }
-        [data-layout="focus"] #history-panel,
-        [data-layout="focus"] [data-widget="ext-batteries"] {
+
+        [data-layout="flow"] #dashboard-container,
+        [data-layout="flow"] #controls,
+        [data-layout="gauges"] #dashboard-container,
+        [data-layout="gauges"] #controls,
+        [data-layout="promon"] #dashboard-container,
+        [data-layout="promon"] #controls {
             display: none;
         }
 
-        /* Monitor layout — numbers only, chart gets the space */
-        [data-layout="monitor"] [data-widget="battery-ring"],
-        [data-layout="monitor"] [data-widget="ext-batteries"] {
-            display: none;
+        [data-layout="flow"] #panel-flow,
+        [data-layout="gauges"] #panel-gauges,
+        [data-layout="promon"] #panel-promon {
+            display: block;
         }
-        [data-layout="monitor"] .battery-ring-container {
-            width: auto;
-            height: auto;
-            margin: 0.25rem auto;
+
+        #historyChart {
+            width: 100%;
+            height: 120px;
+            display: block;
+            cursor: crosshair;
         }
-        [data-layout="monitor"] .battery-text {
-            position: static;
-            transform: none;
+
+        [data-layout="flow"] #historyChart {
+            height: 80px;
+        }
+
+        [data-layout="promon"] #history-panel {
+            order: -1;
+        }
+
+        [data-layout="promon"] #historyChart {
+            height: 220px;
+        }
+
+        #batteryRing {
+            color: var(--text-blue);
+        }
+
+        #batteryRing.ring-low {
+            color: var(--text-red);
+        }
+
+        /* --- Energy Flow layout --- */
+        .flow-stage {
+            position: relative;
+            width: 100%;
+            max-width: 26rem;
+            margin: 0 auto;
+            aspect-ratio: 360 / 300;
+        }
+
+        .flow-svg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .flow-line {
+            fill: none;
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-dasharray: 6 6;
+            opacity: 0.25;
+        }
+
+        .flow-line.flow-in {
+            stroke: var(--text-green);
+        }
+
+        .flow-line.flow-out {
+            stroke: var(--text-blue);
+        }
+
+        .flow-line.flowing {
+            opacity: 1;
+            animation: flow-dash 0.8s linear infinite;
+        }
+
+        @keyframes flow-dash {
+            to {
+                stroke-dashoffset: -12;
+            }
+        }
+
+        .flow-node {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            background: var(--bg-body);
+            border: 2px solid var(--text-muted);
+            border-radius: 0.75rem;
+            padding: 0.4rem 0.6rem;
+            text-align: center;
+            min-width: 4.2rem;
+        }
+
+        .flow-node-label {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .flow-node-val {
+            font-size: 0.95rem;
+            font-weight: 700;
+        }
+
+        .flow-node.flow-input {
+            left: 17%;
+            top: 12%;
+            border-color: var(--text-green);
+        }
+
+        .flow-node.flow-input .flow-node-val {
+            color: var(--text-green);
+        }
+
+        .flow-node.flow-output {
+            left: 83%;
+            top: 12%;
+            border-color: var(--text-blue);
+        }
+
+        .flow-node.flow-output .flow-node-val {
+            color: var(--text-blue);
+        }
+
+        .flow-hub {
+            position: absolute;
+            left: 50%;
+            top: 45%;
+            transform: translate(-50%, -50%);
+            width: 36%;
+            aspect-ratio: 1;
+            border-radius: 50%;
+            background: var(--bg-body);
+            border: 3px solid var(--text-blue);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             justify-content: center;
+            gap: 0.1rem;
+            text-align: center;
         }
-        [data-layout="monitor"] #historyChart {
-            height: 240px;
+
+        .flow-hub.charging {
+            border-color: var(--text-green);
+            animation: hub-pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes hub-pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 transparent;
+            }
+            50% {
+                box-shadow: 0 0 16px 2px var(--text-green);
+            }
+        }
+
+        .flow-hub-soc {
+            font-size: 1.6rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .flow-hub-soc .battery-unit {
+            font-size: 0.8rem;
+        }
+
+        .flow-hub-sub {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+        }
+
+        .flow-toggle {
+            position: absolute;
+            top: 85%;
+            transform: translate(-50%, -50%);
+            width: 24%;
+            padding: 0.5rem 0.25rem;
+            background: var(--bg-body);
+            border: 2px solid var(--text-muted);
+            border-radius: 0.75rem;
+            color: var(--text-muted);
+            text-align: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .flow-toggle .info-btn {
+            top: -0.6rem;
+            right: -0.6rem;
+            width: 1.2rem;
+            height: 1.2rem;
+            font-size: 0.65rem;
+            background: var(--bg-card);
+        }
+
+        .flow-toggle.active {
+            border-color: var(--btn-green);
+            background-color: var(--btn-green);
+            color: #fff;
+        }
+
+        .flow-toggle-usb {
+            left: 18%;
+        }
+
+        .flow-toggle-ac {
+            left: 50%;
+        }
+
+        .flow-toggle-dc {
+            left: 82%;
+        }
+
+        /* --- Gauge Cockpit layout --- */
+        .gauge-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            max-width: 26rem;
+            margin: 0 auto;
+        }
+
+        .gauge {
+            position: relative;
+            flex: 1;
+        }
+
+        .gauge.gauge-center {
+            flex: 1.35;
+        }
+
+        .gauge svg {
+            width: 100%;
+            height: auto;
+            display: block;
+            transform: rotate(-135deg);
+        }
+
+        .gauge-bg {
+            fill: none;
+            stroke: var(--text-muted);
+            opacity: 0.3;
+            stroke-width: 3;
+        }
+
+        .gauge-val {
+            fill: none;
+            stroke-width: 3;
+            transition: stroke-dasharray 0.4s ease;
+        }
+
+        .gauge-val.gauge-in {
+            stroke: var(--text-green);
+        }
+
+        .gauge-val.gauge-out {
+            stroke: var(--text-blue);
+        }
+
+        .gauge-val.gauge-soc {
+            stroke: var(--text-blue);
+        }
+
+        .gauge-val.gauge-soc.ring-low {
+            stroke: var(--text-red);
+        }
+
+        .gauge-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            width: 100%;
+        }
+
+        .gauge-num {
+            font-size: 1.05rem;
+            font-weight: 700;
+            display: block;
+            line-height: 1.1;
+        }
+
+        .gauge-center .gauge-num {
+            font-size: 1.7rem;
+        }
+
+        .gauge-unit {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            display: block;
+        }
+
+        .gauge-strip {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+            margin: 1rem auto 0;
+            max-width: 26rem;
+        }
+
+        .gauge-stat {
+            background: var(--bg-body);
+            border-radius: 0.5rem;
+            padding: 0.4rem 0.2rem;
+            text-align: center;
+            overflow: hidden;
+        }
+
+        .gauge-stat-label {
+            font-size: 0.55rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .gauge-stat-val {
+            font-size: 0.8rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .gauge-toggles {
+            display: flex;
+            gap: 0.75rem;
+            margin: 1rem auto 0;
+            max-width: 26rem;
+        }
+
+        .gauge-toggles .control-tile {
+            padding: 0.75rem;
+        }
+
+        /* --- Pro Monitor layout --- */
+        #panel-promon {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        }
+
+        .pm-row {
+            display: grid;
+            grid-template-columns: 6rem 1fr auto;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.35rem 0;
+            border-bottom: 1px solid rgba(128, 128, 128, 0.15);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .pm-label {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .pm-sub {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-align: right;
+        }
+
+        .pm-val {
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        .pm-val.pm-green {
+            color: var(--text-green);
+        }
+
+        .pm-val.pm-blue {
+            color: var(--text-blue);
+        }
+
+        .pm-bar {
+            height: 0.55rem;
+            background: var(--bg-body);
+            border-radius: 0.3rem;
+            overflow: hidden;
+        }
+
+        .pm-bar-fill {
+            height: 100%;
+            width: 0;
+            background: var(--text-blue);
+            border-radius: 0.3rem;
+            transition: width 0.4s ease;
+        }
+
+        .pm-bar-fill.ring-low {
+            background: var(--text-red);
+        }
+
+        .pm-toggles {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+
+        .pm-toggle {
+            flex: 1;
+            text-align: center;
+            border: 1px solid var(--text-muted);
+            border-radius: 0.4rem;
+            color: var(--text-muted);
+            padding: 0.45rem 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .pm-toggle::after {
+            content: " · OFF";
+            opacity: 0.7;
+            font-weight: 400;
+        }
+
+        .pm-toggle.active {
+            border-color: var(--text-green);
+            color: var(--text-green);
+        }
+
+        .pm-toggle.active::after {
+            content: " · ON";
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .flow-line.flowing,
+            .flow-hub.charging {
+                animation: none;
+            }
+            .gauge-val,
+            .pm-bar-fill {
+                transition: none;
+            }
         }
 
         [data-theme="terminal"] .dash-label {
@@ -1480,8 +1908,9 @@
 
             <!-- Header Removed -->
 
-            <!-- Dashboard -->
-            <div class="dashboard" id="dashboard-container" style="position: relative;">
+            <!-- Dashboard area: corner triggers overlay whichever layout panel is active -->
+            <div id="dash-area">
+            <div id="dash-main">
                 <!-- Settings Trigger (Top Left) -->
                 <div id="settings-trigger" onclick="switchView('settings')"
                     style="position: absolute; top: 10px; left: 10px; cursor: pointer; z-index: 20; color: var(--text-muted); opacity: 0.8;">
@@ -1551,15 +1980,17 @@
                     </div>
                 </div>
 
+                <!-- Classic layout -->
+                <div class="dashboard" id="dashboard-container">
                 <div class="dash-row">
                     <div class="dash-col left">
                         <div class="dash-label">Input</div>
-                        <div class="dash-val text-green"><span id="inputWatts">--</span> <span
+                        <div class="dash-val text-green"><span id="inputWatts" data-field="input_w">--</span> <span
                                 style="font-size:0.75rem;">W</span></div>
                     </div>
 
                     <div class="dash-col center">
-                        <div class="dash-sub" style="margin-bottom: 0.25rem;">Sys: <span id="sysWatts">--</span></div>
+                        <div class="dash-sub" style="margin-bottom: 0.25rem;">Sys: <span id="sysWatts" data-field="sys_status">--</span></div>
                         <div class="battery-ring-container">
                             <svg data-widget="battery-ring" width="100%" height="100%" viewBox="0 0 36 36" style="transform: rotate(-90deg);">
                                 <path class="ring-bg"
@@ -1569,23 +2000,24 @@
                                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                                     fill="none" stroke="currentColor" stroke-width="3" />
                             </svg>
-                            <div class="battery-text"><span id="batteryPercent">--</span><span
+                            <div class="battery-text"><span id="batteryPercent" data-field="soc">--</span><span
                                     class="battery-unit">%</span>
                             </div>
                         </div>
                         <div class="dash-sub" data-widget="remaining-time" style="margin-top: 0.25rem;">
-                            <div><span id="remainingHours">--</span></div>
-                            <div><span id="remainingKwh">--</span> kWh</div>
+                            <div><span id="remainingHours" data-field="time_remaining">--</span></div>
+                            <div><span id="remainingKwh" data-field="kwh">--</span> kWh</div>
                         </div>
-                        <div id="extBatteries" data-widget="ext-batteries" class="ext-battery-info"></div>
+                        <div id="extBatteries" data-field="ext_batteries" class="ext-battery-info"></div>
                     </div>
 
                     <div class="dash-col right">
                         <div class="dash-label">Output</div>
-                        <div class="dash-val text-blue"><span id="outputWatts">--</span> <span
+                        <div class="dash-val text-blue"><span id="outputWatts" data-field="output_w">--</span> <span
                                 style="font-size:0.75rem;">W</span></div>
-                        <div class="dash-sub">Tot: <span id="totalWatts">--</span>W</div>
+                        <div class="dash-sub">Tot: <span id="totalWatts" data-field="total_w">--</span>W</div>
                     </div>
+                </div>
                 </div>
 
                 <!-- Protection Fault Warning Banner -->
@@ -1596,10 +2028,170 @@
                            box-shadow: 0 2px 8px rgba(239,68,68,0.4); animation: toast-in 0.3s ease;">
                     System Alert
                 </div>
+
+                <!-- Energy Flow layout -->
+                <div id="panel-flow" class="dash-panel">
+                    <div class="flow-stage">
+                        <svg class="flow-svg" viewBox="0 0 360 300">
+                            <path class="flow-line flow-in flow-line-in" d="M61,36 C61,110 120,135 180,135" />
+                            <path class="flow-line flow-out flow-line-total" d="M180,135 C240,135 299,110 299,36" />
+                            <path class="flow-line flow-out flow-line-usb" d="M180,135 C120,135 65,180 65,255" />
+                            <path class="flow-line flow-out flow-line-ac" d="M180,135 L180,255" />
+                            <path class="flow-line flow-out flow-line-dc" d="M180,135 C240,135 295,180 295,255" />
+                        </svg>
+                        <div class="flow-node flow-input">
+                            <div class="flow-node-label">Input</div>
+                            <div class="flow-node-val"><span data-field="input_w">--</span> W</div>
+                        </div>
+                        <div class="flow-node flow-output">
+                            <div class="flow-node-label">Output</div>
+                            <div class="flow-node-val"><span data-field="output_w">--</span> W</div>
+                        </div>
+                        <div class="flow-hub">
+                            <div class="flow-hub-soc"><span data-field="soc">--</span><span class="battery-unit">%</span></div>
+                            <div class="flow-hub-sub"><span data-field="kwh">--</span> kWh</div>
+                            <div class="flow-hub-sub" data-field="sys_status">--</div>
+                            <div class="flow-hub-sub" data-field="time_remaining">--</div>
+                        </div>
+                        <div class="flow-toggle flow-toggle-usb" data-toggle="usb" onclick="toggle('usb')">
+                            <div class="info-btn" onclick="showInfo(event, 'USB')">?</div>
+                            USB
+                        </div>
+                        <div class="flow-toggle flow-toggle-ac" data-toggle="ac" onclick="toggle('ac')">
+                            <div class="info-btn" onclick="showInfo(event, 'AC')">?</div>
+                            AC
+                        </div>
+                        <div class="flow-toggle flow-toggle-dc" data-toggle="dc" onclick="toggle('dc')">
+                            <div class="info-btn" onclick="showInfo(event, 'DC')">?</div>
+                            DC
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gauge Cockpit layout -->
+                <div id="panel-gauges" class="dash-panel">
+                    <div class="gauge-row">
+                        <div class="gauge">
+                            <svg viewBox="0 0 36 36">
+                                <path class="gauge-bg" pathLength="100" stroke-dasharray="75, 100"
+                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                <path class="gauge-val gauge-in" data-gauge="in" pathLength="100" stroke-dasharray="0, 100"
+                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            </svg>
+                            <div class="gauge-text">
+                                <span class="gauge-num"><span data-field="input_w">--</span></span>
+                                <span class="gauge-unit">W In</span>
+                            </div>
+                        </div>
+                        <div class="gauge gauge-center">
+                            <svg viewBox="0 0 36 36">
+                                <path class="gauge-bg" pathLength="100" stroke-dasharray="75, 100"
+                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                <path class="gauge-val gauge-soc" data-gauge="soc" pathLength="100" stroke-dasharray="0, 100"
+                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            </svg>
+                            <div class="gauge-text">
+                                <span class="gauge-num"><span data-field="soc">--</span><span class="battery-unit">%</span></span>
+                                <span class="gauge-unit"><span data-field="kwh">--</span> kWh</span>
+                            </div>
+                        </div>
+                        <div class="gauge">
+                            <svg viewBox="0 0 36 36">
+                                <path class="gauge-bg" pathLength="100" stroke-dasharray="75, 100"
+                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                <path class="gauge-val gauge-out" data-gauge="out" pathLength="100" stroke-dasharray="0, 100"
+                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            </svg>
+                            <div class="gauge-text">
+                                <span class="gauge-num"><span data-field="output_w">--</span></span>
+                                <span class="gauge-unit">W Out</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gauge-strip">
+                        <div class="gauge-stat">
+                            <div class="gauge-stat-label">Time</div>
+                            <div class="gauge-stat-val" data-field="time_remaining">--</div>
+                        </div>
+                        <div class="gauge-stat">
+                            <div class="gauge-stat-label">AC In</div>
+                            <div class="gauge-stat-val" data-field="ac_voltage">--</div>
+                        </div>
+                        <div class="gauge-stat">
+                            <div class="gauge-stat-label">Status</div>
+                            <div class="gauge-stat-val" data-field="sys_status">--</div>
+                        </div>
+                        <div class="gauge-stat">
+                            <div class="gauge-stat-label">Fan</div>
+                            <div class="gauge-stat-val" data-field="fan_level">--</div>
+                        </div>
+                    </div>
+                    <div class="gauge-toggles">
+                        <div class="control-tile" data-toggle="usb" onclick="toggle('usb')" style="position: relative;">
+                            <div class="info-btn" onclick="showInfo(event, 'USB')">?</div>
+                            <span>USB</span>
+                        </div>
+                        <div class="control-tile" data-toggle="ac" onclick="toggle('ac')" style="position: relative;">
+                            <div class="info-btn" onclick="showInfo(event, 'AC')">?</div>
+                            <span>AC</span>
+                        </div>
+                        <div class="control-tile" data-toggle="dc" onclick="toggle('dc')" style="position: relative;">
+                            <div class="info-btn" onclick="showInfo(event, 'DC')">?</div>
+                            <span>DC</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pro Monitor layout -->
+                <div id="panel-promon" class="dash-panel">
+                    <div class="pm-row">
+                        <span class="pm-label">SOC</span>
+                        <div class="pm-bar"><div class="pm-bar-fill" data-bar="soc"></div></div>
+                        <span class="pm-val"><span data-field="soc">--</span>%</span>
+                    </div>
+                    <div class="pm-row">
+                        <span class="pm-label">Input</span><span></span>
+                        <span class="pm-val pm-green"><span data-field="input_w">--</span> W</span>
+                    </div>
+                    <div class="pm-row">
+                        <span class="pm-label">Output</span><span></span>
+                        <span class="pm-val pm-blue"><span data-field="output_w">--</span> W</span>
+                    </div>
+                    <div class="pm-row">
+                        <span class="pm-label">Total Out</span><span></span>
+                        <span class="pm-val pm-blue"><span data-field="total_w">--</span> W</span>
+                    </div>
+                    <div class="pm-row">
+                        <span class="pm-label">Status</span><span></span>
+                        <span class="pm-val" data-field="sys_status">--</span>
+                    </div>
+                    <div class="pm-row">
+                        <span class="pm-label">Time</span><span></span>
+                        <span class="pm-val" data-field="time_remaining">--</span>
+                    </div>
+                    <div class="pm-row">
+                        <span class="pm-label">Capacity</span>
+                        <span class="pm-sub" data-field="ext_batteries"></span>
+                        <span class="pm-val"><span data-field="kwh">--</span> kWh</span>
+                    </div>
+                    <div class="pm-row">
+                        <span class="pm-label">AC In</span><span></span>
+                        <span class="pm-val" data-field="ac_voltage">--</span>
+                    </div>
+                    <div class="pm-row">
+                        <span class="pm-label">Fan</span><span></span>
+                        <span class="pm-val"><span data-field="fan_level">--</span>/5</span>
+                    </div>
+                    <div class="pm-toggles">
+                        <div class="pm-toggle" data-toggle="usb" onclick="toggle('usb')">USB</div>
+                        <div class="pm-toggle" data-toggle="ac" onclick="toggle('ac')">AC</div>
+                        <div class="pm-toggle" data-toggle="dc" onclick="toggle('dc')">DC</div>
+                    </div>
+                </div>
             </div>
 
             <div id="controls" class="control-row disabled">
-                <div id="btn-usb" class="control-tile" onclick="toggle('usb')" style="position: relative;">
+                <div id="btn-usb" class="control-tile" data-toggle="usb" onclick="toggle('usb')" style="position: relative;">
                     <div class="info-btn" onclick="showInfo(event, 'USB')">?</div>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
@@ -1607,14 +2199,14 @@
                     </svg>
                     <span>USB</span>
                 </div>
-                <div id="btn-ac" class="control-tile" onclick="toggle('ac')" style="position: relative;">
+                <div id="btn-ac" class="control-tile" data-toggle="ac" onclick="toggle('ac')" style="position: relative;">
                     <div class="info-btn" onclick="showInfo(event, 'AC')">?</div>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M12 2v20M2 12h20"></path>
                     </svg>
                     <span>AC</span>
                 </div>
-                <div id="btn-dc" class="control-tile" onclick="toggle('dc')" style="position: relative;">
+                <div id="btn-dc" class="control-tile" data-toggle="dc" onclick="toggle('dc')" style="position: relative;">
                     <div class="info-btn" onclick="showInfo(event, 'DC')">?</div>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <rect x="2" y="6" width="20" height="12" rx="2" ry="2"></rect>
@@ -1640,8 +2232,7 @@
                     <button onclick="exportHistoryCsv()" title="Download history as CSV"
                         style="background: none; border: 1px solid var(--text-muted); color: var(--text-muted); border-radius: 0.25rem; font-size: 0.7rem; padding: 0.1rem 0.4rem; cursor: pointer;">⬇ CSV</button>
                 </div>
-                <canvas id="historyChart" width="600" height="120" style="width: 100%; height: 120px; display: block; cursor: crosshair;"
-                    onclick="handleChartClick(event)"></canvas>
+                <canvas id="historyChart" width="600" height="120" onclick="handleChartClick(event)"></canvas>
                 <div id="chartTooltip"
                     style="display: none; position: absolute; top: 2.4rem; left: 0; background: var(--bg-log); color: var(--text-main); border: 1px solid var(--text-muted); border-radius: 0.4rem; padding: 0.4rem 0.6rem; font-size: 0.7rem; font-family: monospace; line-height: 1.4; z-index: 15; pointer-events: none; box-shadow: 0 2px 8px rgba(0,0,0,0.5);"></div>
                 <div style="display: flex; gap: 1rem; font-size: 0.65rem; color: var(--text-muted); margin-top: 0.25rem;">
@@ -1650,6 +2241,7 @@
                     <span>┄ Battery %</span>
                     <span style="margin-left: auto; opacity: 0.7;">tap graph for values</span>
                 </div>
+            </div>
             </div>
 
             <!-- Activity Log moved to Diagnostics view -->
@@ -1993,11 +2585,10 @@
                 <div class="accordion-content">
                     <div class="setting-desc" style="margin-bottom:0.25rem;">Dashboard layout</div>
                     <div class="theme-pills" id="layout-pills" style="margin-bottom:0.75rem;">
-                        <span class="theme-pill active" data-layout="default" onclick="selectLayoutPill('default')">📊 Default</span>
-                        <span class="theme-pill" data-layout="compact" onclick="selectLayoutPill('compact')">📱 Compact</span>
-                        <span class="theme-pill" data-layout="numeric" onclick="selectLayoutPill('numeric')">🔢 Numeric</span>
-                        <span class="theme-pill" data-layout="focus" onclick="selectLayoutPill('focus')">🔋 Focus</span>
-                        <span class="theme-pill" data-layout="monitor" onclick="selectLayoutPill('monitor')">📈 Monitor</span>
+                        <span class="theme-pill active" data-layout="default" onclick="selectLayoutPill('default')">📊 Classic</span>
+                        <span class="theme-pill" data-layout="flow" onclick="selectLayoutPill('flow')">⚡ Energy Flow</span>
+                        <span class="theme-pill" data-layout="gauges" onclick="selectLayoutPill('gauges')">🎛️ Gauges</span>
+                        <span class="theme-pill" data-layout="promon" onclick="selectLayoutPill('promon')">📈 Pro Monitor</span>
                     </div>
                     <div class="setting-desc" style="margin-bottom:0.25rem;">Theme</div>
                     <div class="theme-pills" id="theme-pills">
@@ -2266,13 +2857,17 @@ Example format:
             setTheme(themeName);
         }
 
-        // Layout preset functions
+        // Layout functions. Stored values from the retired presets
+        // (compact/numeric/focus/monitor) fall back to the classic default.
+        const VALID_LAYOUTS = ['default', 'flow', 'gauges', 'promon'];
         function setLayout(layoutName) {
+            if (!VALID_LAYOUTS.includes(layoutName)) layoutName = 'default';
             document.documentElement.setAttribute('data-layout', layoutName);
             localStorage.setItem('POWER-layout', layoutName);
             requestAnimationFrame(() => drawHistoryChart());
         }
         function selectLayoutPill(layoutName) {
+            if (!VALID_LAYOUTS.includes(layoutName)) layoutName = 'default';
             document.querySelectorAll('.theme-pill[data-layout]').forEach(p => p.classList.remove('active'));
             const pill = document.querySelector(`.theme-pill[data-layout="${layoutName}"]`);
             if (pill) pill.classList.add('active');
@@ -2508,17 +3103,11 @@ Example format:
         }
 
         function updateStatus(connected) {
-            const controls = document.getElementById('controls');
-            const dashboard = document.getElementById('dashboard-container');
-
+            setDashEnabled(connected);
             if (connected) {
-                if (controls) controls.classList.remove('disabled');
-                if (dashboard) dashboard.classList.remove('disabled');
                 connectBtns.forEach(b => b.classList.add('hidden'));
                 disconnectBtns.forEach(b => b.classList.remove('hidden'));
             } else {
-                if (controls) controls.classList.add('disabled');
-                if (dashboard) dashboard.classList.add('disabled');
                 connectBtns.forEach(b => b.classList.remove('hidden'));
                 disconnectBtns.forEach(b => b.classList.add('hidden'));
             }
@@ -2737,12 +3326,9 @@ Example format:
                     const totalWh = mainWh + s1Wh + s2Wh;
                     const totalKwh = totalWh / 1000;
 
-                    // Update UI for Extensions
-                    const extContainer = document.getElementById('extBatteries');
                     let extText = [];
                     if (hasS1) extText.push(`Ext1: ${s1Pct.toFixed(1)}%`);
                     if (hasS2) extText.push(`Ext2: ${s2Pct.toFixed(1)}%`);
-                    extContainer.textContent = extText.join(' | ');
 
                     // Light State
                     if (settingsRegisters[27] !== undefined) {
@@ -2752,19 +3338,14 @@ Example format:
                     }
 
                     // Enable Dashboard if data is flowing
-                    const dashEl = document.getElementById('dashboard-container');
-                    const ctrlEl = document.getElementById('controls');
-                    if (dashEl) dashEl.classList.remove('disabled');
-                    if (ctrlEl) ctrlEl.classList.remove('disabled');
+                    setDashEnabled(true);
 
-                    if (btns.usb) updateButtonState(btns.usb, usbState);
-                    if (btns.dc) updateButtonState(btns.dc, dcState);
-                    if (btns.ac) updateButtonState(btns.ac, acState);
+                    updateOutputState('usb', usbState);
+                    updateOutputState('dc', dcState);
+                    updateOutputState('ac', acState);
                     if (btns.light) updateButtonState(btns.light, lightState);
 
-                    document.getElementById('inputWatts').textContent = (inputTotal > 0) ? inputTotal : (inputRatified + inputDC);
-
-                    document.getElementById('outputWatts').textContent = output;
+                    const effectiveInput = (inputTotal > 0) ? inputTotal : (inputRatified + inputDC);
 
                     // Protection/Error registers (needed for status + fault display)
                     const protFlags = getRegLocal(42);
@@ -2788,12 +3369,6 @@ Example format:
                     else if (statusFlags & 0x4000) sysStatus = 'Standby';
                     else if (statusFlags > 0) sysStatus = '0x' + statusFlags.toString(16).toUpperCase();
                     else sysStatus = '--';
-                    document.getElementById('sysWatts').textContent = sysStatus;
-
-                    document.getElementById('totalWatts').textContent = totalWatts;
-                    document.getElementById('batteryPercent').textContent = Math.floor(battery);
-
-                    document.getElementById('remainingKwh').textContent = totalKwh.toFixed(2);
 
                     // Time display: Show "Time to Full" when charging, "Time to Empty" when discharging
                     // Use Reg 20 (totalWatts) for output comparison - Reg 39 is undocumented
@@ -2801,7 +3376,6 @@ Example format:
 
                     // Power history + alert checks (only for real device data, not the simulator)
                     if (!isDebug) {
-                        const effectiveInput = (inputTotal > 0) ? inputTotal : (inputRatified + inputDC);
                         recordHistory(battery, effectiveInput, output);
                         checkAlerts(battery, isCharging, isKnownError ? errorCode : 0, sysStatus);
                     }
@@ -2812,10 +3386,17 @@ Example format:
                     const timeText = displayMinutes > 0
                         ? (isCharging ? `${displayMinutes}m` : `${Math.floor(displayMinutes / 60)}h ${displayMinutes % 60}m`)
                         : "--";
-                    document.getElementById('remainingHours').textContent = `${timeLabel} ${timeText}`;
-
-                    document.getElementById('batteryRing').setAttribute('stroke-dasharray', `${battery}, 100`);
-                    document.getElementById('batteryRing').style.color = battery < 20 ? "#ef4444" : "#60a5fa";
+                    renderDashboard({
+                        inputW: effectiveInput,
+                        outputW: output,
+                        sysStatus,
+                        totalW: totalWatts,
+                        soc: battery,
+                        kwh: totalKwh,
+                        timeText: `${timeLabel} ${timeText}`,
+                        extText: extText.join(' | '),
+                        isCharging
+                    });
 
                     // Protection Fault Warning (Reg 42 bitmask + Reg 8 error code)
                     // Reg 42: Bits 13-14 (0x6000) = Critical Fault. Bits 0-12 = normal MOSFET status.
@@ -2975,21 +3556,15 @@ Example format:
             registers[56] = battery * 10;
             registers[22] = 4800 + (battery * 10); // Rough voltage sim
 
-            // Manually update the DOM elements for simulation
-            const elIn = document.getElementById('inputWatts'); if (elIn) elIn.textContent = input;
-            const elOut = document.getElementById('outputWatts'); if (elOut) elOut.textContent = output;
-            const elSys = document.getElementById('sysWatts'); if (elSys) elSys.textContent = input > output ? 'Charging' : 'Standby';
-            const elTot = document.getElementById('totalWatts'); if (elTot) elTot.textContent = total;
-            const elBat = document.getElementById('batteryPercent'); if (elBat) elBat.textContent = Math.floor(battery);
-
-            const totalKwh = (battery / 100) * (settings.mainCap / 1000);
-            const elKwh = document.getElementById('remainingKwh'); if (elKwh) elKwh.textContent = totalKwh.toFixed(2);
-
-            const elRing = document.getElementById('batteryRing');
-            if (elRing) {
-                elRing.setAttribute('stroke-dasharray', `${battery}, 100`);
-                elRing.style.color = battery < 20 ? "#ef4444" : "#60a5fa";
-            }
+            renderDashboard({
+                inputW: input,
+                outputW: output,
+                sysStatus: input > output ? 'Charging' : 'Standby',
+                totalW: total,
+                soc: battery,
+                kwh: (battery / 100) * (settings.mainCap / 1000),
+                isCharging: input > output
+            });
         }
 
 
@@ -3098,6 +3673,9 @@ Example format:
             const valACFreq = getReg(16); // 500 -> 50.0 Hz
             const valBatV = getReg(22); // 4988 -> 49.88 V
             const fanLvl = getReg(69);
+
+            setField('fan_level', fanLvl);
+            setField('ac_voltage', (getReg(21) / 10).toFixed(1) + 'V');
 
             // Safe Retrieval
             const inAC = getReg(3);
@@ -3311,6 +3889,98 @@ Example format:
                 btn.classList.add('active');
             } else {
                 btn.classList.remove('active');
+            }
+        }
+
+        // Output state fan-out: the classic tiles (btns) stay the source of
+        // truth for toggle(); every [data-toggle] element across the layout
+        // panels mirrors the same state.
+        const outputStates = { usb: false, ac: false, dc: false };
+        function updateOutputState(type, isOn) {
+            outputStates[type] = !!isOn;
+            if (btns[type]) updateButtonState(btns[type], isOn);
+            document.querySelectorAll(`[data-toggle="${type}"]`).forEach(el =>
+                el.classList.toggle('active', !!isOn));
+        }
+
+        function setDashEnabled(enabled) {
+            ['controls', 'dashboard-container'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.toggle('disabled', !enabled);
+            });
+            document.querySelectorAll('.dash-panel').forEach(el =>
+                el.classList.toggle('disabled', !enabled));
+        }
+
+        // Central dashboard render: writes each value to every element tagged
+        // with the matching data-field, so all layout panels update together.
+        const fieldEls = {};
+        function setField(name, value) {
+            if (value === undefined || value === null) return;
+            if (!fieldEls[name]) fieldEls[name] = document.querySelectorAll(`[data-field="${name}"]`);
+            const text = String(value);
+            fieldEls[name].forEach(el => {
+                if (el.textContent !== text) el.textContent = text;
+            });
+        }
+
+        function renderDashboard(d) {
+            setField('input_w', d.inputW);
+            setField('output_w', d.outputW);
+            setField('sys_status', d.sysStatus);
+            setField('total_w', d.totalW);
+            setField('time_remaining', d.timeText);
+            setField('ext_batteries', d.extText);
+
+            if (d.soc !== undefined) {
+                setField('soc', Math.floor(d.soc));
+                const ring = document.getElementById('batteryRing');
+                if (ring) {
+                    ring.setAttribute('stroke-dasharray', `${d.soc}, 100`);
+                    ring.classList.toggle('ring-low', d.soc < 20);
+                }
+                const bar = document.querySelector('[data-bar="soc"]');
+                if (bar) {
+                    bar.style.width = Math.max(0, Math.min(100, d.soc)) + '%';
+                    bar.classList.toggle('ring-low', d.soc < 20);
+                }
+            }
+            if (d.kwh !== undefined) setField('kwh', d.kwh.toFixed(2));
+
+            renderFlow(d);
+            renderGauges(d);
+        }
+
+        function renderFlow(d) {
+            const panel = document.getElementById('panel-flow');
+            if (!panel) return;
+            const inActive = (d.inputW || 0) > 0;
+            const outActive = (d.outputW || 0) > 0;
+            panel.querySelector('.flow-line-in').classList.toggle('flowing', inActive);
+            panel.querySelector('.flow-line-total').classList.toggle('flowing', outActive);
+            ['usb', 'ac', 'dc'].forEach(t =>
+                panel.querySelector(`.flow-line-${t}`).classList.toggle('flowing', outActive && outputStates[t]));
+            panel.querySelector('.flow-hub').classList.toggle('charging', !!d.isCharging);
+        }
+
+        // Input gauge scales to the device's AC charge limit (Settings Reg 14);
+        // no register exposes a max output, so that gauge auto-ranges like the chart.
+        let gaugeOutMax = 800;
+        function setGaugeArc(name, frac) {
+            const el = document.querySelector(`[data-gauge="${name}"]`);
+            if (el) el.setAttribute('stroke-dasharray',
+                `${(Math.max(0, Math.min(1, frac)) * 75).toFixed(1)}, 100`);
+        }
+
+        function renderGauges(d) {
+            const maxIn = (settingsRegisters[14] > 0) ? settingsRegisters[14] : 1100;
+            if ((d.outputW || 0) > gaugeOutMax) gaugeOutMax = Math.ceil(d.outputW / 500) * 500;
+            setGaugeArc('in', (d.inputW || 0) / maxIn);
+            setGaugeArc('out', (d.outputW || 0) / gaugeOutMax);
+            if (d.soc !== undefined) {
+                setGaugeArc('soc', d.soc / 100);
+                const socEl = document.querySelector('[data-gauge="soc"]');
+                if (socEl) socEl.classList.toggle('ring-low', d.soc < 20);
             }
         }
 
