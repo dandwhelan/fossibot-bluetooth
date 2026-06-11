@@ -1,6 +1,8 @@
 {
     "name": "Fossibot BLE PWA",
     "short_name": "Fossibot",
+    "description": "Control Fossibot / AFERIY / SYDPOWER power stations over Bluetooth, no cloud required.",
+    "id": "./",
     "start_url": "./",
     "display": "standalone",
     "background_color": "#1a1a1a",
@@ -10,13 +12,13 @@
             "src": "icon-512.png",
             "sizes": "1024x1024",
             "type": "image/png",
-            "purpose": "any maskable"
+            "purpose": "any"
         },
         {
             "src": "icon-512.png",
-            "sizes": "512x512",
+            "sizes": "1024x1024",
             "type": "image/png",
-            "purpose": "any maskable"
+            "purpose": "maskable"
         }
     ]
 }

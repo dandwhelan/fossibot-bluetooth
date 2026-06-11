@@ -701,6 +701,44 @@
             justify-content: center;
         }
 
+        /* Focus layout — large glanceable battery, no chart */
+        [data-layout="focus"] .battery-ring-container {
+            width: 10rem;
+            height: 10rem;
+        }
+        [data-layout="focus"] .battery-text {
+            font-size: 2.25rem;
+        }
+        [data-layout="focus"] .battery-unit {
+            font-size: 1.1rem;
+        }
+        [data-layout="focus"] .dash-val {
+            font-size: 1.5rem;
+        }
+        [data-layout="focus"] #history-panel,
+        [data-layout="focus"] [data-widget="ext-batteries"] {
+            display: none;
+        }
+
+        /* Monitor layout — numbers only, chart gets the space */
+        [data-layout="monitor"] [data-widget="battery-ring"],
+        [data-layout="monitor"] [data-widget="ext-batteries"] {
+            display: none;
+        }
+        [data-layout="monitor"] .battery-ring-container {
+            width: auto;
+            height: auto;
+            margin: 0.25rem auto;
+        }
+        [data-layout="monitor"] .battery-text {
+            position: static;
+            transform: none;
+            justify-content: center;
+        }
+        [data-layout="monitor"] #historyChart {
+            height: 240px;
+        }
+
         [data-theme="terminal"] .dash-label {
             color: #008800;
         }
@@ -1430,7 +1468,7 @@
                     <button class="btn-main btn-connect" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">
                         Connect
                     </button>
-                    <button id="btn-install-term" class="btn-main hidden" onclick="installApp()"
+                    <button id="btn-install-term" class="btn-main js-install-btn hidden" onclick="installApp()"
                         style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">
                         INSTALL
                     </button>
@@ -1958,6 +1996,8 @@
                         <span class="theme-pill active" data-layout="default" onclick="selectLayoutPill('default')">📊 Default</span>
                         <span class="theme-pill" data-layout="compact" onclick="selectLayoutPill('compact')">📱 Compact</span>
                         <span class="theme-pill" data-layout="numeric" onclick="selectLayoutPill('numeric')">🔢 Numeric</span>
+                        <span class="theme-pill" data-layout="focus" onclick="selectLayoutPill('focus')">🔋 Focus</span>
+                        <span class="theme-pill" data-layout="monitor" onclick="selectLayoutPill('monitor')">📈 Monitor</span>
                     </div>
                     <div class="setting-desc" style="margin-bottom:0.25rem;">Theme</div>
                     <div class="theme-pills" id="theme-pills">
@@ -1982,6 +2022,17 @@
                         <span class="theme-pill" data-theme="psychedelic" onclick="selectThemePill('psychedelic')">😵
                             Acid Mode</span>
                     </div>
+                </div>
+            </div>
+
+            <!-- Install App (shown when the app is not installed) -->
+            <div class="setting-row hidden" id="install-settings-row">
+                <div class="setting-info">
+                    <span class="setting-title">Install App</span>
+                    <span class="setting-desc" id="install-settings-desc">Fullscreen, offline, home screen icon</span>
+                </div>
+                <div class="setting-control" id="install-settings-control">
+                    <button class="btn-install js-install-btn hidden" onclick="installApp()">⬇ Install</button>
                 </div>
             </div>
         </div>
@@ -2219,6 +2270,7 @@ Example format:
         function setLayout(layoutName) {
             document.documentElement.setAttribute('data-layout', layoutName);
             localStorage.setItem('POWER-layout', layoutName);
+            requestAnimationFrame(() => drawHistoryChart());
         }
         function selectLayoutPill(layoutName) {
             document.querySelectorAll('.theme-pill[data-layout]').forEach(p => p.classList.remove('active'));
@@ -2571,7 +2623,6 @@ Example format:
         }
 
         function handleNotification(event) {
-            console.log("Data Handler v2 active");
             try {
                 const value = event.target.value;
                 const byteLen = value.byteLength;
@@ -3573,23 +3624,28 @@ Example format:
 
         // PWA Install Prompt
         let deferredPrompt;
-        const installBtnUi = document.getElementById('btn-install-ui');
-        const installBtnTerm = document.getElementById('btn-install-term');
+        const INSTALL_REPROMPT_MS = 14 * 24 * 60 * 60 * 1000;
+
+        const isStandalone = () =>
+            window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+
+        function setInstallButtonsVisible(visible) {
+            document.querySelectorAll('.js-install-btn').forEach(b => b.classList.toggle('hidden', !visible));
+            const row = document.getElementById('install-settings-row');
+            if (row) row.classList.toggle('hidden', !visible);
+        }
 
         window.addEventListener('beforeinstallprompt', (e) => {
             console.log("PWA: beforeinstallprompt fired");
             e.preventDefault();
             deferredPrompt = e;
+            if (isStandalone()) return;
 
-            // Show subtle buttons
-            const btnUI = document.getElementById('btn-install-ui');
-            const btnTerm = document.getElementById('btn-install-term');
-            if (btnUI) btnUI.classList.remove('hidden');
-            if (btnTerm) btnTerm.classList.remove('hidden');
+            setInstallButtonsVisible(true);
 
-            // Also show the visible "popup" asking to install
-            // Check if user has dismissed it before to avoid annoyance
-            if (!localStorage.getItem('POWER-install-dismissed')) {
+            // Show the install popup unless it was dismissed recently
+            const dismissedAt = parseInt(localStorage.getItem('POWER-install-dismissed')) || 0;
+            if (Date.now() - dismissedAt > INSTALL_REPROMPT_MS) {
                 document.getElementById('installModal').style.display = 'flex';
             }
         });
@@ -3598,6 +3654,7 @@ Example format:
             console.log("PWA: App installed");
             deferredPrompt = null;
             closeInstallModal();
+            setInstallButtonsVisible(false);
         });
 
         async function installApp() {
@@ -3607,14 +3664,24 @@ Example format:
             const { outcome } = await deferredPrompt.userChoice;
             console.log(`User response to the install prompt: ${outcome}`);
             deferredPrompt = null;
-            installBtnUi.classList.add('hidden');
-            installBtnTerm.classList.add('hidden');
+            setInstallButtonsVisible(false);
         }
 
         function closeInstallModal() {
             document.getElementById('installModal').style.display = 'none';
-            // Remember dismissal for this session/device
-            localStorage.setItem('POWER-install-dismissed', 'true');
+            localStorage.setItem('POWER-install-dismissed', Date.now());
+        }
+
+        // iOS has no beforeinstallprompt; show Add-to-Home-Screen instructions instead
+        if (/iPhone|iPad|iPod/.test(navigator.userAgent) && !isStandalone()) {
+            const row = document.getElementById('install-settings-row');
+            const desc = document.getElementById('install-settings-desc');
+            const control = document.getElementById('install-settings-control');
+            if (row && desc && control) {
+                desc.textContent = 'In Safari: tap Share, then "Add to Home Screen"';
+                control.style.display = 'none';
+                row.classList.remove('hidden');
+            }
         }
 
         // Settings Logic
@@ -5119,9 +5186,11 @@ Example format:
 
         // Wake locks are auto-released when the tab is hidden; re-acquire on return
         document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible' &&
-                localStorage.getItem('POWER-wakelock') === '1' && !wakeLock) {
-                toggleWakeLock(true);
+            if (document.visibilityState === 'visible') {
+                if (localStorage.getItem('POWER-wakelock') === '1' && !wakeLock) {
+                    toggleWakeLock(true);
+                }
+                drawHistoryChart(); // chart redraws are skipped while hidden
             }
         });
 
@@ -5190,23 +5259,42 @@ Example format:
             drawHistoryChart();
         }
 
+        let lastChartDrawAt = 0;
         function recordHistory(soc, inW, outW) {
             powerHistory.push({ t: Date.now(), soc, in: inW, out: outW });
             if (powerHistory.length > HISTORY_MAX) powerHistory.shift();
-            drawHistoryChart();
+            // Cap redraw frequency; fast poll rates shouldn't redraw more than ~1/s
+            if (Date.now() - lastChartDrawAt >= 900) drawHistoryChart();
         }
 
         function drawHistoryChart() {
             if (document.hidden) return;
             const canvas = document.getElementById('historyChart');
             if (!canvas || canvas.offsetParent === null) return; // not visible
+            lastChartDrawAt = Date.now();
+
+            // Match the backing store to the on-screen size so lines stay crisp
+            const cssW = canvas.clientWidth, cssH = canvas.clientHeight;
+            if (cssW > 0 && (canvas.width !== cssW || canvas.height !== cssH)) {
+                canvas.width = cssW;
+                canvas.height = cssH;
+            }
+
             const ctx = canvas.getContext('2d');
             const w = canvas.width, h = canvas.height;
             ctx.clearRect(0, 0, w, h);
 
             const now = Date.now();
             const windowStart = now - historyRangeMs;
-            const pts = powerHistory.filter(p => p.t >= windowStart);
+            // History is time-ordered: binary search the window start instead of
+            // filtering the whole buffer (up to 86k points) on every redraw
+            let lo = 0, hi = powerHistory.length;
+            while (lo < hi) {
+                const mid = (lo + hi) >> 1;
+                if (powerHistory[mid].t < windowStart) lo = mid + 1;
+                else hi = mid;
+            }
+            const pts = powerHistory.slice(lo);
             chartDrawnPoints = [];
 
             if (pts.length < 2) {
