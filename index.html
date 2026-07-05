@@ -2672,6 +2672,21 @@
                             </select>
                         </div>
                     </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-title">Auto-Connect Max Duration</span>
+                            <span class="setting-desc">Stop retrying after this long; reconnect manually afterwards</span>
+                        </div>
+                        <div class="setting-control">
+                            <select id="set-autoconnect-maxduration" onchange="setAutoConnectMaxDuration(this.value)">
+                                <option value="1">1 min</option>
+                                <option value="5" selected>5 min</option>
+                                <option value="15">15 min</option>
+                                <option value="60">1 hour</option>
+                                <option value="0">Forever</option>
+                            </select>
+                        </div>
+                    </div>
                     <div id="known-devices-list"></div>
                     <div class="setting-desc" id="known-devices-empty" style="padding: 0.5rem 0;">
                         No saved devices yet — connect once and it will appear here.
@@ -3057,6 +3072,16 @@ Example format:
             localStorage.setItem('POWER-autoconnect-interval', String(parseInt(secs) || 10));
         }
 
+        function setAutoConnectMaxDuration(mins) {
+            localStorage.setItem('POWER-autoconnect-maxduration', String(parseInt(mins) || 0));
+        }
+
+        function autoConnectMaxDurationMs() {
+            const stored = localStorage.getItem('POWER-autoconnect-maxduration');
+            const mins = stored === null ? 5 : parseInt(stored) || 0;
+            return mins * 60000; // 0 = forever
+        }
+
         function autoConnectIntervalMs() {
             const secs = parseInt(localStorage.getItem('POWER-autoconnect-interval')) || 10;
             return Math.max(5, secs) * 1000;
@@ -3070,9 +3095,15 @@ Example format:
             autoConnectLoopRunning = true;
             log('Auto-connect: looking for saved device...');
             try {
-                // Keep retrying while the app is open, until connected, the user
-                // disconnects manually, or the setting is switched off.
+                // Keep retrying until connected, the user disconnects manually,
+                // the setting is switched off, or the max duration elapses.
+                const maxMs = autoConnectMaxDurationMs();
+                const startedAt = Date.now();
                 for (let attempt = 1; ; attempt++) {
+                    if (maxMs > 0 && Date.now() - startedAt > maxMs) {
+                        log(`Auto-connect stopped after ${maxMs / 60000} min. Tap Connect to try manually.`);
+                        return;
+                    }
                     autoConnectMode = true;
                     try { await connect(); } finally { autoConnectMode = false; }
                     if (device && device.gatt.connected) return;
@@ -6648,6 +6679,8 @@ Example format:
             if (autoEl) autoEl.checked = (localStorage.getItem('POWER-autoconnect') !== '0');
             const autoIntEl = document.getElementById('set-autoconnect-interval');
             if (autoIntEl) autoIntEl.value = String(parseInt(localStorage.getItem('POWER-autoconnect-interval')) || 10);
+            const autoMaxEl = document.getElementById('set-autoconnect-maxduration');
+            if (autoMaxEl) autoMaxEl.value = String(autoConnectMaxDurationMs() / 60000);
 
             renderKnownDevices();
             updateEnergyStrip();
