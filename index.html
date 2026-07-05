@@ -3089,11 +3089,18 @@ Example format:
 
         async function tryAutoConnect() {
             if (localStorage.getItem('POWER-autoconnect') === '0') return; // default on
-            if (knownDevices.length === 0 || !navigator.bluetooth || !navigator.bluetooth.getDevices) return;
+            if (knownDevices.length === 0) { log('Auto-connect: no saved devices yet.'); return; }
+            if (!navigator.bluetooth) { log('Auto-connect: Web Bluetooth is not available in this browser.'); return; }
+            if (!navigator.bluetooth.getDevices) {
+                log('Auto-connect: this browser cannot reconnect without the device chooser. In Chrome, enable chrome://flags/#enable-web-bluetooth-new-permissions-backend and restart the browser.');
+                showToast('Auto-connect not supported by this browser — see log', 'error');
+                return;
+            }
             if (device && device.gatt.connected) return;
             if (autoConnectLoopRunning) return;
             autoConnectLoopRunning = true;
             log('Auto-connect: looking for saved device...');
+            showToast('Auto-connecting to saved device...');
             try {
                 // Keep retrying until connected, the user disconnects manually,
                 // the setting is switched off, or the max duration elapses.
@@ -3107,6 +3114,13 @@ Example format:
                     autoConnectMode = true;
                     try { await connect(); } finally { autoConnectMode = false; }
                     if (device && device.gatt.connected) return;
+                    if (!device) {
+                        // getDevices() granted nothing: a permission problem, not a
+                        // range problem, so retrying cannot help.
+                        log('Auto-connect: the browser did not remember permission for any saved device. Connect manually once to re-grant it. If this happens every launch, enable chrome://flags/#enable-web-bluetooth-new-permissions-backend.');
+                        showToast('Auto-connect: permission not remembered — tap Connect', 'error');
+                        return;
+                    }
                     if (userDisconnected) return;
                     if (localStorage.getItem('POWER-autoconnect') === '0') return;
                     const waitMs = autoConnectIntervalMs();
