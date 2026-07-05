@@ -107,6 +107,15 @@ Line numbers drift with every change — search for the function name instead.
 - `renderDiagnostics()` — Diag tab renderer.
 - `sendWifiCredentials()` / `disableWifiAP()` / `updateWifiStatusUI()` — WiFi
   config over OpCode 0x07.
+- `recordHistory()` / `flushHistory()` / `loadHistoryFromDB()` — chart samples,
+  persisted to IndexedDB (`POWER-history` DB, 24 h retention).
+- `accumulateEnergy()` / `updateEnergyStrip()` — daily Wh in/out totals
+  (localStorage `POWER-energy`) and optional tariff cost estimate.
+- `checkAlerts()` — notification rules (low battery, faults, charge complete,
+  AC input loss, overload).
+- `rememberDevice()` / `renderKnownDevices()` / `tryAutoConnect()` — saved
+  device list (`POWER-devices`) and chooser-free reconnect via
+  `navigator.bluetooth.getDevices()`.
 
 ## Conventions
 

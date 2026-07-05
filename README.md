@@ -34,12 +34,17 @@ ABOK Power Ark3600 (Probalby works, but not tested)
 *   **Live Power Flow:** Visualize real-time Input (Charging) and Output (Discharging) wattage with dynamic gauges.
 *   **System Health:** Monitor system voltage, frequency, and internal temperatures (fan levels).
 *   **Battery Extensions:** Support for monitoring external battery packs (Success/Extension batteries) with individual charge levels.
-*   **Power History Chart:** Live graph of Input/Output wattage and battery % on the dashboard. Selectable time ranges (5m / 10m / 30m / 1h / 24h), tap the graph to read exact values at any point, and one-click **CSV export**.
+*   **Power History Chart:** Live graph of Input/Output wattage and battery % on the dashboard, with optional Fan level and AC input voltage series when active. Selectable time ranges (5m / 10m / 30m / 1h / 24h), tap the graph to read exact values at any point, and one-click **CSV export**.
+*   **Persistent History:** Chart samples are stored locally (IndexedDB) so the last 24 hours survive page reloads and reconnects.
+*   **Daily Energy Totals:** Charged/discharged energy (Wh / kWh) is tracked per day under the chart, with an optional cost estimate if you enter your electricity tariff in Settings → App Data.
+*   **Session Stats:** Average and peak output plus peak input for the current connection, shown under the chart.
 *   **OLED Saver Theme:** Pure-black theme that switches OLED pixels off — the most power-efficient way to leave the dashboard on overnight with "Keep Screen Awake".
+*   **Saved Devices & One-Tap Reconnect:** Devices you have paired once appear in Settings → My Devices — reconnect without the browser chooser, rename or forget them, and optionally auto-connect when the app opens (Chrome/Edge).
 *   **Auto-Reconnect:** Automatically retries the Bluetooth connection (with backoff) if the link drops unexpectedly.
 *   **Keep Screen Awake:** Optional Wake Lock so your phone screen stays on while monitoring.
-*   **Alerts:** Optional browser notifications for low battery (&lt;20%) and device faults.
+*   **Alerts:** Optional browser notifications for low battery (configurable threshold), device faults, charge complete, AC input loss (UPS use), and output overload.
 *   **Adjustable Poll Rate:** Choose how often the app reads device status (1–10 s).
+*   **Settings Backup:** Export/import all app preferences (themes, alerts, custom appliances, energy totals) as JSON from Settings → App Data.
 
 ### 🔋 Power Simulator
 *   **Runtime Calculator:** Estimate how long your power station will run with selected appliances.

@@ -2235,12 +2235,16 @@
                 <canvas id="historyChart" width="600" height="120" onclick="handleChartClick(event)"></canvas>
                 <div id="chartTooltip"
                     style="display: none; position: absolute; top: 2.4rem; left: 0; background: var(--bg-log); color: var(--text-main); border: 1px solid var(--text-muted); border-radius: 0.4rem; padding: 0.4rem 0.6rem; font-size: 0.7rem; font-family: monospace; line-height: 1.4; z-index: 15; pointer-events: none; box-shadow: 0 2px 8px rgba(0,0,0,0.5);"></div>
-                <div style="display: flex; gap: 1rem; font-size: 0.65rem; color: var(--text-muted); margin-top: 0.25rem;">
+                <div style="display: flex; gap: 1rem; font-size: 0.65rem; color: var(--text-muted); margin-top: 0.25rem; flex-wrap: wrap;">
                     <span style="color: var(--text-green);">▬ Input W</span>
                     <span style="color: var(--text-blue);">▬ Output W</span>
                     <span>┄ Battery %</span>
+                    <span id="legend-fan" style="color: #f59e0b; display: none;">▬ Fan</span>
+                    <span id="legend-acv" style="color: #c084fc; display: none;">┄ AC V</span>
                     <span style="margin-left: auto; opacity: 0.7;">tap graph for values</span>
                 </div>
+                <div id="energy-strip" style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.4rem; font-family: monospace;"></div>
+                <div id="session-stats" style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.15rem; font-family: monospace;"></div>
             </div>
             </div>
 
@@ -2272,7 +2276,7 @@
                         <div class="accordion-title">
                             <span class="accordion-icon">⚡</span>
                             Quick Actions
-                            <span class="accordion-count">6</span>
+                            <span class="accordion-count">7</span>
                         </div>
                         <span class="accordion-arrow">▼</span>
                     </div>
@@ -2318,7 +2322,7 @@
                         <div class="setting-row">
                             <div class="setting-info">
                                 <span class="setting-title">Alerts</span>
-                                <span class="setting-desc">Notify on low battery (&lt;20%) and faults</span>
+                                <span class="setting-desc">Low battery, faults, charge complete, AC loss, overload</span>
                             </div>
                             <div class="setting-control">
                                 <label class="toggle-switch">
@@ -2326,6 +2330,20 @@
                                     <span class="slider"></span>
                                 </label>
                             </div>
+                        </div>
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <span class="setting-title">Low Battery Alert Level</span>
+                                <span class="setting-desc">Notify when battery drops below this</span>
+                            </div>
+                            <select class="setting-select" id="set-lowbatt" onchange="setLowBattThreshold(this.value)">
+                                <option value="10">10%</option>
+                                <option value="15">15%</option>
+                                <option value="20" selected>20%</option>
+                                <option value="30">30%</option>
+                                <option value="40">40%</option>
+                                <option value="50">50%</option>
+                            </select>
                         </div>
                         <div class="setting-row">
                             <div class="setting-info">
@@ -2616,6 +2634,93 @@
                 </div>
             </div>
 
+            <!-- My Devices Accordion -->
+            <div class="accordion" id="acc-devices">
+                <div class="accordion-header" onclick="toggleAccordion('acc-devices')">
+                    <div class="accordion-title">
+                        <span class="accordion-icon">📶</span>
+                        My Devices
+                        <span class="accordion-count" id="devices-count">0</span>
+                    </div>
+                    <span class="accordion-arrow">▼</span>
+                </div>
+                <div class="accordion-content">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-title">Auto-Connect on Launch</span>
+                            <span class="setting-desc">Reconnect to the last device when the app opens</span>
+                        </div>
+                        <div class="setting-control">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="set-autoconnect" onchange="setAutoConnect(this.checked)">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div id="known-devices-list"></div>
+                    <div class="setting-desc" id="known-devices-empty" style="padding: 0.5rem 0;">
+                        No saved devices yet — connect once and it will appear here.
+                    </div>
+                    <button class="btn-main" style="width: 100%; padding: 0.5rem; margin-top: 0.5rem;"
+                        onclick="connectNewDevice()">＋ Pair New Device</button>
+                </div>
+            </div>
+
+            <!-- App Data Accordion -->
+            <div class="accordion" id="acc-appdata">
+                <div class="accordion-header" onclick="toggleAccordion('acc-appdata')">
+                    <div class="accordion-title">
+                        <span class="accordion-icon">💾</span>
+                        App Data
+                    </div>
+                    <span class="accordion-arrow">▼</span>
+                </div>
+                <div class="accordion-content">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-title">Electricity Cost per kWh</span>
+                            <span class="setting-desc">Used to estimate daily charging cost (0 = hide)</span>
+                        </div>
+                        <div class="setting-control">
+                            <input type="number" class="setting-select" id="set-tariff" step="0.01" min="0"
+                                placeholder="0.00" style="width: 90px;" onchange="setTariff(this.value)">
+                        </div>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-title">Export App Settings</span>
+                            <span class="setting-desc">Themes, alerts, appliances, energy totals as JSON</span>
+                        </div>
+                        <div class="setting-control">
+                            <button class="btn-main" style="width: 140px; padding: 0.5rem;"
+                                onclick="exportAppSettings()">⬇ Export</button>
+                        </div>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-title">Import App Settings</span>
+                            <span class="setting-desc">Restore from an exported JSON file</span>
+                        </div>
+                        <div class="setting-control">
+                            <input type="file" id="import-settings-file" accept="application/json,.json"
+                                style="display: none;" onchange="importAppSettings(this)">
+                            <button class="btn-main" style="width: 140px; padding: 0.5rem;"
+                                onclick="document.getElementById('import-settings-file').click()">⬆ Import</button>
+                        </div>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-title text-red">Clear Power History</span>
+                            <span class="setting-desc">Delete recorded chart history and energy totals</span>
+                        </div>
+                        <div class="setting-control">
+                            <button class="btn-main" style="background: var(--btn-red); width: 140px; padding: 0.5rem;"
+                                onclick="clearPowerHistory()">Clear</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Install App (shown when the app is not installed) -->
             <div class="setting-row hidden" id="install-settings-row">
                 <div class="setting-info">
@@ -2840,6 +2945,103 @@ Example format:
         const NOTIFY_UUID = '0000c305-0000-1000-8000-00805f9b34fb';
 
         let device, server, service, writeChar, notifyChar, pollInterval;
+
+        // ========== KNOWN DEVICES (multi-device + one-tap reconnect) ==========
+        let knownDevices = [];
+        try { knownDevices = JSON.parse(localStorage.getItem('POWER-devices')) || []; } catch (e) { }
+        let forceDeviceChooser = false;
+        let preferredDeviceId = null;
+        const listenedDevices = new Set();
+
+        function saveKnownDevices() {
+            localStorage.setItem('POWER-devices', JSON.stringify(knownDevices));
+            renderKnownDevices();
+        }
+
+        function rememberDevice(d) {
+            if (!d || !d.id) return;
+            const entry = knownDevices.find(k => k.id === d.id);
+            if (entry) {
+                if (!entry.customName && d.name) entry.name = d.name;
+                entry.lastSeen = Date.now();
+            } else {
+                knownDevices.push({ id: d.id, name: d.name || 'Unknown device', lastSeen: Date.now() });
+            }
+            knownDevices.sort((a, b) => b.lastSeen - a.lastSeen);
+            saveKnownDevices();
+        }
+
+        function renderKnownDevices() {
+            const list = document.getElementById('known-devices-list');
+            const empty = document.getElementById('known-devices-empty');
+            const count = document.getElementById('devices-count');
+            if (count) count.textContent = knownDevices.length;
+            if (empty) empty.style.display = knownDevices.length ? 'none' : '';
+            if (!list) return;
+            list.innerHTML = knownDevices.map(k => `
+                <div class="setting-row">
+                    <div class="setting-info" style="cursor: pointer;" onclick="connectToKnown('${k.id}')">
+                        <span class="setting-title">${escapeHtml(k.name)}</span>
+                        <span class="setting-desc">${device && device.id === k.id && device.gatt.connected
+                    ? 'Connected' : 'Tap to connect · last seen ' + new Date(k.lastSeen).toLocaleDateString()}</span>
+                    </div>
+                    <div class="setting-control" style="display: flex; gap: 0.4rem;">
+                        <button style="background: none; border: 1px solid var(--text-muted); color: var(--text-muted); border-radius: 0.25rem; padding: 0.2rem 0.5rem; cursor: pointer;"
+                            title="Rename" onclick="renameKnownDevice('${k.id}')">✎</button>
+                        <button style="background: none; border: 1px solid var(--btn-red); color: var(--btn-red); border-radius: 0.25rem; padding: 0.2rem 0.5rem; cursor: pointer;"
+                            title="Forget" onclick="forgetKnownDevice('${k.id}')">✕</button>
+                    </div>
+                </div>`).join('');
+        }
+
+        function connectToKnown(id) {
+            if (device && device.gatt.connected) {
+                if (device.id === id) { showToast('Already connected'); return; }
+                showToast('Disconnect from the current device first', 'error');
+                return;
+            }
+            device = null;
+            preferredDeviceId = id;
+            connect();
+        }
+
+        function connectNewDevice() {
+            if (device && device.gatt.connected) {
+                showToast('Disconnect from the current device first', 'error');
+                return;
+            }
+            device = null;
+            forceDeviceChooser = true;
+            connect();
+        }
+
+        function renameKnownDevice(id) {
+            const entry = knownDevices.find(k => k.id === id);
+            if (!entry) return;
+            const name = prompt('Device name:', entry.name);
+            if (name && name.trim()) {
+                entry.name = name.trim();
+                entry.customName = true;
+                saveKnownDevices();
+            }
+        }
+
+        function forgetKnownDevice(id) {
+            knownDevices = knownDevices.filter(k => k.id !== id);
+            saveKnownDevices();
+        }
+
+        function setAutoConnect(on) {
+            localStorage.setItem('POWER-autoconnect', on ? '1' : '0');
+        }
+
+        async function tryAutoConnect() {
+            if (localStorage.getItem('POWER-autoconnect') === '0') return; // default on
+            if (knownDevices.length === 0 || !navigator.bluetooth || !navigator.bluetooth.getDevices) return;
+            if (device && device.gatt.connected) return;
+            log('Auto-connect: looking for saved device...');
+            connect();
+        }
         // Manual override for light state because device feedback is unreliable
         let manualLightOverride = null;
 
@@ -3135,17 +3337,37 @@ Example format:
             userDisconnected = false;
             try {
                 if (!device) {
-                    log("Requesting Bluetooth Device...");
+                    // Previously-authorized devices can be reused without the chooser
+                    if (!forceDeviceChooser && knownDevices.length > 0 && navigator.bluetooth.getDevices) {
+                        try {
+                            const granted = await navigator.bluetooth.getDevices();
+                            device = (preferredDeviceId && granted.find(d => d.id === preferredDeviceId)) ||
+                                granted.find(d => knownDevices.some(k => k.id === d.id)) || null;
+                            if (device) log(`Reconnecting to saved device: ${device.name || device.id}`);
+                        } catch (e) {
+                            console.warn('getDevices failed:', e);
+                        }
+                    }
+                    forceDeviceChooser = false;
+                    preferredDeviceId = null;
 
-                    // Generate list of services to request (0x1800 - 0x1820)
-                    const svcList = [SERVICE_UUID, 0xA002, 0xA003];
-                    for (let i = 0x1800; i <= 0x1820; i++) svcList.push(i);
+                    if (!device) {
+                        log("Requesting Bluetooth Device...");
 
-                    device = await navigator.bluetooth.requestDevice({
-                        filters: [{ namePrefix: 'POWER' }, { namePrefix: 'AFERIY' }, { namePrefix: 'FOSSIBOT' }],
-                        optionalServices: svcList
-                    });
-                    device.addEventListener('gattserverdisconnected', onDisconnected);
+                        // Generate list of services to request (0x1800 - 0x1820)
+                        const svcList = [SERVICE_UUID, 0xA002, 0xA003];
+                        for (let i = 0x1800; i <= 0x1820; i++) svcList.push(i);
+
+                        device = await navigator.bluetooth.requestDevice({
+                            filters: [{ namePrefix: 'POWER' }, { namePrefix: 'AFERIY' }, { namePrefix: 'FOSSIBOT' }],
+                            optionalServices: svcList
+                        });
+                    }
+                    if (!listenedDevices.has(device.id)) {
+                        device.addEventListener('gattserverdisconnected', onDisconnected);
+                        listenedDevices.add(device.id);
+                    }
+                    rememberDevice(device);
 
                     // Auto-Detect Capacity from Name
                     if (device.name) {
@@ -3198,6 +3420,8 @@ Example format:
                 manualLightOverride = null;
                 reconnectAttempts = 0;
                 updateStatus(true);
+                resetSessionStats();
+                renderKnownDevices();
                 startPolling();
 
                 // Request settings (0x1103) once on connect
@@ -3376,8 +3600,15 @@ Example format:
 
                     // Power history + alert checks (only for real device data, not the simulator)
                     if (!isDebug) {
-                        recordHistory(battery, effectiveInput, output);
-                        checkAlerts(battery, isCharging, isKnownError ? errorCode : 0, sysStatus);
+                        recordHistory(battery, effectiveInput, output, getRegLocal(69), getRegLocal(21) / 10);
+                        checkAlerts({
+                            battery, isCharging,
+                            errorCode: isKnownError ? errorCode : 0,
+                            sysStatus,
+                            outputW: output,
+                            acVolts: getRegLocal(21) / 10,
+                            chargeLimitPct: (settingsRegisters[67] > 0) ? settingsRegisters[67] / 10 : 100
+                        });
                     }
 
                     const displayMinutes = isCharging ? timeToFull : timeToEmpty;
@@ -4072,8 +4303,10 @@ Example format:
         function onDisconnected() {
             log("Disconnected");
             stopPolling();
+            flushHistory();
             manualLightOverride = null; // Reset override
             updateStatus(false);
+            renderKnownDevices();
 
             if (!userDisconnected && device && reconnectAttempts < RECONNECT_MAX_ATTEMPTS) {
                 const delay = Math.min(30000, 2000 * Math.pow(2, reconnectAttempts));
@@ -4099,9 +4332,6 @@ Example format:
 
 
         // Connect/Disconnect listeners are now attached in DOMContentLoaded below
-
-
-        // Service Worker Removed
 
         function toggleScanner() {
             const el = document.getElementById('scanner');
@@ -5867,8 +6097,16 @@ Example format:
         // ========== ALERTS (Notifications API) ==========
         let lowBattNotified = false;
         let faultNotified = false;
-        const LOW_BATT_THRESHOLD = 20;
+        let chargeFullNotified = false;
+        let overloadNotified = false;
+        let acWasPresent = false;
+        let lowBattThreshold = parseInt(localStorage.getItem('POWER-lowbatt')) || 20;
 
+        function setLowBattThreshold(v) {
+            lowBattThreshold = parseInt(v) || 20;
+            localStorage.setItem('POWER-lowbatt', lowBattThreshold);
+            lowBattNotified = false;
+        }
         async function toggleAlerts(on) {
             if (on) {
                 if (!('Notification' in window)) {
@@ -5884,7 +6122,7 @@ Example format:
                     if (el) el.checked = false;
                     return;
                 }
-                showToast(`Alerts on: low battery (<${LOW_BATT_THRESHOLD}%) and faults`);
+                showToast(`Alerts on: low battery (<${lowBattThreshold}%), faults, charge complete, AC loss, overload`);
             }
             localStorage.setItem('POWER-alerts', on ? '1' : '0');
         }
@@ -5898,23 +6136,214 @@ Example format:
         }
 
         // Called from the status packet handler with fresh telemetry
-        function checkAlerts(battery, isCharging, errorCode, sysStatus) {
-            if (battery > 0 && battery <= LOW_BATT_THRESHOLD && !isCharging && !lowBattNotified) {
+        function checkAlerts({ battery, isCharging, errorCode, sysStatus, outputW, acVolts, chargeLimitPct }) {
+            if (battery > 0 && battery <= lowBattThreshold && !isCharging && !lowBattNotified) {
                 lowBattNotified = true;
                 notifyUser('⚠️ Low Battery', `Power station at ${battery.toFixed(0)}%`);
             }
-            if (battery > LOW_BATT_THRESHOLD + 5 || isCharging) lowBattNotified = false;
+            if (battery > lowBattThreshold + 5 || isCharging) lowBattNotified = false;
 
             if (errorCode > 0 && !faultNotified) {
                 faultNotified = true;
                 notifyUser('🚨 Device Fault', sysStatus);
             }
             if (errorCode === 0) faultNotified = false;
+
+            if (isCharging && battery >= chargeLimitPct && !chargeFullNotified) {
+                chargeFullNotified = true;
+                notifyUser('✅ Charge Complete', `Battery at ${battery.toFixed(0)}% (limit ${chargeLimitPct.toFixed(0)}%)`);
+            }
+            if (battery < chargeLimitPct - 5) chargeFullNotified = false;
+
+            // Reg 21 doubles as a state code when unplugged, so require a mains-level voltage
+            const acPresent = acVolts > 80;
+            if (acWasPresent && !acPresent) {
+                notifyUser('🔌 AC Input Lost', `Mains power dropped — running on battery (${battery.toFixed(0)}%)`);
+            }
+            acWasPresent = acPresent;
+
+            // Rated output inferred from detected capacity (F2400 → 2400W, F3600 → 3600W)
+            const ratedW = settings.mainCap >= 3800 ? 3600 : (settings.mainCap >= 2000 ? 2400 : 0);
+            if (ratedW > 0) {
+                if (outputW >= ratedW * 0.95 && !overloadNotified) {
+                    overloadNotified = true;
+                    notifyUser('⚠️ High Output Load', `${Math.round(outputW)}W — near the ${ratedW}W limit`);
+                }
+                if (outputW < ratedW * 0.8) overloadNotified = false;
+            }
         }
 
         // ========== POWER HISTORY + CHART + CSV EXPORT ==========
-        const powerHistory = []; // { t, soc, in: watts, out: watts }
+        const powerHistory = []; // { t, soc, in: watts, out: watts, fan: 0-5, acv: volts }
         const HISTORY_MAX = 86400; // 24h at 1s polling
+        const HISTORY_RETENTION_MS = 86400000;
+
+        // Samples persist in IndexedDB so the chart survives reloads and reconnects
+        let historyDB = null;
+        let pendingSamples = [];
+        let lastHistoryFlush = Date.now();
+
+        (function openHistoryDB() {
+            if (!('indexedDB' in window)) return;
+            const req = indexedDB.open('POWER-history', 1);
+            req.onupgradeneeded = () => req.result.createObjectStore('samples', { keyPath: 't' });
+            req.onsuccess = () => { historyDB = req.result; loadHistoryFromDB(); };
+            req.onerror = () => console.warn('History DB unavailable:', req.error);
+        })();
+
+        function loadHistoryFromDB() {
+            const cutoff = Date.now() - HISTORY_RETENTION_MS;
+            const getReq = historyDB.transaction('samples', 'readonly')
+                .objectStore('samples').getAll(IDBKeyRange.lowerBound(cutoff));
+            getReq.onsuccess = () => {
+                const saved = getReq.result || [];
+                if (saved.length) {
+                    const merged = saved.concat(powerHistory).sort((a, b) => a.t - b.t);
+                    powerHistory.length = 0;
+                    powerHistory.push(...merged.slice(-HISTORY_MAX));
+                    drawHistoryChart();
+                    log(`Restored ${saved.length} history samples`);
+                }
+                pruneHistoryDB();
+            };
+        }
+
+        function flushHistory() {
+            lastHistoryFlush = Date.now();
+            if (!historyDB || pendingSamples.length === 0) return;
+            try {
+                const store = historyDB.transaction('samples', 'readwrite').objectStore('samples');
+                pendingSamples.forEach(s => store.put(s));
+                pendingSamples = [];
+            } catch (e) { console.warn('History flush failed:', e); }
+        }
+
+        function pruneHistoryDB() {
+            if (!historyDB) return;
+            try {
+                historyDB.transaction('samples', 'readwrite').objectStore('samples')
+                    .delete(IDBKeyRange.upperBound(Date.now() - HISTORY_RETENTION_MS));
+            } catch (e) { }
+        }
+        setInterval(pruneHistoryDB, 3600000);
+        window.addEventListener('pagehide', flushHistory);
+        document.addEventListener('visibilitychange', () => { if (document.hidden) flushHistory(); });
+
+        // ========== ENERGY ACCOUNTING (Wh per day) ==========
+        let energyDays = {};
+        try { energyDays = JSON.parse(localStorage.getItem('POWER-energy')) || {}; } catch (e) { }
+        let lastEnergyT = 0;
+        let lastEnergySave = 0;
+        let tariff = parseFloat(localStorage.getItem('POWER-tariff')) || 0;
+
+        const energyDayKey = (t) => {
+            const d = new Date(t);
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        };
+
+        function accumulateEnergy(t, inW, outW) {
+            const dtHours = (t - lastEnergyT) / 3600000;
+            lastEnergyT = t;
+            // Skip the first sample and gaps (disconnects) — no data to integrate over
+            if (dtHours <= 0 || dtHours > 30 / 3600) return;
+            const day = energyDays[energyDayKey(t)] || (energyDays[energyDayKey(t)] = { in: 0, out: 0 });
+            day.in += inW * dtHours;
+            day.out += outW * dtHours;
+            if (t - lastEnergySave > 15000) saveEnergy(t);
+            updateEnergyStrip();
+        }
+
+        function saveEnergy(t) {
+            lastEnergySave = t;
+            const keys = Object.keys(energyDays).sort();
+            keys.slice(0, Math.max(0, keys.length - 31)).forEach(k => delete energyDays[k]);
+            localStorage.setItem('POWER-energy', JSON.stringify(energyDays));
+        }
+
+        function setTariff(v) {
+            tariff = parseFloat(v) || 0;
+            localStorage.setItem('POWER-tariff', tariff);
+            updateEnergyStrip();
+        }
+
+        function updateEnergyStrip() {
+            const el = document.getElementById('energy-strip');
+            if (!el) return;
+            const today = energyDays[energyDayKey(Date.now())];
+            if (!today || (today.in < 1 && today.out < 1)) { el.textContent = ''; return; }
+            const fmt = (wh) => wh >= 1000 ? (wh / 1000).toFixed(2) + ' kWh' : Math.round(wh) + ' Wh';
+            let txt = `Today: ⚡ in ${fmt(today.in)} · 🔌 out ${fmt(today.out)}`;
+            if (tariff > 0) txt += ` · 💰 ${(today.in / 1000 * tariff).toFixed(2)}`;
+            el.textContent = txt;
+        }
+
+        // ========== SESSION STATS ==========
+        let sessionStats = null;
+
+        function resetSessionStats() {
+            sessionStats = { start: Date.now(), n: 0, sumOut: 0, maxOut: 0, maxIn: 0 };
+        }
+
+        function updateSessionStats(s) {
+            if (!sessionStats) return;
+            sessionStats.n++;
+            sessionStats.sumOut += s.out;
+            sessionStats.maxOut = Math.max(sessionStats.maxOut, s.out);
+            sessionStats.maxIn = Math.max(sessionStats.maxIn, s.in);
+            const el = document.getElementById('session-stats');
+            if (!el) return;
+            const mins = Math.floor((Date.now() - sessionStats.start) / 60000);
+            const dur = mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}m`;
+            el.textContent = `Session ${dur}: avg out ${Math.round(sessionStats.sumOut / sessionStats.n)}W` +
+                ` · peak out ${Math.round(sessionStats.maxOut)}W · peak in ${Math.round(sessionStats.maxIn)}W`;
+        }
+
+        function clearPowerHistory() {
+            if (!confirm('Delete all recorded power history and energy totals?')) return;
+            powerHistory.length = 0;
+            pendingSamples = [];
+            energyDays = {};
+            localStorage.removeItem('POWER-energy');
+            if (historyDB) {
+                try { historyDB.transaction('samples', 'readwrite').objectStore('samples').clear(); } catch (e) { }
+            }
+            drawHistoryChart();
+            updateEnergyStrip();
+            showToast('History cleared');
+        }
+
+        // ========== APP SETTINGS EXPORT / IMPORT ==========
+        function exportAppSettings() {
+            const data = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const k = localStorage.key(i);
+                if (k && k.startsWith('POWER-')) data[k] = localStorage.getItem(k);
+            }
+            const payload = { app: 'fossibot-bluetooth', exported: new Date().toISOString(), data };
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `fossibot-settings-${new Date().toISOString().slice(0, 10)}.json`;
+            a.click();
+            URL.revokeObjectURL(a.href);
+            showToast('App settings exported');
+        }
+
+        function importAppSettings(input) {
+            const file = input.files && input.files[0];
+            if (!file) return;
+            file.text().then(txt => {
+                const parsed = JSON.parse(txt);
+                const data = parsed.data || parsed;
+                const keys = Object.keys(data).filter(k => k.startsWith('POWER-') && typeof data[k] === 'string');
+                if (keys.length === 0) throw new Error('no app settings found in file');
+                keys.forEach(k => localStorage.setItem(k, data[k]));
+                showToast(`Imported ${keys.length} settings — reloading…`);
+                setTimeout(() => location.reload(), 800);
+            }).catch(e => {
+                showToast('Import failed: ' + e.message, 'error');
+            }).finally(() => { input.value = ''; });
+        }
 
         // Selected time window for the chart (persisted)
         let historyRangeMs = parseInt(localStorage.getItem('POWER-histrange')) || 600000; // default 10 min
@@ -5930,9 +6359,14 @@ Example format:
         }
 
         let lastChartDrawAt = 0;
-        function recordHistory(soc, inW, outW) {
-            powerHistory.push({ t: Date.now(), soc, in: inW, out: outW });
+        function recordHistory(soc, inW, outW, fan = 0, acv = 0) {
+            const sample = { t: Date.now(), soc, in: inW, out: outW, fan, acv };
+            powerHistory.push(sample);
             if (powerHistory.length > HISTORY_MAX) powerHistory.shift();
+            pendingSamples.push(sample);
+            if (sample.t - lastHistoryFlush >= 10000) flushHistory();
+            accumulateEnergy(sample.t, inW, outW);
+            updateSessionStats(sample);
             // Cap redraw frequency; fast poll rates shouldn't redraw more than ~1/s
             if (Date.now() - lastChartDrawAt >= 900) drawHistoryChart();
         }
@@ -5985,10 +6419,12 @@ Example format:
             for (const p of pts) {
                 const x = Math.round(((p.t - domainStart) / domainLen) * (w - 1));
                 const b = buckets[x];
-                if (!b) buckets[x] = { x, t: p.t, soc: p.soc, in: p.in, out: p.out };
+                if (!b) buckets[x] = { x, t: p.t, soc: p.soc, in: p.in, out: p.out, fan: p.fan || 0, acv: p.acv || 0 };
                 else {
                     b.in = Math.max(b.in, p.in);
                     b.out = Math.max(b.out, p.out);
+                    b.fan = Math.max(b.fan, p.fan || 0);
+                    b.acv = p.acv || b.acv;
                     b.soc = p.soc;
                     b.t = p.t;
                 }
@@ -6015,6 +6451,16 @@ Example format:
             drawLine(p => p.in, maxW, styles.getPropertyValue('--text-green').trim() || '#4ade80', false);
             drawLine(p => p.out, maxW, styles.getPropertyValue('--text-blue').trim() || '#60a5fa', false);
             drawLine(p => p.soc, 100, styles.getPropertyValue('--text-muted').trim() || '#9ca3af', true);
+
+            // Optional series, only drawn (and shown in the legend) when there is data
+            const hasFan = drawPts.some(p => p.fan > 0);
+            const hasAcv = drawPts.some(p => p.acv > 80);
+            if (hasFan) drawLine(p => p.fan * 20, 100, '#f59e0b', false);
+            if (hasAcv) drawLine(p => Math.min(p.acv, 300), 300, '#c084fc', true);
+            const fanLegend = document.getElementById('legend-fan');
+            const acvLegend = document.getElementById('legend-acv');
+            if (fanLegend) fanLegend.style.display = hasFan ? '' : 'none';
+            if (acvLegend) acvLegend.style.display = hasAcv ? '' : 'none';
 
             // Scale marker + time axis labels
             ctx.fillStyle = 'rgba(255,255,255,0.4)';
@@ -6046,7 +6492,9 @@ Example format:
             tip.innerHTML = `<b>${new Date(p.t).toLocaleTimeString()}</b><br>
                 In: <span style="color:var(--text-green)">${Math.round(p.in)}W</span><br>
                 Out: <span style="color:var(--text-blue)">${Math.round(p.out)}W</span><br>
-                Bat: ${p.soc.toFixed(1)}%`;
+                Bat: ${p.soc.toFixed(1)}%`
+                + (p.fan > 0 ? `<br>Fan: <span style="color:#f59e0b">${p.fan}</span>` : '')
+                + (p.acv > 80 ? `<br>AC In: <span style="color:#c084fc">${p.acv.toFixed(0)}V</span>` : '');
             tip.style.display = 'block';
             const panel = tip.parentElement;
             const maxLeft = panel.clientWidth - tip.offsetWidth - 4;
@@ -6065,9 +6513,9 @@ Example format:
                 showToast('No history recorded yet', 'error');
                 return;
             }
-            let csv = 'timestamp,soc_percent,input_watts,output_watts\n';
+            let csv = 'timestamp,soc_percent,input_watts,output_watts,fan_level,ac_input_volts\n';
             powerHistory.forEach(p => {
-                csv += `${new Date(p.t).toISOString()},${p.soc},${p.in},${p.out}\n`;
+                csv += `${new Date(p.t).toISOString()},${p.soc},${p.in},${p.out},${p.fan || 0},${p.acv || 0}\n`;
             });
             const blob = new Blob([csv], { type: 'text/csv' });
             const a = document.createElement('a');
@@ -6136,6 +6584,16 @@ Example format:
             if (alertsEl) alertsEl.checked = (localStorage.getItem('POWER-alerts') === '1');
             const pollEl = document.getElementById('set-poll-rate');
             if (pollEl) pollEl.value = String(pollRateMs);
+            const lowBattEl = document.getElementById('set-lowbatt');
+            if (lowBattEl) lowBattEl.value = String(lowBattThreshold);
+            const tariffEl = document.getElementById('set-tariff');
+            if (tariffEl && tariff > 0) tariffEl.value = tariff;
+            const autoEl = document.getElementById('set-autoconnect');
+            if (autoEl) autoEl.checked = (localStorage.getItem('POWER-autoconnect') !== '0');
+
+            renderKnownDevices();
+            updateEnergyStrip();
+            tryAutoConnect();
 
             // Highlight the persisted history range button
             document.querySelectorAll('#history-ranges .hist-range-btn').forEach(b =>
