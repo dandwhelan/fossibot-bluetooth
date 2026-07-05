@@ -2950,6 +2950,7 @@ Example format:
         let knownDevices = [];
         try { knownDevices = JSON.parse(localStorage.getItem('POWER-devices')) || []; } catch (e) { }
         let forceDeviceChooser = false;
+        let autoConnectMode = false;
         let preferredDeviceId = null;
         const listenedDevices = new Set();
 
@@ -3040,7 +3041,19 @@ Example format:
             if (knownDevices.length === 0 || !navigator.bluetooth || !navigator.bluetooth.getDevices) return;
             if (device && device.gatt.connected) return;
             log('Auto-connect: looking for saved device...');
-            connect();
+            // The first BLE connection after page load often times out on mobile,
+            // so retry a few times before giving up.
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                autoConnectMode = true;
+                try { await connect(); } finally { autoConnectMode = false; }
+                if (device && device.gatt.connected) return;
+                if (userDisconnected) return;
+                if (attempt < 3) {
+                    log(`Auto-connect attempt ${attempt} failed, retrying...`);
+                    await new Promise(r => setTimeout(r, 2000 * attempt));
+                }
+            }
+            log('Auto-connect gave up. Tap Connect to try manually.');
         }
         // Manual override for light state because device feedback is unreliable
         let manualLightOverride = null;
@@ -3352,6 +3365,10 @@ Example format:
                     preferredDeviceId = null;
 
                     if (!device) {
+                        if (autoConnectMode) {
+                            log("Auto-connect: no saved device granted by the browser.");
+                            return;
+                        }
                         log("Requesting Bluetooth Device...");
 
                         // Generate list of services to request (0x1800 - 0x1820)
@@ -3392,9 +3409,11 @@ Example format:
 
                 // Single attempt with Timeout
                 try {
+                    // Cold BLE connections on mobile can take well over 5s
+                    const timeoutMs = autoConnectMode ? 10000 : 5000;
                     const connectPromise = device.gatt.connect();
                     const timeoutPromise = new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error("Timeout (5s)")), 5000)
+                        setTimeout(() => reject(new Error(`Timeout (${timeoutMs / 1000}s)`)), timeoutMs)
                     );
 
                     server = await Promise.race([connectPromise, timeoutPromise]);
