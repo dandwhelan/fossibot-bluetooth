@@ -3109,6 +3109,7 @@ Example format:
                 for (let attempt = 1; ; attempt++) {
                     if (maxMs > 0 && Date.now() - startedAt > maxMs) {
                         log(`Auto-connect stopped after ${maxMs / 60000} min. Tap Connect to try manually.`);
+                        showToast('Auto-connect gave up — tap Connect', 'error');
                         return;
                     }
                     autoConnectMode = true;
@@ -3487,6 +3488,27 @@ Example format:
                 log("Connecting...");
 
                 // Single attempt with Timeout
+                // Chrome (especially Android) often cannot connect to a
+                // getDevices()-restored device until it has seen an
+                // advertisement from it, so wait for one first when we can.
+                if (autoConnectMode && device.watchAdvertisements) {
+                    const abort = new AbortController();
+                    try {
+                        const seen = new Promise((resolve, reject) => {
+                            device.addEventListener('advertisementreceived', resolve, { once: true });
+                            setTimeout(() => reject(new Error('no advertisement within 15s')), 15000);
+                        });
+                        log(`Listening for ${device.name || 'device'} advertisement...`);
+                        await device.watchAdvertisements({ signal: abort.signal });
+                        await seen;
+                        log('Device is in range, connecting...');
+                    } catch (e) {
+                        log(`Advertisement watch: ${e.message || e}. Trying direct connect...`);
+                    } finally {
+                        abort.abort();
+                    }
+                }
+
                 try {
                     // Cold BLE connections on mobile can take well over 5s
                     const timeoutMs = autoConnectMode ? 10000 : 5000;
