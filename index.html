@@ -2657,6 +2657,36 @@
                             </label>
                         </div>
                     </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-title">Auto-Connect Retry Interval</span>
+                            <span class="setting-desc">How long to wait between reconnect attempts; keeps trying while the app is open</span>
+                        </div>
+                        <div class="setting-control">
+                            <select id="set-autoconnect-interval" onchange="setAutoConnectInterval(this.value)">
+                                <option value="5">5 s</option>
+                                <option value="10" selected>10 s</option>
+                                <option value="15">15 s</option>
+                                <option value="30">30 s</option>
+                                <option value="60">60 s</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-title">Auto-Connect Max Duration</span>
+                            <span class="setting-desc">Stop retrying after this long; reconnect manually afterwards</span>
+                        </div>
+                        <div class="setting-control">
+                            <select id="set-autoconnect-maxduration" onchange="setAutoConnectMaxDuration(this.value)">
+                                <option value="1">1 min</option>
+                                <option value="5" selected>5 min</option>
+                                <option value="15">15 min</option>
+                                <option value="60">1 hour</option>
+                                <option value="0">Forever</option>
+                            </select>
+                        </div>
+                    </div>
                     <div id="known-devices-list"></div>
                     <div class="setting-desc" id="known-devices-empty" style="padding: 0.5rem 0;">
                         No saved devices yet — connect once and it will appear here.
@@ -2950,6 +2980,8 @@ Example format:
         let knownDevices = [];
         try { knownDevices = JSON.parse(localStorage.getItem('POWER-devices')) || []; } catch (e) { }
         let forceDeviceChooser = false;
+        let autoConnectMode = false;
+        let autoConnectLoopRunning = false;
         let preferredDeviceId = null;
         const listenedDevices = new Set();
 
@@ -3033,14 +3065,60 @@ Example format:
 
         function setAutoConnect(on) {
             localStorage.setItem('POWER-autoconnect', on ? '1' : '0');
+            if (on) tryAutoConnect();
+        }
+
+        function setAutoConnectInterval(secs) {
+            localStorage.setItem('POWER-autoconnect-interval', String(parseInt(secs) || 10));
+        }
+
+        function setAutoConnectMaxDuration(mins) {
+            localStorage.setItem('POWER-autoconnect-maxduration', String(parseInt(mins) || 0));
+        }
+
+        function autoConnectMaxDurationMs() {
+            const stored = localStorage.getItem('POWER-autoconnect-maxduration');
+            const mins = stored === null ? 5 : parseInt(stored) || 0;
+            return mins * 60000; // 0 = forever
+        }
+
+        function autoConnectIntervalMs() {
+            const secs = parseInt(localStorage.getItem('POWER-autoconnect-interval')) || 10;
+            return Math.max(5, secs) * 1000;
         }
 
         async function tryAutoConnect() {
             if (localStorage.getItem('POWER-autoconnect') === '0') return; // default on
             if (knownDevices.length === 0 || !navigator.bluetooth || !navigator.bluetooth.getDevices) return;
             if (device && device.gatt.connected) return;
+            if (autoConnectLoopRunning) return;
+            autoConnectLoopRunning = true;
             log('Auto-connect: looking for saved device...');
-            connect();
+            try {
+                // Keep retrying until connected, the user disconnects manually,
+                // the setting is switched off, or the max duration elapses.
+                const maxMs = autoConnectMaxDurationMs();
+                const startedAt = Date.now();
+                for (let attempt = 1; ; attempt++) {
+                    if (maxMs > 0 && Date.now() - startedAt > maxMs) {
+                        log(`Auto-connect stopped after ${maxMs / 60000} min. Tap Connect to try manually.`);
+                        return;
+                    }
+                    autoConnectMode = true;
+                    try { await connect(); } finally { autoConnectMode = false; }
+                    if (device && device.gatt.connected) return;
+                    if (userDisconnected) return;
+                    if (localStorage.getItem('POWER-autoconnect') === '0') return;
+                    const waitMs = autoConnectIntervalMs();
+                    log(`Auto-connect attempt ${attempt} failed, retrying in ${waitMs / 1000}s...`);
+                    await new Promise(r => setTimeout(r, waitMs));
+                    if (device && device.gatt.connected) return;
+                    if (userDisconnected) return;
+                    if (localStorage.getItem('POWER-autoconnect') === '0') return;
+                }
+            } finally {
+                autoConnectLoopRunning = false;
+            }
         }
         // Manual override for light state because device feedback is unreliable
         let manualLightOverride = null;
@@ -3352,6 +3430,10 @@ Example format:
                     preferredDeviceId = null;
 
                     if (!device) {
+                        if (autoConnectMode) {
+                            log("Auto-connect: no saved device granted by the browser.");
+                            return;
+                        }
                         log("Requesting Bluetooth Device...");
 
                         // Generate list of services to request (0x1800 - 0x1820)
@@ -3392,9 +3474,11 @@ Example format:
 
                 // Single attempt with Timeout
                 try {
+                    // Cold BLE connections on mobile can take well over 5s
+                    const timeoutMs = autoConnectMode ? 10000 : 5000;
                     const connectPromise = device.gatt.connect();
                     const timeoutPromise = new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error("Timeout (5s)")), 5000)
+                        setTimeout(() => reject(new Error(`Timeout (${timeoutMs / 1000}s)`)), timeoutMs)
                     );
 
                     server = await Promise.race([connectPromise, timeoutPromise]);
@@ -4315,6 +4399,9 @@ Example format:
                 setTimeout(() => {
                     if (device && !device.gatt.connected && !userDisconnected) connect();
                 }, delay);
+            } else if (!userDisconnected && device) {
+                // Quick backoff exhausted — fall back to the slow indefinite loop
+                tryAutoConnect();
             }
         }
 
@@ -6590,6 +6677,10 @@ Example format:
             if (tariffEl && tariff > 0) tariffEl.value = tariff;
             const autoEl = document.getElementById('set-autoconnect');
             if (autoEl) autoEl.checked = (localStorage.getItem('POWER-autoconnect') !== '0');
+            const autoIntEl = document.getElementById('set-autoconnect-interval');
+            if (autoIntEl) autoIntEl.value = String(parseInt(localStorage.getItem('POWER-autoconnect-interval')) || 10);
+            const autoMaxEl = document.getElementById('set-autoconnect-maxduration');
+            if (autoMaxEl) autoMaxEl.value = String(autoConnectMaxDurationMs() / 60000);
 
             renderKnownDevices();
             updateEnergyStrip();
