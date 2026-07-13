@@ -390,7 +390,8 @@
         }
 
         .setting-title {
-            font-weight: bold;
+            font-size: 1rem;
+            font-weight: 600;
             display: block;
         }
 
@@ -1810,6 +1811,7 @@
             display: flex;
             align-items: center;
             gap: 0.75rem;
+            font-size: 1rem;
             font-weight: 600;
         }
 
@@ -2269,7 +2271,7 @@
                 <h1 style="margin: 0;">Settings</h1>
             </div>
 
-            <div style="padding: 0 1rem;">
+            <div style="padding: 0 1rem; width: 100%; box-sizing: border-box;">
                 <!-- Quick Actions Accordion -->
                 <div class="accordion open" id="acc-quick">
                     <div class="accordion-header" onclick="toggleAccordion('acc-quick')">
@@ -2487,7 +2489,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
 
             <!-- Timers Accordion -->
             <div class="accordion" id="acc-timers">
@@ -2760,6 +2761,7 @@
                 <div class="setting-control" id="install-settings-control">
                     <button class="btn-install js-install-btn hidden" onclick="installApp()">⬇ Install</button>
                 </div>
+            </div>
             </div>
         </div>
     </div>
