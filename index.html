@@ -2694,6 +2694,9 @@
                     </div>
                     <button class="btn-main" style="width: 100%; padding: 0.5rem; margin-top: 0.5rem;"
                         onclick="connectNewDevice()">＋ Pair New Device</button>
+                    <button class="btn-main" style="width: 100%; padding: 0.5rem; margin-top: 0.5rem;"
+                        onclick="connectNewDevice(true)"
+                        title="Search without the POWER/AFERIY/FOSSIBOT name filter">🔍 Pair Any Device (no name filter)</button>
                 </div>
             </div>
 
@@ -2982,10 +2985,31 @@ Example format:
         let knownDevices = [];
         try { knownDevices = JSON.parse(localStorage.getItem('POWER-devices')) || []; } catch (e) { }
         let forceDeviceChooser = false;
-        let autoConnectMode = false;
+        let acceptAnyDevice = false;
         let autoConnectLoopRunning = false;
+        let autoConnectCancelled = false;
         let preferredDeviceId = null;
+        let connectInFlight = false;
+        // getDevices() is async, but requestDevice() needs the click's user
+        // activation, so the granted list is cached ahead of the tap.
+        let grantedDevices = [];
+        const failedConnects = new Map();
+        const MAX_SILENT_RETRIES = 2;
         const listenedDevices = new Set();
+
+        async function refreshGrantedDevices() {
+            if (!navigator.bluetooth || !navigator.bluetooth.getDevices) return grantedDevices;
+            try {
+                grantedDevices = await navigator.bluetooth.getDevices();
+            } catch (e) {
+                console.warn('getDevices failed:', e);
+            }
+            return grantedDevices;
+        }
+
+        function cancelAutoConnect() {
+            if (autoConnectLoopRunning) autoConnectCancelled = true;
+        }
 
         function saveKnownDevices() {
             localStorage.setItem('POWER-devices', JSON.stringify(knownDevices));
@@ -3036,16 +3060,18 @@ Example format:
             }
             device = null;
             preferredDeviceId = id;
+            failedConnects.delete(id);
             connect();
         }
 
-        function connectNewDevice() {
+        function connectNewDevice(showAll) {
             if (device && device.gatt.connected) {
                 showToast('Disconnect from the current device first', 'error');
                 return;
             }
             device = null;
             forceDeviceChooser = true;
+            acceptAnyDevice = showAll === true;
             connect();
         }
 
@@ -3101,6 +3127,7 @@ Example format:
             if (device && device.gatt.connected) return;
             if (autoConnectLoopRunning) return;
             autoConnectLoopRunning = true;
+            autoConnectCancelled = false;
             log('Auto-connect: looking for saved device...');
             showToast('Auto-connecting to saved device...');
             try {
@@ -3109,14 +3136,15 @@ Example format:
                 const maxMs = autoConnectMaxDurationMs();
                 const startedAt = Date.now();
                 for (let attempt = 1; ; attempt++) {
+                    if (autoConnectCancelled) { log('Auto-connect: stopped, connecting manually.'); return; }
                     if (maxMs > 0 && Date.now() - startedAt > maxMs) {
                         log(`Auto-connect stopped after ${maxMs / 60000} min. Tap Connect to try manually.`);
                         showToast('Auto-connect gave up — tap Connect', 'error');
                         return;
                     }
-                    autoConnectMode = true;
-                    try { await connect(); } finally { autoConnectMode = false; }
+                    await connect({ auto: true });
                     if (device && device.gatt.connected) return;
+                    if (autoConnectCancelled) return;
                     if (!device) {
                         // getDevices() granted nothing: a permission problem, not a
                         // range problem, so retrying cannot help.
@@ -3130,11 +3158,12 @@ Example format:
                     log(`Auto-connect attempt ${attempt} failed, retrying in ${waitMs / 1000}s...`);
                     await new Promise(r => setTimeout(r, waitMs));
                     if (device && device.gatt.connected) return;
-                    if (userDisconnected) return;
+                    if (userDisconnected || autoConnectCancelled) return;
                     if (localStorage.getItem('POWER-autoconnect') === '0') return;
                 }
             } finally {
                 autoConnectLoopRunning = false;
+                autoConnectCancelled = false;
             }
         }
         // Manual override for light state because device feedback is unreliable
@@ -3428,31 +3457,50 @@ Example format:
             return new Uint8Array([...payload, (checksum >> 8) & 0xff, checksum & 0xff]);
         }
 
-        async function connect() {
+        // Called both from a user tap and from the auto-connect loop; `auto` must
+        // never be inferred from shared state, or a tap landing mid-loop is
+        // treated as a background retry and silently skips the device chooser.
+        async function connect(options) {
+            const auto = !!(options && options.auto === true);
             userDisconnected = false;
             if (!navigator.bluetooth) {
                 log('Web Bluetooth is not supported in this browser. Safari (Mac and iPhone) does not support it — use Chrome or Edge on desktop/Android, or the Bluefy browser on iOS. The page must be served over HTTPS or localhost.');
                 showToast('Web Bluetooth not supported — use Chrome/Edge (or Bluefy on iOS)', 'error');
                 return;
             }
+            if (!auto) cancelAutoConnect();
+            // A tap may take over from a background attempt, but not from another tap.
+            if (connectInFlight === 'manual') { log('Already connecting...'); return; }
+            if (connectInFlight && auto) return;
+            connectInFlight = auto ? 'auto' : 'manual';
+
+            // A saved device the auto-connect loop latched on to must not keep the
+            // chooser out of reach once it has proved it will not connect.
+            if (!auto && device && !device.gatt.connected && (failedConnects.get(device.id) || 0) >= MAX_SILENT_RETRIES) {
+                log(`${device.name || 'Saved device'} is not responding — opening the device chooser.`);
+                device = null;
+                forceDeviceChooser = true;
+            }
+
             try {
                 if (!device) {
+                    if (auto) await refreshGrantedDevices();
+
                     // Previously-authorized devices can be reused without the chooser
-                    if (!forceDeviceChooser && knownDevices.length > 0 && navigator.bluetooth.getDevices) {
-                        try {
-                            const granted = await navigator.bluetooth.getDevices();
-                            device = (preferredDeviceId && granted.find(d => d.id === preferredDeviceId)) ||
-                                granted.find(d => knownDevices.some(k => k.id === d.id)) || null;
-                            if (device) log(`Reconnecting to saved device: ${device.name || device.id}`);
-                        } catch (e) {
-                            console.warn('getDevices failed:', e);
-                        }
+                    if (!forceDeviceChooser && knownDevices.length > 0) {
+                        const usable = auto ? grantedDevices
+                            : grantedDevices.filter(d => (failedConnects.get(d.id) || 0) < MAX_SILENT_RETRIES);
+                        device = (preferredDeviceId && usable.find(d => d.id === preferredDeviceId)) ||
+                            usable.find(d => knownDevices.some(k => k.id === d.id)) || null;
+                        if (device) log(`Reconnecting to saved device: ${device.name || device.id}`);
                     }
+                    const showAll = acceptAnyDevice;
                     forceDeviceChooser = false;
+                    acceptAnyDevice = false;
                     preferredDeviceId = null;
 
                     if (!device) {
-                        if (autoConnectMode) {
+                        if (auto) {
                             log("Auto-connect: no saved device granted by the browser.");
                             return;
                         }
@@ -3462,10 +3510,17 @@ Example format:
                         const svcList = [SERVICE_UUID, 0xA002, 0xA003];
                         for (let i = 0x1800; i <= 0x1820; i++) svcList.push(i);
 
-                        device = await navigator.bluetooth.requestDevice({
-                            filters: [{ namePrefix: 'POWER' }, { namePrefix: 'AFERIY' }, { namePrefix: 'FOSSIBOT' }],
-                            optionalServices: svcList
-                        });
+                        // First await on the manual path: Chrome on Android drops
+                        // the click's user activation across earlier awaits and
+                        // then refuses to open the chooser.
+                        device = await navigator.bluetooth.requestDevice(showAll
+                            ? { acceptAllDevices: true, optionalServices: svcList }
+                            : {
+                                filters: [{ namePrefix: 'POWER' }, { namePrefix: 'AFERIY' }, { namePrefix: 'FOSSIBOT' }],
+                                optionalServices: svcList
+                            });
+                        failedConnects.delete(device.id);
+                        refreshGrantedDevices();
                     }
                     if (!listenedDevices.has(device.id)) {
                         device.addEventListener('gattserverdisconnected', onDisconnected);
@@ -3498,7 +3553,7 @@ Example format:
                 // Chrome (especially Android) often cannot connect to a
                 // getDevices()-restored device until it has seen an
                 // advertisement from it, so wait for one first when we can.
-                if (autoConnectMode && device.watchAdvertisements) {
+                if (auto && device.watchAdvertisements) {
                     const abort = new AbortController();
                     try {
                         const seen = new Promise((resolve, reject) => {
@@ -3518,7 +3573,7 @@ Example format:
 
                 try {
                     // Cold BLE connections on mobile can take well over 5s
-                    const timeoutMs = autoConnectMode ? 10000 : 5000;
+                    const timeoutMs = auto ? 10000 : 5000;
                     const connectPromise = device.gatt.connect();
                     const timeoutPromise = new Promise((_, reject) =>
                         setTimeout(() => reject(new Error(`Timeout (${timeoutMs / 1000}s)`)), timeoutMs)
@@ -3546,6 +3601,7 @@ Example format:
                 // Reset override on connect
                 manualLightOverride = null;
                 reconnectAttempts = 0;
+                failedConnects.delete(device.id);
                 updateStatus(true);
                 resetSessionStats();
                 renderKnownDevices();
@@ -3556,9 +3612,32 @@ Example format:
                 await sendSettingsRequest();
 
             } catch (error) {
+                if (error && error.name === 'NotFoundError' && !device) {
+                    log("No device picked. If the chooser was empty, grant Nearby devices/Location permission to the browser, wake the power station, and try “Pair Any Device” in Settings › Devices to search without the name filter.");
+                    updateStatus(false);
+                    return;
+                }
+                if (error && error.name === 'SecurityError') {
+                    log("The browser blocked the device chooser because the tap was no longer in progress. Tap Connect again.");
+                    showToast('Tap Connect again to open the device chooser', 'error');
+                }
                 log("Connection failed: " + (error.message || error));
                 if (device && device.gatt.connected) device.gatt.disconnect();
+
+                // Never keep hold of a device that will not connect: `device`
+                // stays truthy otherwise, so every later tap skips the chooser
+                // and there is no way back to device discovery.
+                if (device && !device.gatt.connected) {
+                    const fails = (failedConnects.get(device.id) || 0) + 1;
+                    failedConnects.set(device.id, fails);
+                    if (fails >= MAX_SILENT_RETRIES && !auto) {
+                        log(`${device.name || 'Device'} failed ${fails} times — the next Connect will open the device chooser.`);
+                        device = null;
+                    }
+                }
                 updateStatus(false); // Reset UI so user can retry
+            } finally {
+                connectInFlight = false;
             }
         }
 
@@ -6727,7 +6806,7 @@ Example format:
 
             renderKnownDevices();
             updateEnergyStrip();
-            tryAutoConnect();
+            refreshGrantedDevices().then(tryAutoConnect);
 
             // Highlight the persisted history range button
             document.querySelectorAll('#history-ranges .hist-range-btn').forEach(b =>
