@@ -3430,6 +3430,11 @@ Example format:
 
         async function connect() {
             userDisconnected = false;
+            if (!navigator.bluetooth) {
+                log('Web Bluetooth is not supported in this browser. Safari (Mac and iPhone) does not support it — use Chrome or Edge on desktop/Android, or the Bluefy browser on iOS. The page must be served over HTTPS or localhost.');
+                showToast('Web Bluetooth not supported — use Chrome/Edge (or Bluefy on iOS)', 'error');
+                return;
+            }
             try {
                 if (!device) {
                     // Previously-authorized devices can be reused without the chooser
