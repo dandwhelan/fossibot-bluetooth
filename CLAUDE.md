@@ -57,6 +57,41 @@ Open in Chrome / Edge on Android, desktop, or Bluefy on iOS.
   between commands) to avoid "GATT operation already in progress".
   See the "Robot Restaurant" analogy at the bottom of `README.md`.
 
+## Connecting and device discovery
+
+`connect(options)` serves both a user tap and the background auto-connect
+loop, and the two must not be confused. Four invariants, each of which has
+already broken Android discovery once — see PR #32:
+
+1. **Pass `auto` per call — never via shared state.** `connect({ auto: true })`
+   from `tryAutoConnect()`, plain `connect()` from a tap. A global flag set
+   around the loop's `await` makes any tap landing in that window look like a
+   background retry, and the device chooser is silently skipped. `connect` is
+   also wired directly as a click listener, so `options` may be an `Event` —
+   hence the strict `options.auto === true` check.
+2. **Never leave a dead `device` latched.** `device` is truthy → `connect()`
+   skips `requestDevice()` entirely. A saved device restored from
+   `getDevices()` that will not connect must be released, or the chooser
+   becomes unreachable until a page reload. `failedConnects` counts failures
+   per device id; a manual tap drops the device after `MAX_SILENT_RETRIES`.
+   Background retries keep theirs, so out-of-range reconnect still works.
+3. **Nothing may `await` before `requestDevice()` on the manual path.** Chrome
+   on Android requires transient user activation and rejects with
+   `SecurityError` if the tap's activation was consumed. This is why
+   `getDevices()` is cached into `grantedDevices` at startup by
+   `refreshGrantedDevices()` instead of being awaited inside the tap.
+4. **A tap cancels the auto-connect loop** (`cancelAutoConnect()`) so the two
+   do not race for the same adapter.
+
+`watchAdvertisements()` is used only on the auto path — Chrome on Android
+often cannot connect to a `getDevices()`-restored device before it has seen
+an advertisement. It needs an experimental flag on some builds, so its
+failure is caught and treated as "try connecting directly".
+
+Chooser-free reconnect via `getDevices()` also needs
+`chrome://flags/#enable-web-bluetooth-new-permissions-backend` on some Chrome
+builds; without it the browser forgets the grant on every launch.
+
 ## ⚠️ Register 68 brick hazard
 
 **Writing `0` to Settings Reg 68 (Machine Shutdown timer) permanently bricks
@@ -116,6 +151,13 @@ Line numbers drift with every change — search for the function name instead.
 - `rememberDevice()` / `renderKnownDevices()` / `tryAutoConnect()` — saved
   device list (`POWER-devices`) and chooser-free reconnect via
   `navigator.bluetooth.getDevices()`.
+- `connect(options)` — the single connect path for taps and auto-connect
+  alike; see "Connecting and device discovery" above before touching it.
+- `refreshGrantedDevices()` / `cancelAutoConnect()` — `grantedDevices` cache
+  and the loop's cancellation flag.
+- `connectToKnown(id)` / `connectNewDevice(showAll)` — Settings › Devices
+  entry points. `connectNewDevice(true)` pairs with `acceptAllDevices`, for
+  units advertising outside the `POWER` / `AFERIY` / `FOSSIBOT` prefixes.
 
 ## Conventions
 
@@ -130,6 +172,18 @@ Line numbers drift with every change — search for the function name instead.
   1. `node --check` the inline JS (extract `<script>` blocks first),
   2. Load the PWA over `localhost` against a real device, or
   3. Import a saved JSON dump in the Diag tab to replay register state.
+
+  Real hardware is usually not available to a Claude Code session, and the
+  live site is the only place the maintainer can test. For connection or BLE
+  logic, drive the real `index.html` in headless Chromium (Playwright is
+  preinstalled) over `python3 -m http.server`, with `navigator.bluetooth`
+  replaced via `addInitScript` by a stub exposing `getDevices()`,
+  `requestDevice()` and a fake `device.gatt`. Assert on *which* API calls
+  happen — e.g. "tapping Connect reaches `requestDevice`" — and run the same
+  script against `git show origin/main:index.html` to prove the bug existed
+  before the fix. Note `.btn-connect` matches three elements, only one of
+  which is visible. This catches regressions that `node --check` cannot, but
+  it does not replace a confirmation run against a real power station.
 - **Keep `index.html` as a single file.** Don't introduce a bundler or split
   into modules without discussion.
 - **Service worker:** bump `CACHE_NAME` in `service-worker.js` only when
@@ -149,3 +203,15 @@ guessing — it removes most ambiguity. Common gotchas:
   fault; Reg 42 bits 13–14 alone are not an error.
 - Device unresponsive after settings change → ask exactly which registers
   were written (see the reg 68 brick hazard).
+- "Connect does nothing" / no device chooser on Android → check the terminal
+  log. `Reconnecting to saved device:` followed by repeated
+  `Connection failed:` means a stale saved device is being retried, not that
+  discovery is broken; the chooser opens after `MAX_SILENT_RETRIES`. An
+  *empty* chooser is a browser permission problem (Nearby devices /
+  Location), not a code bug — have the reporter try "Pair Any Device" in
+  Settings › Devices to rule out the name filter. See "Connecting and device
+  discovery" above.
+- Reports that arrive right after a deploy → the app shell is network-first,
+  but an installed PWA may still be running a cached build. Ask the reporter
+  to fully close and reopen it before assuming the newest commit is what they
+  are running.
