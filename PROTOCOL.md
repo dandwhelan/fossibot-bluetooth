@@ -355,3 +355,33 @@ The presence of `Y_DHK` and `LOCAL_KEY` in `0xC301` confirms this is a **Tuya-ba
 ## CRC Calculation
 
 The protocol uses a custom CRC-16 checksum with polynomial 0xA001 (Modbus standard). See `calculateChecksum()` in `index.html` for implementation details.
+
+---
+
+## 8. SwitchBot Bot (Remote Power Button)
+
+Used by the "SwitchBot Power Button" panel to wake a powered-off station by
+having a SwitchBot Bot press the physical power button. This is the vendor's
+own BLE protocol, documented at
+<https://github.com/OpenWonderLabs/SwitchBotAPI-BLE> (`devicetypes/bot.md`).
+
+| UUID | Role |
+| :--- | :--- |
+| `cba20d00-224d-11e6-9fb8-0002a5d5c51b` | Primary service |
+| `cba20002-224d-11e6-9fb8-0002a5d5c51b` | Write (commands) |
+| `cba20003-224d-11e6-9fb8-0002a5d5c51b` | Notify (responses) |
+
+Commands (write, then wait for one notification):
+
+| Bytes | Meaning |
+| :--- | :--- |
+| `57 01 00` | Press (no password set) |
+| `57 11 <crc32> 00` | Press with password — `<crc32>` is the big-endian CRC32 of the password string (same scheme as pySwitchbot) |
+
+First byte of the notification: `01` OK · `02` error · `03` busy · `06` low
+battery · `07` device has a password (command was sent without one) · `09`
+wrong password.
+
+For discovery, Bots advertise service data under UUID `0xFD3D` (device type
+byte `H` / `0x48`; older firmware also advertises the 128-bit service UUID).
+The 2026 rechargeable USB-C Bot uses the same protocol as the original.

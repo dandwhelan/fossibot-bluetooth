@@ -158,6 +158,15 @@ Line numbers drift with every change — search for the function name instead.
 - `connectToKnown(id)` / `connectNewDevice(showAll)` — Settings › Devices
   entry points. `connectNewDevice(true)` pairs with `acceptAllDevices`, for
   units advertising outside the `POWER` / `AFERIY` / `FOSSIBOT` prefixes.
+- `switchbotPress()` / `renderSwitchbotPanel()` — the "SwitchBot Power
+  Button" panel at the bottom of the Control view: its Press button pairs a
+  SwitchBot Bot (button pusher) and makes it press the station's physical
+  power button, the only way to wake a unit whose BLE is off; 5 s after a
+  successful press it kicks off `tryAutoConnect()`. Separate GATT connection
+  and `SWITCHBOT_*` constants; does not touch the power-station connect path
+  or its command queue. Bot password = CRC32 only, stored as
+  `POWER-switchbot-key`; paired Bot stored as `POWER-switchbot`. Protocol
+  details in `PROTOCOL.md` §8.
 
 ## Conventions
 

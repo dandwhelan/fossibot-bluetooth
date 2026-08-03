@@ -58,6 +58,13 @@ ABOK Power Ark3600 (Probalby works, but not tested)
 *   **LED Light Control:** Switch between Light modes: **Off**, **Low**, **High**, **SOS**, and **Flash**.
 *   **Silent Charging Mode:** Toggle "Silent Charging" to reduce fan noise max charging speed for overnight use.
 
+### 🤖 SwitchBot Power Button (Remote Power-On)
+*   **Wake a powered-off station:** When the station is off its Bluetooth is off too, so no app can switch it on remotely. Stick a [SwitchBot Bot](https://us.switch-bot.com/products/switchbot-bot-rechargeable) (button-pusher) over the physical power button and the **Press** button at the bottom of the dashboard makes it press the button for you.
+*   **One-tap pairing:** The first tap opens the browser's Bluetooth chooser filtered to SwitchBot devices (the Bot usually advertises as "WoHand"; on Android and Windows the chooser also shows the MAC address so you can pick the right one). Browsers cannot pre-select a device by MAC address, so this first pick is always manual — after that the Bot is remembered and Press fires immediately.
+*   **Password support:** If the Bot has a password set in the SwitchBot app you are asked for it once; only the CRC32 checksum the protocol needs is stored locally, never the password itself.
+*   **Hands-free recovery:** After a successful press the app waits 5 seconds for the station to boot, then starts the normal auto-connect so the dashboard comes straight back up.
+*   Works with the original Bot and the 2026 rechargeable USB-C Bot — both speak the same BLE protocol.
+
 ### ⚙️ Power Management Settings
 *   **Accordion Layout:** Clean collapsible sections for Quick Actions, Power Limits, Timers, and Theme selection.
 *   **Charging Rate:** Adjust AC Charging power from **200W to 1100W+** (Verify supported limits for your specific model).

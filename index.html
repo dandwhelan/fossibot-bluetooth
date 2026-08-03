@@ -2250,6 +2250,22 @@
             </div>
             </div>
 
+            <!-- SwitchBot Bot: presses the physical power button, the only way to
+                 wake a station whose BLE is off -->
+            <div id="switchbot-panel"
+                style="display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; width: 100%; background: var(--bg-card); border-radius: var(--border-radius); padding: 0.75rem; box-sizing: border-box; margin-bottom: 2rem;">
+                <div style="display: flex; flex-direction: column; gap: 0.15rem; min-width: 0;">
+                    <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">SwitchBot Power Button</span>
+                    <span id="switchbot-status" style="font-size: 0.7rem; color: var(--text-muted); font-family: monospace;"></span>
+                </div>
+                <div style="display: flex; gap: 0.5rem; align-items: center; flex-shrink: 0;">
+                    <button id="btn-switchbot-forget" class="hidden" onclick="switchbotForget()" title="Forget this SwitchBot"
+                        style="background: none; border: 1px solid var(--text-muted); color: var(--text-muted); border-radius: 0.25rem; padding: 0.2rem 0.5rem; cursor: pointer;">✕</button>
+                    <button id="btn-switchbot-press" class="btn-main" onclick="switchbotPress()"
+                        style="flex: 0 0 auto; padding: 0.5rem 1.5rem; background-color: var(--btn-blue);">Press</button>
+                </div>
+            </div>
+
             <!-- Activity Log moved to Diagnostics view -->
 
             <div class="terminal-prompt">
@@ -3166,6 +3182,177 @@ Example format:
                 autoConnectCancelled = false;
             }
         }
+
+        // ========== SWITCHBOT BOT (physical power button pusher) ==========
+        // A powered-off station has its BLE off too, so nothing can wake it over
+        // the air. A SwitchBot Bot stuck over the power button can: pairing and
+        // press live behind the "Press" button at the bottom of the dashboard.
+        // Protocol: github.com/OpenWonderLabs/SwitchBotAPI-BLE (devicetypes/bot.md);
+        // the password variant matches pySwitchbot (0x57 0x11 <crc32> <action>).
+        const SWITCHBOT_SERVICE = 'cba20d00-224d-11e6-9fb8-0002a5d5c51b';
+        const SWITCHBOT_WRITE_UUID = 'cba20002-224d-11e6-9fb8-0002a5d5c51b';
+        const SWITCHBOT_NOTIFY_UUID = 'cba20003-224d-11e6-9fb8-0002a5d5c51b';
+        const SWITCHBOT_RESULTS = {
+            0x02: 'the Bot reported an error',
+            0x03: 'the Bot is busy — try again in a moment',
+            0x06: 'the Bot battery is too low',
+            0x07: 'password required',
+            0x09: 'wrong password',
+        };
+
+        let switchbotSaved = null;
+        try { switchbotSaved = JSON.parse(localStorage.getItem('POWER-switchbot')); } catch (e) { }
+        let switchbotBusy = false;
+        let switchbotShowAllNext = false;
+
+        function switchbotStatus(msg) {
+            const el = document.getElementById('switchbot-status');
+            if (el) el.textContent = msg;
+        }
+
+        function renderSwitchbotPanel() {
+            const forget = document.getElementById('btn-switchbot-forget');
+            if (forget) forget.classList.toggle('hidden', !switchbotSaved);
+            switchbotStatus(switchbotSaved
+                ? `${switchbotSaved.name} paired — tap Press to push the power button`
+                : 'Pair a SwitchBot Bot to press the power button remotely');
+        }
+
+        function switchbotForget() {
+            switchbotSaved = null;
+            localStorage.removeItem('POWER-switchbot');
+            localStorage.removeItem('POWER-switchbot-key');
+            log('SwitchBot forgotten.');
+            renderSwitchbotPanel();
+        }
+
+        function crc32(str) {
+            let crc = 0xffffffff;
+            for (let i = 0; i < str.length; i++) {
+                crc ^= str.charCodeAt(i);
+                for (let j = 0; j < 8; j++) crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1));
+            }
+            return (crc ^ 0xffffffff) >>> 0;
+        }
+
+        function switchbotPressBytes() {
+            const key = localStorage.getItem('POWER-switchbot-key');
+            if (!key) return new Uint8Array([0x57, 0x01, 0x00]);
+            const crc = parseInt(key, 16) >>> 0;
+            return new Uint8Array([0x57, 0x11, (crc >>> 24) & 0xff, (crc >>> 16) & 0xff, (crc >>> 8) & 0xff, crc & 0xff, 0x00]);
+        }
+
+        async function switchbotSendPress(writeChar, notifyChar) {
+            const response = new Promise(resolve => {
+                const onValue = e => {
+                    notifyChar.removeEventListener('characteristicvaluechanged', onValue);
+                    resolve(e.target.value.getUint8(0));
+                };
+                notifyChar.addEventListener('characteristicvaluechanged', onValue);
+                setTimeout(() => {
+                    notifyChar.removeEventListener('characteristicvaluechanged', onValue);
+                    resolve(null);
+                }, 5000);
+            });
+            const bytes = switchbotPressBytes();
+            if (writeChar.writeValueWithResponse) await writeChar.writeValueWithResponse(bytes);
+            else await writeChar.writeValue(bytes);
+            return response;
+        }
+
+        async function switchbotPress() {
+            if (switchbotBusy) return;
+            if (!navigator.bluetooth) {
+                log('Web Bluetooth is not supported in this browser. Safari (Mac and iPhone) does not support it — use Chrome or Edge on desktop/Android, or the Bluefy browser on iOS.');
+                showToast('Web Bluetooth not supported — use Chrome/Edge (or Bluefy on iOS)', 'error');
+                return;
+            }
+            switchbotBusy = true;
+            const btn = document.getElementById('btn-switchbot-press');
+            if (btn) btn.disabled = true;
+            let bot = null;
+            try {
+                // Chooser-free path for a Bot the browser still remembers. The
+                // granted list is cached at startup, so the first-pair path below
+                // still holds the tap's user activation when it reaches
+                // requestDevice() (same rule as connect()).
+                if (switchbotSaved) bot = grantedDevices.find(d => d.id === switchbotSaved.id) || null;
+                if (!bot) {
+                    const showAll = switchbotShowAllNext;
+                    switchbotShowAllNext = false;
+                    log('Requesting SwitchBot device...');
+                    switchbotStatus('Pick your SwitchBot in the device chooser...');
+                    bot = await navigator.bluetooth.requestDevice(showAll
+                        ? { acceptAllDevices: true, optionalServices: [SWITCHBOT_SERVICE] }
+                        : {
+                            filters: [{ services: [SWITCHBOT_SERVICE] }, { services: [0xfd3d] }, { namePrefix: 'WoHand' }, { namePrefix: 'Bot' }],
+                            optionalServices: [SWITCHBOT_SERVICE]
+                        });
+                    switchbotSaved = { id: bot.id, name: bot.name || 'SwitchBot' };
+                    localStorage.setItem('POWER-switchbot', JSON.stringify(switchbotSaved));
+                    log(`Paired SwitchBot: ${switchbotSaved.name}`);
+                    refreshGrantedDevices();
+                    renderSwitchbotPanel();
+                }
+
+                if (!bot.gatt.connected) {
+                    log(`Connecting to ${bot.name || 'SwitchBot'}...`);
+                    switchbotStatus('Connecting to SwitchBot...');
+                    const timeoutPromise = new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error('Timeout (10s) — is the Bot in range?')), 10000));
+                    await Promise.race([bot.gatt.connect(), timeoutPromise]);
+                }
+                const svc = await bot.gatt.getPrimaryService(SWITCHBOT_SERVICE);
+                const sbWrite = await svc.getCharacteristic(SWITCHBOT_WRITE_UUID);
+                const sbNotify = await svc.getCharacteristic(SWITCHBOT_NOTIFY_UUID);
+                await sbNotify.startNotifications();
+
+                switchbotStatus('Pressing...');
+                let status = await switchbotSendPress(sbWrite, sbNotify);
+                if (status === 0x07 || status === 0x09) {
+                    const pass = prompt(status === 0x09
+                        ? 'Wrong SwitchBot password. Enter the password set in the SwitchBot app:'
+                        : 'This Bot has a password set in the SwitchBot app. Enter it:');
+                    if (pass && pass.trim()) {
+                        // Only the CRC32 the protocol needs is stored, not the password.
+                        localStorage.setItem('POWER-switchbot-key', ('00000000' + crc32(pass.trim()).toString(16)).slice(-8));
+                        status = await switchbotSendPress(sbWrite, sbNotify);
+                    }
+                }
+
+                if (status === 0x01) {
+                    log('SwitchBot pressed the power button.');
+                    switchbotStatus('Pressed ✓');
+                    showToast('SwitchBot pressed the power button');
+                    // Give the station 5 s to boot before looking for it.
+                    setTimeout(() => { if (!device || !device.gatt.connected) tryAutoConnect(); }, 5000);
+                } else if (status === null) {
+                    switchbotStatus('No response from the Bot');
+                    log('SwitchBot: no response within 5s — the press may still have happened.');
+                } else {
+                    const reason = SWITCHBOT_RESULTS[status] || `unknown response 0x${status.toString(16)}`;
+                    if (status === 0x09) localStorage.removeItem('POWER-switchbot-key');
+                    switchbotStatus(`Press failed: ${reason}`);
+                    log(`SwitchBot press failed: ${reason}`);
+                    showToast('SwitchBot press failed — see log', 'error');
+                }
+            } catch (error) {
+                if (error && error.name === 'NotFoundError' && !bot) {
+                    switchbotShowAllNext = true;
+                    switchbotStatus('No Bot picked — tap Press again to search all nearby devices');
+                    log('No SwitchBot picked. If the chooser was empty, tap Press again to search without the SwitchBot filter, and check the browser has Nearby devices/Location permission.');
+                } else {
+                    switchbotStatus(`SwitchBot error: ${error.message || error}`);
+                    log(`SwitchBot error: ${error.message || error}`);
+                    showToast('SwitchBot press failed — see log', 'error');
+                }
+            } finally {
+                if (bot && bot.gatt.connected) bot.gatt.disconnect();
+                switchbotBusy = false;
+                if (btn) btn.disabled = false;
+            }
+        }
+
         // Manual override for light state because device feedback is unreliable
         let manualLightOverride = null;
 
@@ -6805,6 +6992,7 @@ Example format:
             if (autoMaxEl) autoMaxEl.value = String(autoConnectMaxDurationMs() / 60000);
 
             renderKnownDevices();
+            renderSwitchbotPanel();
             updateEnergyStrip();
             refreshGrantedDevices().then(tryAutoConnect);
 
