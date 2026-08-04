@@ -32,7 +32,13 @@
 - [x] **Diagnostics UI:** Add "Hide 0 Values" toggle.
 - [x] **Commit & Push:** Stage all changes and push to the `main` branch.
 
-## 4. Reverse Engineering Toolkit
+## 4. SwitchBot Power Button
+- [x] **Press Button:** Pair a SwitchBot Bot and press the station's physical power button (`switchbotPress()`).
+- [x] **Password Support:** Prompt once, store only the CRC32 the protocol needs.
+- [x] **Auto-Connect After Press:** Wait 5 s for boot, then `tryAutoConnect()`.
+- [x] **Docs:** Protocol in `PROTOCOL.md` §8; feature, setup guide and troubleshooting in `README.md`.
+
+## 5. Reverse Engineering Toolkit
 - [x] **Record Changes Tool:** Implement snapshot/compare feature for registers.
 - [x] **System Summary:** Add plain-text status summary and comparison logic.
 - [x] **Bit Inspector:** UI to visualize individual bits of flag registers (click 🔬 rows in Diagnostics).
