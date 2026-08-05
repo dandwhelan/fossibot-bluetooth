@@ -23,10 +23,12 @@ manifest.json      PWA manifest.
 img/               Screenshots.
 icon-512.png       PWA icon.
 task.md            Scratchpad / TODO notes (all items completed).
+test/              Node test-runner suite; harvests functions out of index.html.
 ```
 
-There is no build step, package manager, lockfile, or test suite. The single
-`index.html` is intentional — keeps offline/PWA install simple.
+There is no build step, package manager, or lockfile. The single `index.html`
+is intentional — keeps offline/PWA install simple. The tests sit beside it and
+run on stock Node with no dependencies, so nothing enters the deployed app.
 
 ## Run locally
 
@@ -177,8 +179,16 @@ Line numbers drift with every change — search for the function name instead.
 - **Commits:** short imperative subject, no scope prefix. Examples from
   history: `Fix mismatched unit on dashboard remaining-time display`,
   `Treat only error codes 78/79 as device faults`.
-- **Verification:** there is no automated test suite. To verify changes:
-  1. `node --check` the inline JS (extract `<script>` blocks first),
+- **Verification:** run `node --test "test/*.test.mjs"` (no dependencies, no
+  install step; CI runs the same command). It covers the protocol packet
+  builder, the Reg 68 brick guard, and `node --check` over every inline
+  `<script>` block. Coverage stops there — most of the app is still unverified.
+  To verify anything else:
+  1. Add a test — `test/extract.mjs` harvests any top-level function out of
+     `index.html` and evaluates it with stubs for its free variables, so pure
+     logic (parsers, formatters, register maps) is testable without a browser.
+     Load a function together with everything it calls, or you get a
+     `ReferenceError` for the missing stub.
   2. Load the PWA over `localhost` against a real device, or
   3. Import a saved JSON dump in the Diag tab to replay register state.
 
