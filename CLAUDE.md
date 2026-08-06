@@ -182,9 +182,10 @@ Line numbers drift with every change — search for the function name instead.
 - **Verification:** run `node --test "test/*.test.mjs"` (no dependencies, no
   install step; CI runs the same command). It covers the protocol packet
   builder, the Reg 68 brick guard, `handleNotification()` packet decoding,
-  `checkAlerts()` notification rules, and `node --check` over every inline
-  `<script>` block. Much of the app — the connect path, the chart, the
-  simulator, energy accounting — is still unverified. To verify anything else:
+  `checkAlerts()` notification rules, the four `connect()` invariants, and
+  `node --check` over every inline `<script>` block. Much of the app — the
+  chart, the simulator, energy accounting, the diag import — is still
+  unverified. To verify anything else:
   1. Add a test — `test/extract.mjs` harvests any top-level function out of
      `index.html` and evaluates it with stubs for its free variables, so pure
      logic (parsers, formatters, register maps) is testable without a browser.
@@ -194,6 +195,14 @@ Line numbers drift with every change — search for the function name instead.
 
      `handleNotification()` swallows exceptions into `console.error`, so assert
      that nothing was caught — otherwise a missing stub reads as a pass.
+     `loadFunctions(...).readVar(name)` reads back module state the code
+     assigns rather than returns, such as `device` on the connect path.
+
+     `connect()` takes `navigator` as a free variable, so `test/connect.test.mjs`
+     drives the whole path against a stub with no browser. What that cannot see
+     is the DOM wiring — that `connect` is registered as a click listener at
+     all — so a change to how it is bound still needs the Playwright check
+     below.
   2. Load the PWA over `localhost` against a real device, or
   3. Import a saved JSON dump in the Diag tab to replay register state.
 
