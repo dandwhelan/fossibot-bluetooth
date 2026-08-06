@@ -118,11 +118,14 @@ export function extractFunction(name, src = readAppScript()) {
 // Anything the function references that is absent from `env` and from the Node
 // globals throws a ReferenceError when called, which is usually the signal that
 // a test is missing a stub.
+// `readVar` reads a free variable back out of the scope the functions run in,
+// for the module-level state they assign to rather than return — `device` on
+// the connect path, say. Reads only; there is deliberately no writer.
 export function loadFunctions(names, env = {}) {
     const src = readAppScript();
     const bodies = names.map(n => extractFunction(n, src)).join('\n\n');
     const keys = Object.keys(env);
-    const factory = new Function(...keys, `${bodies}\nreturn { ${names.join(', ')} };`);
+    const factory = new Function(...keys, `${bodies}\nreturn { ${names.join(', ')}, readVar: n => eval(n) };`);
     return factory(...keys.map(k => env[k]));
 }
 
