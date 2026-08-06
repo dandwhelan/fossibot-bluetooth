@@ -182,16 +182,20 @@ Line numbers drift with every change — search for the function name instead.
 - **Verification:** run `node --test "test/*.test.mjs"` (no dependencies, no
   install step; CI runs the same command). It covers the protocol packet
   builder, the Reg 68 brick guard, `handleNotification()` packet decoding,
-  `checkAlerts()` notification rules, the four `connect()` invariants, and
-  `node --check` over every inline `<script>` block. Much of the app — the
-  chart, the simulator, energy accounting, the diag import — is still
-  unverified. To verify anything else:
+  `checkAlerts()` notification rules, the four `connect()` invariants, the Diag
+  tab's register formatting and JSON round trip, daily energy accounting, and
+  `node --check` over every inline `<script>` block. Still unverified: the
+  history chart, the appliance simulator, and the SwitchBot panel. To verify
+  anything else:
   1. Add a test — `test/extract.mjs` harvests any top-level function out of
      `index.html` and evaluates it with stubs for its free variables, so pure
      logic (parsers, formatters, register maps) is testable without a browser.
      Load a function together with everything it calls, or you get a
-     `ReferenceError` for the missing stub. `test/harness.mjs` supplies a fake
-     `document` and builders for synthetic BLE packets.
+     `ReferenceError` for the missing stub. It handles `function` declarations
+     and block-bodied arrow consts; `loadLiteral()` pulls out a top-level table
+     such as `KNOWN_REGS` so tests assert against the real map rather than a
+     copy. `test/harness.mjs` supplies a fake `document` and builders for
+     synthetic BLE packets.
 
      `handleNotification()` swallows exceptions into `console.error`, so assert
      that nothing was caught — otherwise a missing stub reads as a pass.
