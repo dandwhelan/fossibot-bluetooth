@@ -38,8 +38,10 @@ function isRegexStart(src, i, prev) {
     if (!/[\w$]/.test(prev)) return false;
     let j = i - 1;
     while (j >= 0 && /\s/.test(src[j])) j--;
-    let end = j + 1;
+    const end = j + 1;
     while (j >= 0 && /[\w$]/.test(src[j])) j--;
+    // `today.in / 1000` is division; only a bare keyword can precede a regex.
+    if (src[j] === '.') return false;
     return REGEX_KEYWORDS.has(src.slice(j + 1, end));
 }
 
@@ -104,14 +106,42 @@ function matchDelim(src, start, open, close) {
 }
 
 export function extractFunction(name, src = readAppScript()) {
-    const decl = new RegExp(`(?:^|[^\\w.$])((?:async\\s+)?function\\s+${name}\\s*\\()`, 'm');
-    const m = decl.exec(src);
-    if (!m) throw new Error(`no top-level declaration of function ${name}() in index.html`);
+    const fnDecl = new RegExp(`(?:^|[^\\w.$])((?:async\\s+)?function\\s+${name}\\s*\\()`, 'm');
+    const m = fnDecl.exec(src);
+    if (m) {
+        const start = m.index + m[0].length - m[1].length;
+        const parenClose = matchDelim(src, src.indexOf('(', start), '(', ')');
+        const bodyOpen = src.indexOf('{', parenClose);
+        return src.slice(start, matchDelim(src, bodyOpen, '{', '}') + 1);
+    }
 
-    const start = m.index + m[0].length - m[1].length;
-    const parenClose = matchDelim(src, src.indexOf('(', start), '(', ')');
-    const bodyOpen = src.indexOf('{', parenClose);
-    return src.slice(start, matchDelim(src, bodyOpen, '{', '}') + 1);
+    // Some helpers are block-bodied arrow consts rather than declarations.
+    const arrowDecl = new RegExp(`(?:^|[^\\w.$])((?:const|let|var)\\s+${name}\\s*=\\s*(?:async\\s+)?\\()`, 'm');
+    const a = arrowDecl.exec(src);
+    if (!a) throw new Error(`no top-level declaration of ${name}() in index.html`);
+
+    const start = a.index + a[0].length - a[1].length;
+    const parenClose = matchDelim(src, src.indexOf('(', start + a[1].indexOf('=')), '(', ')');
+    const arrowAt = src.indexOf('=>', parenClose);
+    const bodyOpen = src.indexOf('{', arrowAt);
+    if (arrowAt < 0 || bodyOpen < 0) throw new Error(`${name} is not a block-bodied arrow function`);
+    return `${src.slice(start, matchDelim(src, bodyOpen, '{', '}') + 1)};`;
+}
+
+// Source of a top-level object or array literal, e.g. `const KNOWN_REGS = {…}`,
+// so tests can assert against the real lookup tables instead of a copy.
+export function extractLiteral(name, src = readAppScript()) {
+    const decl = new RegExp(`(?:^|[^\\w.$])(?:const|let|var)\\s+${name}\\s*=\\s*([{\\[])`, 'm');
+    const m = decl.exec(src);
+    if (!m) throw new Error(`no top-level object or array literal named ${name} in index.html`);
+
+    const open = src.indexOf(m[1], m.index);
+    const close = m[1] === '{' ? '}' : ']';
+    return src.slice(open, matchDelim(src, open, m[1], close) + 1);
+}
+
+export function loadLiteral(name) {
+    return new Function(`return (${extractLiteral(name)});`)();
 }
 
 // Evaluates the named functions with `env` supplying their free variables.
