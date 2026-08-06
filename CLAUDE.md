@@ -181,14 +181,19 @@ Line numbers drift with every change — search for the function name instead.
   `Treat only error codes 78/79 as device faults`.
 - **Verification:** run `node --test "test/*.test.mjs"` (no dependencies, no
   install step; CI runs the same command). It covers the protocol packet
-  builder, the Reg 68 brick guard, and `node --check` over every inline
-  `<script>` block. Coverage stops there — most of the app is still unverified.
-  To verify anything else:
+  builder, the Reg 68 brick guard, `handleNotification()` packet decoding,
+  `checkAlerts()` notification rules, and `node --check` over every inline
+  `<script>` block. Much of the app — the connect path, the chart, the
+  simulator, energy accounting — is still unverified. To verify anything else:
   1. Add a test — `test/extract.mjs` harvests any top-level function out of
      `index.html` and evaluates it with stubs for its free variables, so pure
      logic (parsers, formatters, register maps) is testable without a browser.
      Load a function together with everything it calls, or you get a
-     `ReferenceError` for the missing stub.
+     `ReferenceError` for the missing stub. `test/harness.mjs` supplies a fake
+     `document` and builders for synthetic BLE packets.
+
+     `handleNotification()` swallows exceptions into `console.error`, so assert
+     that nothing was caught — otherwise a missing stub reads as a pass.
   2. Load the PWA over `localhost` against a real device, or
   3. Import a saved JSON dump in the Diag tab to replay register state.
 
