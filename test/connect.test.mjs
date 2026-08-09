@@ -48,7 +48,7 @@ function makeConnect({
     failedConnects = new Map(),
     refreshGate = null,
 } = {}) {
-    const calls = { order: [], logs: [], toasts: [], requestDeviceArgs: [] };
+    const calls = { order: [], logs: [], toasts: [], requestDeviceArgs: [], connStates: [] };
     const track = name => { calls.order.push(name); };
 
     const bluetooth = {
@@ -101,6 +101,12 @@ function makeConnect({
         onDisconnected: () => {},
         handleNotification: () => {},
         updateStatus: ok => track(`updateStatus:${ok}`),
+        setConnState: (state, overrides) => {
+            track(`connState:${state}`);
+            calls.connStates.push(Object.assign({ state }, overrides || {}));
+        },
+        friendlyConnectError: err => ({ title: 'friendly', detail: String((err && err.message) || err) }),
+        savedDeviceName: () => (knownDevices[0] && knownDevices[0].name) || '',
         resetSessionStats: () => {},
         startPolling: () => track('startPolling'),
         sendSettingsRequest: async () => track('sendSettingsRequest'),
@@ -245,6 +251,32 @@ test('background failures keep the device latched', async () => {
 
     assert.equal(c.readVar('device'), dead, 'a background retry gave up its saved device');
     assert.ok(c.failedConnects.get(dead.id) >= MAX_SILENT_RETRIES);
+});
+
+// A background retry will try again by itself, so putting a red failure in
+// front of the user is both wrong and alarming; a tap has actually run out of
+// road and must say so rather than leaving the dashboard reading "--".
+test('only a tap surfaces a failure; a background retry stays on "reconnecting"', async () => {
+    const dead = fakeDevice({ connects: false });
+    const known = [{ id: dead.id, name: 'POWER-2400' }];
+
+    const background = makeConnect({ device: dead, knownDevices: known, grantedDevices: [dead] });
+    await background.connect({ auto: true });
+    const bgStates = background.calls.connStates.map(s => s.state);
+    assert.ok(!bgStates.includes('error'), 'a background retry alarmed the user with a failure');
+    assert.equal(bgStates.at(-1), 'scanning');
+
+    const tap = makeConnect({ device: fakeDevice({ connects: false }), knownDevices: known });
+    await tap.connect();
+    const tapStates = tap.calls.connStates.map(s => s.state);
+    assert.equal(tapStates[0], 'scanning', 'a tap gave no sign anything was happening');
+    assert.equal(tapStates.at(-1), 'error', 'a failed tap left the user with no explanation');
+});
+
+test('a cancelled chooser is explained on screen, not only in the log', async () => {
+    const c = makeConnect();  // no chooserDevice: requestDevice rejects NotFoundError
+    await c.connect();
+    assert.equal(c.calls.connStates.at(-1).state, 'error');
 });
 
 test('a successful connect clears the failure count and starts polling', async () => {

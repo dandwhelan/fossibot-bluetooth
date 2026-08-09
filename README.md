@@ -18,6 +18,7 @@ ABOK Power Ark3600 (Probalby works, but not tested)
 
 | Area | Icon / Label | Function |
 | :--- | :--- | :--- |
+| **Top Bar** | **Not connected / Connected** | **Connection status:** Always shows whether you are connected, and to which power station. Tap it to connect or disconnect. |
 | **Top Left** | ⚙️ (Gear) | **Settings:** Open configuration menu (Charge limits, Timers, Theme). |
 | **Top Right** | ⚡ (Bluetooth) | **Connect/Disconnect:** Toggle connection to the device. |
 | **Center** | **Ring Chart** | **Battery Level:** Visual and percentage SOC. Color changes with level. |
@@ -40,6 +41,7 @@ ABOK Power Ark3600 (Probalby works, but not tested)
 *   **Session Stats:** Average and peak output plus peak input for the current connection, shown under the chart.
 *   **OLED Saver Theme:** Pure-black theme that switches OLED pixels off — the most power-efficient way to leave the dashboard on overnight with "Keep Screen Awake".
 *   **Saved Devices & One-Tap Reconnect:** Devices you have paired once appear in Settings → My Devices — reconnect without the browser chooser, rename or forget them, and optionally auto-connect when the app opens (Chrome/Edge).
+*   **Guided First Connection:** A status bar at the top of the dashboard always says whether you are connected and to what. Until you are, the dashboard is replaced by a short walkthrough — switch the station on, turn Bluetooth on, tap Connect — and after the first pairing that becomes a single **Connect to \<your station\>** button. Failures are explained in plain English with the next thing to try, instead of leaving the screen full of dashes.
 *   **Auto-Reconnect:** Automatically retries the Bluetooth connection (with backoff) if the link drops unexpectedly.
 *   **Keep Screen Awake:** Optional Wake Lock so your phone screen stays on while monitoring.
 *   **Alerts:** Optional browser notifications for low battery (configurable threshold), device faults, charge complete, AC input loss (UPS use), and output overload.
