@@ -7,6 +7,7 @@ export function makeDocument() {
 
     const makeElement = id => {
         const classes = new Set();
+        const attrs = new Map();
         return {
             id,
             textContent: '',
@@ -22,14 +23,15 @@ export function makeDocument() {
                 contains: c => classes.has(c),
             },
             classes,
+            attrs,
             appendChild() {},
             remove() {},
             addEventListener() {},
             removeEventListener() {},
             querySelectorAll: () => [],
             querySelector: () => null,
-            setAttribute() {},
-            getAttribute: () => null,
+            setAttribute: (k, v) => { attrs.set(k, String(v)); },
+            getAttribute: k => (attrs.has(k) ? attrs.get(k) : null),
         };
     };
 

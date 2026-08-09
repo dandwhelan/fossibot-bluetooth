@@ -85,10 +85,37 @@ already broken Android discovery once — see PR #32:
 4. **A tap cancels the auto-connect loop** (`cancelAutoConnect()`) so the two
    do not race for the same adapter.
 
+Invariant 3 applies to every connect entry point, not just the original
+button: `#conn-bar`, `#connect-help-cta` and the "connect a different power
+station" link all reach `requestDevice()` with no `await` in between.
+`test/connect.test.mjs` cannot see that — only the Playwright check described
+under Verification can.
+
 `watchAdvertisements()` is used only on the auto path — Chrome on Android
 often cannot connect to a `getDevices()`-restored device before it has seen
 an advertisement. It needs an experimental flag on some builds, so its
 failure is caught and treated as "try connecting directly".
+
+### What the user is told
+
+Every statement about the connection goes through `setConnState(state,
+overrides)` — `idle`, `scanning`, `connected` or `error` — which drives both
+the status bar above the dashboard and the card that stands in for it while
+disconnected. Two things to preserve:
+
+- **Never report a connection problem only via `log()`.** The Activity Log
+  lives inside the Diagnostics tab, two taps away, so anything reported only
+  there is reported nowhere. Pair every `log()` on a failure path with a
+  `setConnState('error', friendlyConnectError(e))`.
+- **Only a tap may show an error.** A background retry sets `scanning` with a
+  "reconnecting" detail — it will try again by itself, so a red failure is
+  both wrong and alarming.
+
+`friendlyConnectError()` maps exceptions to a plain-English cause plus a next
+step; it must never surface a `DOMException` name. The card hides the
+dashboard (`#dash-main.needs-connect`) rather than covering it, so whatever
+hides the card has to restore the dashboard in the same breath —
+`dismissConnectHelp()` re-renders through `setConnState` for that reason.
 
 Chooser-free reconnect via `getDevices()` also needs
 `chrome://flags/#enable-web-bluetooth-new-permissions-backend` on some Chrome
@@ -155,6 +182,9 @@ Line numbers drift with every change — search for the function name instead.
   `navigator.bluetooth.getDevices()`.
 - `connect(options)` — the single connect path for taps and auto-connect
   alike; see "Connecting and device discovery" above before touching it.
+- `setConnState()` / `connStateCopy()` / `friendlyConnectError()` /
+  `renderConnectHelp()` — the connection status bar and the guided card that
+  replaces the dashboard while disconnected.
 - `refreshGrantedDevices()` / `cancelAutoConnect()` — `grantedDevices` cache
   and the loop's cancellation flag.
 - `connectToKnown(id)` / `connectNewDevice(showAll)` — Settings › Devices
@@ -182,10 +212,11 @@ Line numbers drift with every change — search for the function name instead.
 - **Verification:** run `node --test "test/*.test.mjs"` (no dependencies, no
   install step; CI runs the same command). It covers the protocol packet
   builder, the Reg 68 brick guard, `handleNotification()` packet decoding,
-  `checkAlerts()` notification rules, the four `connect()` invariants, the Diag
-  tab's register formatting and JSON round trip, daily energy accounting, and
-  `node --check` over every inline `<script>` block. Still unverified: the
-  history chart, the appliance simulator, and the SwitchBot panel. To verify
+  `checkAlerts()` notification rules, the four `connect()` invariants, the
+  connection status copy and its card/dashboard swap, the Diag tab's register
+  formatting and JSON round trip, daily energy accounting, and `node --check`
+  over every inline `<script>` block. Still unverified: the history chart, the
+  appliance simulator, and the SwitchBot panel. To verify
   anything else:
   1. Add a test — `test/extract.mjs` harvests any top-level function out of
      `index.html` and evaluates it with stubs for its free variables, so pure
@@ -240,7 +271,9 @@ guessing — it removes most ambiguity. Common gotchas:
   fault; Reg 42 bits 13–14 alone are not an error.
 - Device unresponsive after settings change → ask exactly which registers
   were written (see the reg 68 brick hazard).
-- "Connect does nothing" / no device chooser on Android → check the terminal
+- "Connect does nothing" / no device chooser on Android → ask what the status
+  bar above the dashboard says first; it names the failure and the next step
+  without opening Diagnostics. Then check the terminal
   log. `Reconnecting to saved device:` followed by repeated
   `Connection failed:` means a stale saved device is being retried, not that
   discovery is broken; the chooser opens after `MAX_SILENT_RETRIES`. An

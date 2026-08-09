@@ -704,6 +704,249 @@
             margin-bottom: 0;
         }
 
+        /* ===== Connection status =====
+           Before this the only connect affordance on the dashboard was an
+           unlabelled 24px corner glyph, and "not connected" looked identical
+           to "loading": a wall of "--". The bar is the always-visible answer
+           to "am I connected?", the card covers the dead readout with the
+           next step, and both are worded for someone who has never heard of
+           BLE. */
+        .conn-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            width: 100%;
+            max-width: 28rem;
+            box-sizing: border-box;
+            margin-bottom: 1rem;
+            padding: 0.7rem 0.9rem;
+            background-color: var(--bg-card);
+            border: none;
+            border-left: 4px solid var(--text-muted);
+            border-radius: var(--border-radius);
+            color: var(--text-main);
+            font-family: inherit;
+            text-align: left;
+            cursor: pointer;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .conn-dot {
+            flex: 0 0 auto;
+            width: 0.65rem;
+            height: 0.65rem;
+            border-radius: 50%;
+            background: var(--text-muted);
+        }
+
+        .conn-text {
+            display: flex;
+            flex-direction: column;
+            gap: 0.1rem;
+            flex: 1;
+            min-width: 0;
+        }
+
+        #conn-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+        }
+
+        /* Clamped rather than ellipsised on one line: the detail carries the
+           "what to do next" half of a failure, and truncating that loses the
+           only actionable text on screen once the card is hidden. */
+        #conn-detail {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            font-size: 0.75rem;
+            line-height: 1.3;
+            color: var(--text-muted);
+        }
+
+        .conn-cta {
+            flex: 0 0 auto;
+            padding: 0.45rem 0.9rem;
+            border-radius: 0.5rem;
+            background: var(--btn-blue);
+            color: #fff;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .conn-bar[data-state="scanning"] {
+            border-left-color: var(--text-blue);
+        }
+
+        .conn-bar[data-state="scanning"] .conn-dot {
+            background: var(--text-blue);
+            animation: conn-pulse 1.2s ease-in-out infinite;
+        }
+
+        .conn-bar[data-state="connected"] {
+            border-left-color: var(--text-green);
+        }
+
+        .conn-bar[data-state="connected"] .conn-dot {
+            background: var(--text-green);
+        }
+
+        .conn-bar[data-state="error"] {
+            border-left-color: var(--text-red);
+        }
+
+        .conn-bar[data-state="error"] .conn-dot {
+            background: var(--text-red);
+        }
+
+        /* Only "connect" stays a filled call to action; disconnecting and
+           cancelling must not compete with it for attention. */
+        .conn-bar[data-state="scanning"] .conn-cta,
+        .conn-bar[data-state="connected"] .conn-cta {
+            background: none;
+            border: 1px solid var(--text-muted);
+            color: var(--text-muted);
+        }
+
+        @keyframes conn-pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.35; transform: scale(0.75); }
+        }
+
+        /* Takes the dashboard's place rather than covering it, so the card
+           sizes to its own content. The corner triggers stay on top of it —
+           the bottom nav is disabled, so they are the only way to Settings
+           and Diagnostics; the padding keeps text clear of them. */
+        #connect-help {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.55rem;
+            padding: 2.75rem 1.25rem 1.75rem;
+            box-sizing: border-box;
+            background-color: var(--bg-card);
+            border-radius: var(--border-radius);
+            text-align: center;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        #dash-main.needs-connect .dashboard,
+        #dash-main.needs-connect .dash-panel {
+            display: none;
+        }
+
+        [data-theme="terminal"] #connect-help {
+            background: #000;
+            border: 1px solid #00ff00;
+        }
+
+        #connect-help-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        #connect-help-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            width: 100%;
+            max-width: 20rem;
+            margin: 0.25rem 0 0;
+            padding: 0;
+            list-style: none;
+            counter-reset: connect-step;
+            text-align: left;
+        }
+
+        #connect-help-steps li {
+            counter-increment: connect-step;
+            display: grid;
+            grid-template-columns: 1.4rem 1fr;
+            gap: 0.1rem 0.6rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        #connect-help-steps li::before {
+            content: counter(connect-step);
+            grid-row: span 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.4rem;
+            height: 1.4rem;
+            border-radius: 50%;
+            background: var(--btn-blue);
+            color: #fff;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        #connect-help-steps b {
+            color: var(--text-main);
+            font-size: 0.85rem;
+        }
+
+        #connect-help-note {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            max-width: 20rem;
+        }
+
+        .connect-help-cta {
+            padding: 0.75rem 2.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            background: var(--btn-blue);
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .connect-help-cta.busy {
+            opacity: 0.6;
+        }
+
+        /* The terminal theme sets --btn-blue to black, so filled buttons and
+           the step markers would vanish into the background. */
+        [data-theme="terminal"] .connect-help-cta,
+        [data-theme="terminal"] .conn-cta,
+        [data-theme="terminal"] #connect-help-steps li::before {
+            background: transparent;
+            border: 1px solid #00ff00;
+            color: #00ff00;
+        }
+
+        .connect-help-alt {
+            padding: 0.25rem;
+            border: none;
+            background: none;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        #connect-help-dismiss {
+            padding: 0.15rem;
+            border: none;
+            background: none;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            cursor: pointer;
+            opacity: 0.7;
+        }
+
+        /* Dimmed, but still able to receive the tap that explains why the
+           output tiles do nothing yet. */
+        .control-row.disabled,
+        .dash-panel.disabled {
+            pointer-events: auto;
+        }
+
         .dash-panel {
             display: none;
             position: relative;
@@ -1159,7 +1402,8 @@
 
         @media (prefers-reduced-motion: reduce) {
             .flow-line.flowing,
-            .flow-hub.charging {
+            .flow-hub.charging,
+            .conn-bar[data-state="scanning"] .conn-dot {
                 animation: none;
             }
             .gauge-val,
@@ -1910,6 +2154,16 @@
 
             <!-- Header Removed -->
 
+            <!-- Connection status: always visible, always tappable -->
+            <button type="button" id="conn-bar" class="conn-bar" data-state="idle" aria-live="polite">
+                <span class="conn-dot"></span>
+                <span class="conn-text">
+                    <span id="conn-title">Not connected</span>
+                    <span id="conn-detail">Tap to connect to your power station</span>
+                </span>
+                <span id="conn-cta" class="conn-cta">Connect</span>
+            </button>
+
             <!-- Dashboard area: corner triggers overlay whichever layout panel is active -->
             <div id="dash-area">
             <div id="dash-main">
@@ -1926,15 +2180,17 @@
 
                 <!-- Connect/Disconnect Triggers (Top Right) -->
                 <!-- click handler attached via .btn-connect listener in DOMContentLoaded -->
-                <div class="btn-connect"
-                    style="position: absolute; top: 10px; right: 10px; cursor: pointer; z-index: 20; color: var(--text-muted); opacity: 0.8; background: transparent !important; box-shadow: none;">
+                <div class="btn-connect" role="button" tabindex="0" title="Connect to your power station"
+                    aria-label="Connect to your power station"
+                    style="position: absolute; top: 10px; right: 10px; cursor: pointer; z-index: 20; color: var(--text-blue); opacity: 1; background: transparent !important; box-shadow: none;">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">
                         <path d="M7 7l10 10-5 5V2l5 5L7 17" />
                     </svg>
                 </div>
-                <div class="btn-disconnect hidden" onclick="disconnect()"
-                    style="position: absolute; top: 10px; right: 10px; cursor: pointer; z-index: 20; color: var(--text-green); opacity: 1;">
+                <div class="btn-disconnect hidden" onclick="disconnect()" role="button" tabindex="0"
+                    title="Disconnect" aria-label="Disconnect"
+                    style="position: absolute; top: 10px; right: 10px; cursor: pointer; z-index: 20; color: var(--text-green); opacity: 1; background: transparent !important; box-shadow: none;">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -1980,6 +2236,27 @@
                         <input type="number" id="sim-output" value="0" style="width: 50px;"
                             onchange="updateSimulation()">
                     </div>
+                </div>
+
+                <!-- Takes the dashboard's place while disconnected: the readout
+                     is all dashes then anyway, and "what do I do now?" is the
+                     only question worth answering. -->
+                <div id="connect-help" class="hidden">
+                    <div id="connect-help-title">Connect your power station</div>
+                    <ol id="connect-help-steps">
+                        <li><b>Switch the station on</b><span>Press its power button — its screen should light
+                                up.</span></li>
+                        <li><b>Turn on Bluetooth</b><span>On this phone, and let the browser find nearby
+                                devices.</span></li>
+                        <li><b>Tap Connect, then pick your station</b><span>Its name starts with POWER, AFERIY or
+                                FOSSIBOT.</span></li>
+                    </ol>
+                    <div id="connect-help-note" class="hidden"></div>
+                    <button type="button" id="connect-help-cta" class="connect-help-cta">Connect</button>
+                    <button type="button" id="connect-help-alt" class="connect-help-alt hidden"
+                        onclick="connectNewDevice()">Connect a different power station</button>
+                    <button type="button" id="connect-help-dismiss" onclick="dismissConnectHelp()"
+                        aria-label="Hide connection help">Hide this</button>
                 </div>
 
                 <!-- Classic layout -->
@@ -2190,6 +2467,7 @@
                         <div class="pm-toggle" data-toggle="dc" onclick="toggle('dc')">DC</div>
                     </div>
                 </div>
+
             </div>
 
             <div id="controls" class="control-row disabled">
@@ -3146,6 +3424,10 @@ Example format:
             autoConnectCancelled = false;
             log('Auto-connect: looking for saved device...');
             showToast('Auto-connecting to saved device...');
+            setConnState('scanning', {
+                title: 'Reconnecting…',
+                detail: savedDeviceName() ? `Looking for ${savedDeviceName()}` : 'Looking for your power station',
+            });
             try {
                 // Keep retrying until connected, the user disconnects manually,
                 // the setting is switched off, or the max duration elapses.
@@ -3156,6 +3438,10 @@ Example format:
                     if (maxMs > 0 && Date.now() - startedAt > maxMs) {
                         log(`Auto-connect stopped after ${maxMs / 60000} min. Tap Connect to try manually.`);
                         showToast('Auto-connect gave up — tap Connect', 'error');
+                        setConnState('error', {
+                            title: 'Could not find your power station',
+                            detail: 'Check it is switched on and nearby, then tap to try again.',
+                        });
                         return;
                     }
                     await connect({ auto: true });
@@ -3166,6 +3452,10 @@ Example format:
                         // range problem, so retrying cannot help.
                         log('Auto-connect: the browser did not remember permission for any saved device. Connect manually once to re-grant it. If this happens every launch, enable chrome://flags/#enable-web-bluetooth-new-permissions-backend.');
                         showToast('Auto-connect: permission not remembered — tap Connect', 'error');
+                        setConnState('error', {
+                            title: 'Tap Connect to pick your station',
+                            detail: 'This browser needs you to choose it again from the list.',
+                        });
                         return;
                     }
                     if (userDisconnected) return;
@@ -3213,6 +3503,14 @@ Example format:
         function renderSwitchbotPanel() {
             const forget = document.getElementById('btn-switchbot-forget');
             if (forget) forget.classList.toggle('hidden', !switchbotSaved);
+            // Without a Bot paired this button did nothing yet still outshouted
+            // Connect, so it read as the way in to the app.
+            const press = document.getElementById('btn-switchbot-press');
+            if (press) {
+                press.style.backgroundColor = switchbotSaved ? 'var(--btn-blue)' : 'transparent';
+                press.style.border = switchbotSaved ? 'none' : '1px solid var(--text-muted)';
+                press.style.color = switchbotSaved ? '#fff' : 'var(--text-muted)';
+            }
             switchbotStatus(switchbotSaved
                 ? `${switchbotSaved.name} paired — tap Press to push the power button`
                 : 'Pair a SwitchBot Bot to press the power button remotely');
@@ -3615,6 +3913,153 @@ Example format:
             box.scrollTop = box.scrollHeight;
         }
 
+        // ===== Connection status =====
+        // Everything the user is told about the connection funnels through
+        // setConnState: one state at a time, worded without BLE jargon, and
+        // never only in the Activity Log — that lives two taps away in
+        // Diagnostics, so a failure reported only there is a silent failure.
+        let connState = 'idle';
+        let connectHelpDismissed = false;
+
+        function savedDeviceName() {
+            return (knownDevices[0] && knownDevices[0].name) || '';
+        }
+
+        function friendlyConnectError(error) {
+            const name = (error && error.name) || '';
+            // Never String(error): an Error with no message stringifies to the
+            // bare word "Error", which would be shown as the advice.
+            const msg = String((error && error.message) || (typeof error === 'string' ? error : '') || '');
+            if (name === 'NotFoundError') {
+                return {
+                    title: 'No power station picked',
+                    detail: 'If the list was empty, switch the station on and let the browser find nearby devices.',
+                };
+            }
+            if (name === 'SecurityError') {
+                return {
+                    title: 'Tap Connect again',
+                    detail: 'The browser closed the device list because the tap had already ended.',
+                };
+            }
+            if (/timeout/i.test(msg)) {
+                return {
+                    title: 'Your power station did not answer',
+                    detail: 'Check it is switched on and within a few metres, then try again.',
+                };
+            }
+            if (name === 'NetworkError' || /gatt|connection failed/i.test(msg)) {
+                return {
+                    title: 'The connection dropped',
+                    detail: 'Move closer to the station, or switch it off and on again, then try again.',
+                };
+            }
+            if (name === 'NotSupportedError' || /service|characteristic/i.test(msg)) {
+                return {
+                    title: 'That device is not a power station',
+                    detail: 'Pick the entry whose name starts with POWER, AFERIY or FOSSIBOT.',
+                };
+            }
+            return {
+                title: 'Could not connect',
+                detail: msg || 'Check the station is switched on, then try again.',
+            };
+        }
+
+        function connStateCopy(state) {
+            if (state === 'scanning') {
+                return { title: 'Connecting…', detail: 'Looking for your power station', cta: 'Connect' };
+            }
+            if (state === 'connected') {
+                return {
+                    title: 'Connected',
+                    detail: (device && device.name) || savedDeviceName() || 'Power station',
+                    cta: 'Disconnect',
+                };
+            }
+            if (state === 'error') {
+                return { title: 'Could not connect', detail: 'Tap to try again', cta: 'Try again' };
+            }
+            return {
+                title: 'Not connected',
+                detail: knownDevices.length
+                    ? `Tap to reconnect to ${savedDeviceName()}`
+                    : 'Tap to connect to your power station',
+                cta: 'Connect',
+            };
+        }
+
+        function setConnState(state, overrides) {
+            connState = state;
+            const copy = Object.assign(connStateCopy(state), overrides || {});
+            const bar = document.getElementById('conn-bar');
+            if (bar) bar.setAttribute('data-state', state);
+            [['conn-title', copy.title], ['conn-detail', copy.detail], ['conn-cta', copy.cta]].forEach(([id, text]) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = text;
+            });
+            renderConnectHelp(copy);
+        }
+
+        function renderConnectHelp(copy) {
+            const card = document.getElementById('connect-help');
+            if (!card) return;
+            const showCard = connState !== 'connected' && !connectHelpDismissed;
+            card.classList.toggle('hidden', !showCard);
+            const main = document.getElementById('dash-main');
+            if (main) main.classList.toggle('needs-connect', showCard);
+            if (connState === 'connected') return;
+
+            const paired = knownDevices.length > 0;
+            const scanning = connState === 'scanning';
+            const el = id => document.getElementById(id);
+            const show = (id, visible) => { const n = el(id); if (n) n.classList.toggle('hidden', !visible); };
+
+            if (el('connect-help-title')) {
+                el('connect-help-title').textContent = scanning ? copy.title
+                    : connState === 'error' ? copy.title
+                        : paired ? 'Not connected' : 'Connect your power station';
+            }
+
+            // The walkthrough is for someone who has never paired; once a
+            // station is saved all that is left is one button.
+            show('connect-help-steps', !paired && !scanning);
+            show('connect-help-note', paired || scanning || connState === 'error');
+            if (el('connect-help-note')) {
+                el('connect-help-note').textContent = (scanning || connState === 'error')
+                    ? copy.detail
+                    : `Saved: ${savedDeviceName()}`;
+            }
+            if (el('connect-help-cta')) {
+                el('connect-help-cta').textContent = scanning ? 'Connecting…'
+                    : connState === 'error' ? 'Try again'
+                        : paired ? `Connect to ${savedDeviceName()}` : 'Connect';
+                el('connect-help-cta').classList.toggle('busy', scanning);
+            }
+            show('connect-help-alt', paired && !scanning);
+        }
+
+        // Re-renders rather than just hiding the card: the dashboard is hidden
+        // for as long as the card stands in for it, so dropping one without
+        // restoring the other leaves an empty page.
+        function dismissConnectHelp() {
+            connectHelpDismissed = true;
+            setConnState(connState);
+        }
+
+        function onConnBarClick() {
+            if (device && device.gatt && device.gatt.connected) { disconnect(); return; }
+            connect();
+        }
+
+        // No await may run before connect() reaches requestDevice() on a tap,
+        // or Chrome on Android drops the click's user activation.
+        function onConnectHelpCta() {
+            if (device && device.gatt && device.gatt.connected) return;
+            if (knownDevices.length > 0) { connectToKnown(knownDevices[0].id); return; }
+            connect();
+        }
+
         function updateStatus(connected) {
             setDashEnabled(connected);
             if (connected) {
@@ -3624,6 +4069,7 @@ Example format:
                 connectBtns.forEach(b => b.classList.remove('hidden'));
                 disconnectBtns.forEach(b => b.classList.add('hidden'));
             }
+            setConnState(connected ? 'connected' : 'idle');
         }
 
         function calculateChecksum(arr) {
@@ -3657,9 +4103,16 @@ Example format:
             }
             if (!auto) cancelAutoConnect();
             // A tap may take over from a background attempt, but not from another tap.
-            if (connectInFlight === 'manual') { log('Already connecting...'); return; }
+            if (connectInFlight === 'manual') {
+                log('Already connecting...');
+                showToast('Already connecting — give it a moment');
+                return;
+            }
             if (connectInFlight && auto) return;
             connectInFlight = auto ? 'auto' : 'manual';
+            setConnState('scanning', {
+                detail: device ? `Looking for ${device.name || savedDeviceName()}` : 'Looking for your power station',
+            });
 
             // A saved device the auto-connect loop latched on to must not keep the
             // chooser out of reach once it has proved it will not connect.
@@ -3799,9 +4252,11 @@ Example format:
                 await sendSettingsRequest();
 
             } catch (error) {
+                const friendly = friendlyConnectError(error);
                 if (error && error.name === 'NotFoundError' && !device) {
                     log("No device picked. If the chooser was empty, grant Nearby devices/Location permission to the browser, wake the power station, and try “Pair Any Device” in Settings › Devices to search without the name filter.");
                     updateStatus(false);
+                    if (!auto) setConnState('error', friendly);
                     return;
                 }
                 if (error && error.name === 'SecurityError') {
@@ -3823,6 +4278,11 @@ Example format:
                     }
                 }
                 updateStatus(false); // Reset UI so user can retry
+                // A background retry that will try again on its own must not
+                // put a red failure in front of the user; only a tap has
+                // actually run out of road.
+                if (auto) setConnState('scanning', { title: 'Reconnecting…', detail: friendly.detail });
+                else setConnState('error', friendly);
             } finally {
                 connectInFlight = false;
             }
@@ -4612,6 +5072,13 @@ Example format:
             // Flash image if psychedelic theme
             flashPsyImage();
 
+            // The tiles are dimmed but still tappable while disconnected, so
+            // that a tap says why nothing happens instead of doing nothing.
+            if (!writeChar) {
+                showToast('Connect to your power station first', 'error');
+                return;
+            }
+
             const btn = btns[type];
             if (!btn || btn.classList.contains('disabled')) return;
 
@@ -4705,6 +5172,10 @@ Example format:
                 const delay = Math.min(30000, 2000 * Math.pow(2, reconnectAttempts));
                 reconnectAttempts++;
                 log(`Auto-reconnect in ${delay / 1000}s (attempt ${reconnectAttempts}/${RECONNECT_MAX_ATTEMPTS})...`);
+                setConnState('scanning', {
+                    title: 'Connection lost',
+                    detail: `Reconnecting in ${Math.round(delay / 1000)}s…`,
+                });
                 setTimeout(() => {
                     if (device && !device.gatt.connected && !userDisconnected) connect();
                 }, delay);
@@ -7004,6 +7475,12 @@ Example format:
             const cBtns = document.querySelectorAll('.btn-connect');
             console.log("Re-attaching listeners, count:", cBtns.length);
             cBtns.forEach(btn => btn.addEventListener('click', connect));
+
+            const connBar = document.getElementById('conn-bar');
+            if (connBar) connBar.addEventListener('click', onConnBarClick);
+            const helpCta = document.getElementById('connect-help-cta');
+            if (helpCta) helpCta.addEventListener('click', onConnectHelpCta);
+            setConnState('idle');
 
             // Initial Status Log
             if (typeof log === 'function') log("System Ready. Click Connect.");
