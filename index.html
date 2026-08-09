@@ -2198,12 +2198,29 @@
                     </svg>
                 </div>
 
-                <!-- Simulation Trigger (Bottom Left) -->
-                <div id="sim-trigger" onclick="toggleSimulationUI()"
-                    style="position: absolute; bottom: 10px; left: 10px; cursor: pointer; opacity: 0.5; z-index: 20;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                <!-- Power Button (Bottom Left): the physical power button by proxy.
+                     Disconnected, a paired SwitchBot Bot presses it — the only way
+                     to wake a station whose BLE is off. Connected, it sends the BLE
+                     power-off write (Reg 64) directly instead, bypassing SwitchBot
+                     entirely. Two elements toggled the same way as
+                     .btn-connect/.btn-disconnect in updateStatus(). -->
+                <div class="btn-switchbot-corner" onclick="switchbotPress()" role="button" tabindex="0"
+                    title="Press power button (SwitchBot)"
+                    aria-label="Press the power station's power button via SwitchBot"
+                    style="position: absolute; bottom: 10px; left: 10px; cursor: pointer; z-index: 20; color: var(--text-muted); opacity: 0.7;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+                        <line x1="12" y1="2" x2="12" y2="12"></line>
+                    </svg>
+                </div>
+                <div class="btn-poweroff-corner hidden" onclick="toggleSetting('power_off')" role="button"
+                    tabindex="0" title="Power off" aria-label="Power off the power station"
+                    style="position: absolute; bottom: 10px; left: 10px; cursor: pointer; z-index: 20; color: var(--text-red); opacity: 0.8;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+                        <line x1="12" y1="2" x2="12" y2="12"></line>
                     </svg>
                 </div>
 
@@ -3823,6 +3840,8 @@ Example format:
         // Handle multiple connect/disconnect buttons
         const connectBtns = document.querySelectorAll('.btn-connect');
         const disconnectBtns = document.querySelectorAll('.btn-disconnect');
+        const switchbotCornerBtns = document.querySelectorAll('.btn-switchbot-corner');
+        const poweroffCornerBtns = document.querySelectorAll('.btn-poweroff-corner');
 
         // Psychedelic Images
         const psyImages = [
@@ -4065,9 +4084,13 @@ Example format:
             if (connected) {
                 connectBtns.forEach(b => b.classList.add('hidden'));
                 disconnectBtns.forEach(b => b.classList.remove('hidden'));
+                switchbotCornerBtns.forEach(b => b.classList.add('hidden'));
+                poweroffCornerBtns.forEach(b => b.classList.remove('hidden'));
             } else {
                 connectBtns.forEach(b => b.classList.remove('hidden'));
                 disconnectBtns.forEach(b => b.classList.add('hidden'));
+                switchbotCornerBtns.forEach(b => b.classList.remove('hidden'));
+                poweroffCornerBtns.forEach(b => b.classList.add('hidden'));
             }
             setConnState(connected ? 'connected' : 'idle');
         }
