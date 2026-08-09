@@ -696,7 +696,7 @@
            bottom corner triggers land in the margin band below the card */
         #dash-main {
             position: relative;
-            margin-bottom: 2rem;
+            margin-bottom: 1rem;
         }
 
         #dash-main .dashboard,
@@ -714,12 +714,12 @@
         .conn-bar {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
+            gap: 0.6rem;
             width: 100%;
             max-width: 28rem;
             box-sizing: border-box;
-            margin-bottom: 1rem;
-            padding: 0.7rem 0.9rem;
+            margin-bottom: 0.6rem;
+            padding: 0.4rem 0.7rem;
             background-color: var(--bg-card);
             border: none;
             border-left: 4px solid var(--text-muted);
@@ -733,8 +733,8 @@
 
         .conn-dot {
             flex: 0 0 auto;
-            width: 0.65rem;
-            height: 0.65rem;
+            width: 0.55rem;
+            height: 0.55rem;
             border-radius: 50%;
             background: var(--text-muted);
         }
@@ -748,8 +748,9 @@
         }
 
         #conn-title {
-            font-size: 0.95rem;
+            font-size: 0.85rem;
             font-weight: 700;
+            line-height: 1.2;
         }
 
         /* Clamped rather than ellipsised on one line: the detail carries the
@@ -760,18 +761,18 @@
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
-            font-size: 0.75rem;
-            line-height: 1.3;
+            font-size: 0.7rem;
+            line-height: 1.2;
             color: var(--text-muted);
         }
 
         .conn-cta {
             flex: 0 0 auto;
-            padding: 0.45rem 0.9rem;
+            padding: 0.35rem 0.7rem;
             border-radius: 0.5rem;
             background: var(--btn-blue);
             color: #fff;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             font-weight: 700;
         }
 
@@ -996,6 +997,29 @@
 
         [data-layout="promon"] #historyChart {
             height: 220px;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+
+        .history-arrow {
+            flex-shrink: 0;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            transition: transform 0.2s;
+        }
+
+        #history-panel.collapsed .history-arrow {
+            transform: rotate(-90deg);
+        }
+
+        #history-panel.collapsed #history-body {
+            display: none;
         }
 
         #batteryRing {
@@ -1421,7 +1445,7 @@
             display: flex;
             gap: 1rem;
             width: 100%;
-            margin-bottom: 2rem;
+            margin-bottom: 1rem;
         }
 
         .control-tile {
@@ -2516,39 +2540,45 @@
 
             <!-- Power History Chart -->
             <div id="history-panel"
-                style="position: relative; width: 100%; background: var(--bg-card); border-radius: var(--border-radius); padding: 0.75rem; box-sizing: border-box; margin-bottom: 2rem;">
-                <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.25rem;">
+                style="position: relative; width: 100%; background: var(--bg-card); border-radius: var(--border-radius); padding: 0.75rem; box-sizing: border-box; margin-bottom: 1rem;">
+                <div class="history-header" onclick="toggleHistoryCollapsed()" role="button" tabindex="0"
+                    aria-expanded="true" aria-controls="history-body">
                     <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Power History</span>
-                    <div id="history-ranges" style="display: flex; gap: 0.25rem;">
-                        <button class="hist-range-btn" data-ms="300000" onclick="setHistoryRange(300000, this)">5m</button>
-                        <button class="hist-range-btn" data-ms="600000" onclick="setHistoryRange(600000, this)">10m</button>
-                        <button class="hist-range-btn" data-ms="1800000" onclick="setHistoryRange(1800000, this)">30m</button>
-                        <button class="hist-range-btn" data-ms="3600000" onclick="setHistoryRange(3600000, this)">1h</button>
-                        <button class="hist-range-btn" data-ms="86400000" onclick="setHistoryRange(86400000, this)">24h</button>
+                    <span id="history-arrow" class="history-arrow">▼</span>
+                </div>
+                <div id="history-body">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin: 0.4rem 0 0.25rem;">
+                        <div id="history-ranges" style="display: flex; gap: 0.25rem;">
+                            <button class="hist-range-btn" data-ms="300000" onclick="setHistoryRange(300000, this)">5m</button>
+                            <button class="hist-range-btn" data-ms="600000" onclick="setHistoryRange(600000, this)">10m</button>
+                            <button class="hist-range-btn" data-ms="1800000" onclick="setHistoryRange(1800000, this)">30m</button>
+                            <button class="hist-range-btn" data-ms="3600000" onclick="setHistoryRange(3600000, this)">1h</button>
+                            <button class="hist-range-btn" data-ms="86400000" onclick="setHistoryRange(86400000, this)">24h</button>
+                        </div>
+                        <button onclick="exportHistoryCsv()" title="Download history as CSV"
+                            style="background: none; border: 1px solid var(--text-muted); color: var(--text-muted); border-radius: 0.25rem; font-size: 0.7rem; padding: 0.1rem 0.4rem; cursor: pointer;">⬇ CSV</button>
                     </div>
-                    <button onclick="exportHistoryCsv()" title="Download history as CSV"
-                        style="background: none; border: 1px solid var(--text-muted); color: var(--text-muted); border-radius: 0.25rem; font-size: 0.7rem; padding: 0.1rem 0.4rem; cursor: pointer;">⬇ CSV</button>
+                    <canvas id="historyChart" width="600" height="120" onclick="handleChartClick(event)"></canvas>
+                    <div id="chartTooltip"
+                        style="display: none; position: absolute; top: 2.4rem; left: 0; background: var(--bg-log); color: var(--text-main); border: 1px solid var(--text-muted); border-radius: 0.4rem; padding: 0.4rem 0.6rem; font-size: 0.7rem; font-family: monospace; line-height: 1.4; z-index: 15; pointer-events: none; box-shadow: 0 2px 8px rgba(0,0,0,0.5);"></div>
+                    <div style="display: flex; gap: 1rem; font-size: 0.65rem; color: var(--text-muted); margin-top: 0.25rem; flex-wrap: wrap;">
+                        <span style="color: var(--text-green);">▬ Input W</span>
+                        <span style="color: var(--text-blue);">▬ Output W</span>
+                        <span>┄ Battery %</span>
+                        <span id="legend-fan" style="color: #f59e0b; display: none;">▬ Fan</span>
+                        <span id="legend-acv" style="color: #c084fc; display: none;">┄ AC V</span>
+                        <span style="margin-left: auto; opacity: 0.7;">tap graph for values</span>
+                    </div>
+                    <div id="energy-strip" style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.4rem; font-family: monospace;"></div>
+                    <div id="session-stats" style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.15rem; font-family: monospace;"></div>
                 </div>
-                <canvas id="historyChart" width="600" height="120" onclick="handleChartClick(event)"></canvas>
-                <div id="chartTooltip"
-                    style="display: none; position: absolute; top: 2.4rem; left: 0; background: var(--bg-log); color: var(--text-main); border: 1px solid var(--text-muted); border-radius: 0.4rem; padding: 0.4rem 0.6rem; font-size: 0.7rem; font-family: monospace; line-height: 1.4; z-index: 15; pointer-events: none; box-shadow: 0 2px 8px rgba(0,0,0,0.5);"></div>
-                <div style="display: flex; gap: 1rem; font-size: 0.65rem; color: var(--text-muted); margin-top: 0.25rem; flex-wrap: wrap;">
-                    <span style="color: var(--text-green);">▬ Input W</span>
-                    <span style="color: var(--text-blue);">▬ Output W</span>
-                    <span>┄ Battery %</span>
-                    <span id="legend-fan" style="color: #f59e0b; display: none;">▬ Fan</span>
-                    <span id="legend-acv" style="color: #c084fc; display: none;">┄ AC V</span>
-                    <span style="margin-left: auto; opacity: 0.7;">tap graph for values</span>
-                </div>
-                <div id="energy-strip" style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.4rem; font-family: monospace;"></div>
-                <div id="session-stats" style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.15rem; font-family: monospace;"></div>
             </div>
             </div>
 
             <!-- SwitchBot Bot: presses the physical power button, the only way to
                  wake a station whose BLE is off -->
             <div id="switchbot-panel"
-                style="display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; width: 100%; background: var(--bg-card); border-radius: var(--border-radius); padding: 0.75rem; box-sizing: border-box; margin-bottom: 2rem;">
+                style="display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; width: 100%; background: var(--bg-card); border-radius: var(--border-radius); padding: 0.75rem; box-sizing: border-box; margin-bottom: 1rem;">
                 <div style="display: flex; flex-direction: column; gap: 0.15rem; min-width: 0;">
                     <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">SwitchBot Power Button</span>
                     <span id="switchbot-status" style="font-size: 0.7rem; color: var(--text-muted); font-family: monospace;"></span>
@@ -7239,6 +7269,25 @@ Example format:
         let historyRangeMs = parseInt(localStorage.getItem('POWER-histrange')) || 600000; // default 10 min
         let chartDrawnPoints = []; // points as drawn (downsampled), for tap lookup
 
+        // Collapsed by choice only — defaults open. drawHistoryChart() already
+        // no-ops while hidden (offsetParent is null), so collapsing costs nothing
+        // and expanding just needs one redraw to catch up.
+        let historyCollapsed = localStorage.getItem('POWER-hist-collapsed') === '1';
+
+        function applyHistoryCollapsed() {
+            const panel = document.getElementById('history-panel');
+            if (panel) panel.classList.toggle('collapsed', historyCollapsed);
+            const header = document.querySelector('#history-panel .history-header');
+            if (header) header.setAttribute('aria-expanded', String(!historyCollapsed));
+            if (!historyCollapsed) drawHistoryChart();
+        }
+
+        function toggleHistoryCollapsed() {
+            historyCollapsed = !historyCollapsed;
+            localStorage.setItem('POWER-hist-collapsed', historyCollapsed ? '1' : '0');
+            applyHistoryCollapsed();
+        }
+
         function setHistoryRange(ms, btn) {
             historyRangeMs = ms;
             localStorage.setItem('POWER-histrange', ms);
@@ -7493,6 +7542,7 @@ Example format:
             // Highlight the persisted history range button
             document.querySelectorAll('#history-ranges .hist-range-btn').forEach(b =>
                 b.classList.toggle('active', parseInt(b.dataset.ms) === historyRangeMs));
+            applyHistoryCollapsed();
 
             // Robust Listener Attachment
             const cBtns = document.querySelectorAll('.btn-connect');
