@@ -200,7 +200,7 @@ The device uses different function codes (OpCodes) for different types of data:
 
 | Reg | Name | Value | Description |
 |:----|:-----|:------|:------------|
-| 64  | Power Off | 1 | Shuts down the entire machine. |
+| 64  | Power Off | 1 | Shuts down the entire machine. The device echoes the write back as a normal confirmation (opCode `0x06`) whether or not it actually powers off — the echo is protocol-level receipt, not proof of shutdown. Observed in the field: a unit charging from an external source (van battery) accepted and echoed the write but stayed on. Suspected firmware interlock against shutting down mid-charge, not independently confirmed — untested whether it powers off with no AC/DC input connected. |
 
 ---
 

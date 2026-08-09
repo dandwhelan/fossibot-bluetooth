@@ -173,6 +173,11 @@ Line numbers drift with every change — search for the function name instead.
   config over OpCode 0x07.
 - `recordHistory()` / `flushHistory()` / `loadHistoryFromDB()` — chart samples,
   persisted to IndexedDB (`POWER-history` DB, 24 h retention).
+- `toggleHistoryCollapsed()` / `applyHistoryCollapsed()` — collapses the Power
+  History card to its header (`#history-panel.collapsed`), persisted in
+  `localStorage['POWER-hist-collapsed']`. Safe to collapse for free:
+  `drawHistoryChart()` already no-ops when `canvas.offsetParent === null`, so
+  `applyHistoryCollapsed()` only needs to force one redraw on the way back in.
 - `accumulateEnergy()` / `updateEnergyStrip()` — daily Wh in/out totals
   (localStorage `POWER-energy`) and optional tariff cost estimate.
 - `checkAlerts()` — notification rules (low battery, faults, charge complete,
@@ -281,6 +286,14 @@ guessing — it removes most ambiguity. Common gotchas:
   fault; Reg 42 bits 13–14 alone are not an error.
 - Device unresponsive after settings change → ask exactly which registers
   were written (see the reg 68 brick hazard).
+- "Power Off did nothing" → check Reg 3/4 (AC/DC input watts) for active
+  charging first. Reg 64 = 1 gets echoed back by the device as a normal write
+  confirmation (`handleNotification()`'s opCode `0x06` branch) even when the
+  unit does not actually shut down — the echo only proves the command was
+  received, not that the physical power-off happened. Confirmed in the field:
+  a unit charging from a van battery took the write, echoed it, and stayed
+  on. Ask the reporter to retry with no AC/DC input connected before treating
+  it as a code bug.
 - "Connect does nothing" / no device chooser on Android → ask what the status
   bar above the dashboard says first; it names the failure and the next step
   without opening Diagnostics. Then check the terminal
