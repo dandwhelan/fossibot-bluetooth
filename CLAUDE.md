@@ -198,7 +198,17 @@ Line numbers drift with every change — search for the function name instead.
   and `SWITCHBOT_*` constants; does not touch the power-station connect path
   or its command queue. Bot password = CRC32 only, stored as
   `POWER-switchbot-key`; paired Bot stored as `POWER-switchbot`. Protocol
-  details in `PROTOCOL.md` §8.
+  details in `PROTOCOL.md` §8. Also the onclick for `.btn-switchbot-corner`,
+  the bottom-left dashboard corner icon shown while disconnected — same
+  function, no separate wiring.
+- `.btn-switchbot-corner` / `.btn-poweroff-corner` — the bottom-left corner
+  icon is the physical power button by proxy, toggled by `updateStatus()`
+  exactly like `.btn-connect`/`.btn-disconnect`: `switchbotPress()` while
+  disconnected (nothing else can reach a station with its BLE off), reused
+  `toggleSetting('power_off')` (Reg 64, with its existing `confirm()`) while
+  connected. Never let the connected state fall through to a SwitchBot press
+  — a paired Bot pressing an already-on station's power button would turn it
+  *off*.
 
 ## Conventions
 
