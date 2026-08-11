@@ -26,6 +26,7 @@ ABOK Power Ark3600 (Probalby works, but not tested)
 | **Bottom** | **-- hrs** | **Time Remaining:** Shows "Time to Empty" 🔋 or "Time to Full" ⚡ while charging. |
 | **Bottom Left** | 📖 (Book) | **Device Info:** System Summary and status flags. |
 | **Bottom Right** | 🔧 (Wrench) | **Diagnostics:** Advanced debugging, register inspector, and JSON import/export. |
+| **Below the chart** | 🤖 **Press** | **SwitchBot Power Button:** Tells a paired [SwitchBot Bot](https://us.switch-bot.com/products/switchbot-bot-rechargeable) to push the station's physical power button — the only way to switch a powered-off unit back on. See [setup](#-switchbot-power-button-setup-remote-power-on). |
 
 ## ✨ Comprehensive Features
 
@@ -65,7 +66,8 @@ ABOK Power Ark3600 (Probalby works, but not tested)
 *   **One-tap pairing:** The first tap opens the browser's Bluetooth chooser filtered to SwitchBot devices (the Bot usually advertises as "WoHand"; on Android and Windows the chooser also shows the MAC address so you can pick the right one). Browsers cannot pre-select a device by MAC address, so this first pick is always manual — after that the Bot is remembered and Press fires immediately.
 *   **Password support:** If the Bot has a password set in the SwitchBot app you are asked for it once; only the CRC32 checksum the protocol needs is stored locally, never the password itself.
 *   **Hands-free recovery:** After a successful press the app waits 5 seconds for the station to boot, then starts the normal auto-connect so the dashboard comes straight back up.
-*   Works with the original Bot and the 2026 rechargeable USB-C Bot — both speak the same BLE protocol.
+*   **Clear failure reasons:** The panel reports exactly what the Bot said back — busy, low battery, wrong password — instead of failing silently, and the ✕ button forgets the Bot if you move it to another device.
+*   Works with the original Bot and the 2026 rechargeable USB-C Bot — both speak the same BLE protocol. Full setup walkthrough [below](#-switchbot-power-button-setup-remote-power-on).
 
 ### ⚙️ Power Management Settings
 *   **Accordion Layout:** Clean collapsible sections for Quick Actions, Power Limits, Timers, and Theme selection.
@@ -124,6 +126,48 @@ For the best experience (fullscreen, offline access), install the app:
 
 ---
 
+## 🤖 SwitchBot Power Button Setup (Remote Power-On)
+
+**The problem:** when a power station is switched off, its Bluetooth radio is
+off too. No app — this one, BrightEMS, or anything else — can wake it over the
+air. Somebody has to physically press the power button.
+
+**The fix:** a [SwitchBot Bot](https://us.switch-bot.com/products/switchbot-bot-rechargeable)
+is a small battery-powered arm that presses a button on command over Bluetooth.
+Stick one over the station's power button and the app can press it for you from
+anywhere the Bot is in Bluetooth range.
+
+### What you need
+*   A SwitchBot Bot — the original or the 2026 rechargeable USB-C model. Both use the same BLE protocol.
+*   The Bot stuck over your station's power button (double-sided pad included in the box). Leave it in **Press mode**, not Switch mode.
+*   Chrome / Edge on Android, Windows, Mac or Linux, or Bluefy on iOS — same Web Bluetooth support as the rest of the app.
+*   You do **not** need the SwitchBot app, a SwitchBot Hub, a cloud account or an API token. The app talks to the Bot directly over BLE.
+
+### Steps
+1.  Open the app and scroll to the **SwitchBot Power Button** panel at the bottom of the dashboard.
+2.  Tap **Press**. The browser's Bluetooth chooser opens, filtered to SwitchBot devices — Bots usually advertise as **"WoHand"**. On Android and Windows the chooser shows the MAC address printed inside the Bot's battery cover, so you can tell several Bots apart.
+3.  Pick your Bot. It is remembered from then on: later taps of **Press** fire immediately without the chooser.
+4.  If the Bot has a password set in the SwitchBot app you are prompted for it once. Only the CRC32 checksum the protocol needs is saved on your device — the password itself is never stored.
+5.  On a successful press the app waits 5 seconds for the station to boot, then auto-connects and the dashboard comes back up on its own.
+
+Tap the **✕** next to Press to forget the Bot (for example if you move it to a
+different device); the stored password checksum is cleared with it.
+
+### Troubleshooting
+
+| Symptom | What it means |
+| :--- | :--- |
+| Chooser is empty | Browser permission problem, not the Bot. Grant **Nearby devices** (Android 12+) or **Location** and try again. Tap **Press** a second time to re-scan without the SwitchBot name filter. |
+| "the Bot is busy" | A press is already running. Wait a couple of seconds and tap again. |
+| "the Bot battery is too low" | Change the CR2 cell (or charge the USB-C model). Bots refuse to actuate on a flat battery. |
+| "wrong password" | The saved checksum is dropped automatically — tap **Press** again and re-enter the password from the SwitchBot app. |
+| "No response from the Bot" | The command was sent but no reply arrived within 5 s. The press may still have happened — check the station. |
+| Press works, station stays off | The arm is not lined up on the button, or the press is too short for a station that needs a long press. Reposition the Bot, or use the SwitchBot app to set a longer press duration. |
+
+Protocol details are in [PROTOCOL.md § 8](PROTOCOL.md).
+
+---
+
 ## 🔄 Battery Factory Reset
 
 If you want to remove your battery's Wi-Fi connection to the cloud (or recover
@@ -166,6 +210,19 @@ Received upon request or when settings change.
 ### Writing Commands
 Commands are sent to the Write Characteristic using a specific structure:
 `[Header 0x11] [Cmd 0x??] [Reg High] [Reg Low] [Val High] [Val Low] [CRC]`
+
+### SwitchBot Bot (power button pusher)
+
+A separate BLE connection, unrelated to the power station's command queue.
+
+*   **Service:** `cba20d00-224d-11e6-9fb8-0002a5d5c51b`
+*   **Write:** `cba20002-...` · **Notify:** `cba20003-...`
+*   **Press:** `57 01 00`, or `57 11 <crc32 of password> 00` when the Bot has a password.
+*   **Reply (first byte):** `01` OK · `02` error · `03` busy · `06` low battery · `07` password required · `09` wrong password.
+
+This is SwitchBot's own published protocol
+([OpenWonderLabs/SwitchBotAPI-BLE](https://github.com/OpenWonderLabs/SwitchBotAPI-BLE)),
+not reverse-engineered here.
 
 **See [PROTOCOL.md](PROTOCOL.md) for the complete reverse-engineered register map and packet structure details.**
 
