@@ -67,6 +67,15 @@ ABOK Power Ark3600 (Probalby works, but not tested)
 *   **Hands-free recovery:** After a successful press the app waits 5 seconds for the station to boot, then starts the normal auto-connect so the dashboard comes straight back up.
 *   Works with the original Bot and the 2026 rechargeable USB-C Bot — both speak the same BLE protocol.
 
+### 🦾 Switch Robot (Tuya BLE Fingerbot)
+*   **A second button pusher,** next to the SwitchBot one, for a button the station cannot reach itself — the wall switch feeding its charger, say. Works with Tuya "Switch Robot" / Fingerbot devices (model `ADSBB201`, sold by Adaprox, MOES and many rebadges).
+*   **Toggle button:** one tap connects, presses and disconnects, in about 1–3 seconds. In *push* mode it taps once; in *switch* mode it holds the arm down and the next tap releases it.
+*   **Full settings** behind the ⚙ button: mode (push / switch / program), up and down arm positions, hold time, reverse direction, the Fingerbot Plus touch button, and a battery readout.
+*   **One-time setup:** unlike SwitchBot, Tuya devices are encrypted and need per-device credentials. Pair the robot with the **Smart Life** app once, then pull `device_id`, `uuid`, `local_key` and `product_id` with [`tinytuya wizard`](https://github.com/jasonacox/tinytuya) or [tuya-local-key-extractor](https://github.com/redphx/tuya-local-key-extractor), and paste the JSON into the ⚙ drawer. After that everything is local and offline — the app never calls Tuya's cloud.
+*   **Where the credentials live:** in this browser's storage, because there is no server to keep them on. `local_key` is a device secret: anyone with access to the browser profile (or in Bluetooth range with the key) can work the robot. Don't put one on something that matters.
+*   **Battery-friendly:** connects only when you press something and drops the link straight after, rather than holding it open.
+*   ⚠️ Built and tested against the protocol and a simulated device, but **not yet confirmed against real hardware** — reports welcome.
+
 ### ⚙️ Power Management Settings
 *   **Accordion Layout:** Clean collapsible sections for Quick Actions, Power Limits, Timers, and Theme selection.
 *   **Charging Rate:** Adjust AC Charging power from **200W to 1100W+** (Verify supported limits for your specific model).

@@ -385,3 +385,160 @@ wrong password.
 For discovery, Bots advertise service data under UUID `0xFD3D` (device type
 byte `H` / `0x48`; older firmware also advertises the 128-bit service UUID).
 The 2026 rechargeable USB-C Bot uses the same protocol as the original.
+
+---
+
+## 9. Tuya BLE Switch Robot (Fingerbot)
+
+Used by the "Switch Robot" panel next to the SwitchBot one, for a button the
+station cannot reach itself — the wall switch feeding its charger, say. Model
+`ADSBB201`, Tuya category `szjqr`, sold as Adaprox / MOES Fingerbot and many
+rebadges.
+
+Unlike the SwitchBot Bot, this protocol is encrypted and needs per-device
+credentials. They exist only in Tuya's cloud once the Smart Life app has paired
+the device, so they are pasted into the app once (`tinytuya wizard`, or
+`redphx/tuya-local-key-extractor`) and kept in `localStorage`. Everything after
+that is local; the app never makes a cloud call.
+
+Cross-checked against `PlusPlus-ua/ha_tuya_ble` (MIT), which is the de-facto
+reference implementation.
+
+### Credentials
+
+| Key | Shape | Role |
+| :--- | :--- | :--- |
+| `device_id` | 20 chars | sent in the pairing frame |
+| `uuid` | 16 hex chars | sent in the pairing frame |
+| `local_key` | 16 chars | **only the first 6 are key material** |
+| `product_id` | 8 chars | selects the datapoint map |
+
+### GATT
+
+| UUID | Role |
+| :--- | :--- |
+| `0000a201-0000-1000-8000-00805f9b34fb` | Service (also the advertised UUID) |
+| `00002b10-0000-1000-8000-00805f9b34fb` | Notify |
+| `00002b11-0000-1000-8000-00805f9b34fb` | Write |
+
+Fixed 20-byte GATT MTU; do not negotiate larger.
+
+### Keys
+
+```
+local_key_6 = local_key[:6]                 ASCII, first 6 chars only
+login_key   = MD5(local_key_6)
+session_key = MD5(local_key_6 || srand)     srand = device_info_reply[6:12]
+auth_key    = device_info_reply[14:46]
+```
+
+MD5 is not there for security — it is what the device expects. WebCrypto has no
+MD5, so `md5()` in `index.html` implements it.
+
+### Frame
+
+```
+plain = seq(u32) response_to(u32) code(u16) len(u16) || data || CRC16(u16)
+plain += 0x00 × (16 - len(plain) % 16)      ZERO padding, never PKCS#7
+wire   = flag || iv(16) || AES-128-CBC(plain, key, iv)
+flag   = 0x04 for DEVICE_INFO (login_key), else 0x05 (session_key)
+```
+
+CRC-16 is Modbus (init `0xFFFF`, poly `0xA001`, reflected) — the same algorithm
+as the power station's, but stored little-end-first here rather than hi-first.
+
+`crypto.subtle` only does PKCS#7, which the device rejects. Both directions work
+around it without shipping a JS AES: on encrypt the input is already a multiple
+of 16, so subtle appends exactly one padding block and its ciphertext is
+dropped; on decrypt a block that decrypts to a full pad (`0x10` ×16) is appended
+so subtle accepts the zero-padded frame. See `tuyaAesEncrypt` /
+`tuyaAesDecrypt`, pinned against Node's own AES in `test/tuya.test.mjs`.
+
+### Fragmentation
+
+```
+packet 0 = varint(0) || varint(total_len) || (protocol_version << 4) || payload
+packet N = varint(N) || payload
+```
+
+Each packet is at most 20 bytes **including** its header, so the length varint
+growing to two bytes shifts the version byte along — nothing may assume a fixed
+offset. Protocol v3 sends `0x30`.
+
+On receive, a fragment out of sequence discards the buffer. Fragment 0 always
+starts a new frame, which is a deliberate departure from the reference: it
+treats a restart as out-of-order and so loses the whole of a retransmission.
+
+### Handshake
+
+```
+1. connect, subscribe 2b10
+2. TX FUN_SENDER_DEVICE_INFO (0x0000), no data
+3. RX 46+ bytes: [2] protocol version (must be 3) · [6:12] srand · [14:46] auth_key
+4. TX FUN_SENDER_PAIR (0x0001), 44 bytes: uuid || local_key_6 || device_id, zero-padded
+5. RX 1 byte: 0 = paired · 2 = already paired · anything else = refused
+6. TX FUN_SENDER_DEVICE_STATUS (0x0003) to make the device report every datapoint
+```
+
+`seq` starts at 1 and **resets on every reconnect**. Protocol v4 frames
+(`0x0027`, `0x8006`, `0x8007`) are not implemented; the app fails loudly.
+
+### Reports and acks
+
+Skipping an ack makes the device retry and then drop the link.
+
+| Code | Payload | Ack |
+| :--- | :--- | :--- |
+| `0x8001` RECEIVE_DP | records from 0 | empty data |
+| `0x8004` RECEIVE_SIGN_DP | dp_seq(u16), flags, records | `dp_seq, flags, 0` |
+| `0x8003` RECEIVE_TIME_DP | timestamp from 0, then records | empty data |
+| `0x8005` RECEIVE_SIGN_TIME_DP | dp_seq(u16), flags, timestamp from 3, records | `dp_seq, flags, 0` |
+| `0x8011` / `0x8012` TIME REQ | — | ms timestamp as ASCII, or Y/M/D/h/m/s/weekday; both + UTC offset in hundredths of an hour |
+
+A timestamp is a format byte then either 13 ASCII digits (`0`) or 4 bytes big
+endian (`1`).
+
+**The signed-report offset is ambiguous.** The reference reads `flags` at offset
+2 and then parses records from offset 2 as well, while its timestamped variant
+parses from 3 — the two cannot both be right. `tuyaReadDpReport()` therefore
+tries each and keeps whichever consumes the payload exactly.
+
+### Datapoints
+
+TLV records: `dp_id, dp_type, length, value` (big endian). Types: `0` RAW,
+`1` BOOL, `2` VALUE, `3` STRING, `4` ENUM, `5` BITMAP. `DT_VALUE` is always sent
+as 4 signed bytes; on receive it may arrive narrower and is sign-extended from
+its declared width.
+
+Fingerbot / Fingerbot Plus (`szjqr`):
+
+| Function | DP | Type | Range |
+| :--- | :--- | :--- | :--- |
+| `switch` | 2 | BOOL | actuate |
+| `mode` | 8 | ENUM | 0 push · 1 switch · 2 program |
+| `down_position` | 9 | VALUE | 51–100 % |
+| `hold_time` | 10 | VALUE | 0–10 s, push mode only |
+| `reverse_positions` | 11 | BOOL | |
+| `battery` | 12 | VALUE | 0–100 %, read-only |
+| `up_position` | 15 | VALUE | 0–50 % |
+| `manual_control` | 17 | BOOL | Plus only |
+| `program` | 121 | RAW | Plus only |
+
+CubeTouch 1s / II is a different layout (`switch` 1, `mode` 2, `hold_time` 3,
+`reverse` 4, `up` 5, `down` 6, `battery_charging` 7, `battery` 8, both positions
+0–100), which is why position limits are read from the resolved map rather than
+from constants.
+
+Product ids are mapped in `TUYA_PRODUCT_TABLES`. **`ADSBB201`'s own product id
+is unconfirmed** — it is USB-C rechargeable, which points at the `y6kttvd6`
+family. An unrecognised id falls back to the plain Fingerbot map and the panel
+says so rather than refusing to run. To confirm one: Tuya IoT console → Cloud →
+Devices → *Change Control Instruction Mode* → **DP Instruction**, then API
+Explorer → *Get Device Specification Attribute*.
+
+### Battery
+
+The device is sleepy: it advertises, accepts a connection, acts, then drops.
+The app connects on demand and disconnects immediately, with no reconnect loop
+— a held-open link is what flattened the battery in the original Home Assistant
+integration. Expect 1–3 s per action.

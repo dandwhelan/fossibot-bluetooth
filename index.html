@@ -2591,6 +2591,139 @@
                 </div>
             </div>
 
+            <!-- Tuya Switch Robot (Fingerbot ADSBB201): a second button pusher,
+                 for what the station cannot reach itself — the wall switch
+                 feeding its charger, say. Encrypted local protocol, no cloud. -->
+            <div id="tuya-panel"
+                style="display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; width: 100%; background: var(--bg-card); border-radius: var(--border-radius); padding: 0.75rem; box-sizing: border-box; margin-bottom: 1rem;">
+                <div style="display: flex; flex-direction: column; gap: 0.15rem; min-width: 0;">
+                    <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Switch Robot</span>
+                    <span id="tuya-status" style="font-size: 0.7rem; color: var(--text-muted); font-family: monospace;"></span>
+                </div>
+                <div style="display: flex; gap: 0.5rem; align-items: center; flex-shrink: 0;">
+                    <button id="btn-tuya-settings" onclick="toggleTuyaConfig()" title="Switch Robot settings"
+                        style="background: none; border: 1px solid var(--text-muted); color: var(--text-muted); border-radius: 0.25rem; padding: 0.2rem 0.5rem; cursor: pointer;">⚙</button>
+                    <button id="btn-tuya-forget" class="hidden" onclick="tuyaForget()" title="Forget this Switch Robot"
+                        style="background: none; border: 1px solid var(--text-muted); color: var(--text-muted); border-radius: 0.25rem; padding: 0.2rem 0.5rem; cursor: pointer;">✕</button>
+                    <button id="btn-tuya-toggle" class="btn-main" onclick="tuyaToggle()"
+                        style="flex: 0 0 auto; padding: 0.5rem 1.5rem; background-color: var(--btn-blue);">Toggle</button>
+                </div>
+            </div>
+
+            <div id="tuya-config" class="hidden" style="margin-bottom: 1rem;">
+                <div class="setting-row" style="flex-direction: column; align-items: stretch; gap: 0.5rem;">
+                    <div class="setting-info">
+                        <span class="setting-title">Tuya credentials</span>
+                        <span class="setting-desc">Paste a tinytuya <code>devices.json</code> entry, or any JSON with
+                            <code>device_id</code>, <code>uuid</code>, <code>local_key</code> and
+                            <code>product_id</code>. These only exist in Tuya's cloud after the Smart Life app has
+                            paired the robot — get them once with <code>tinytuya wizard</code>. They are stored in this
+                            browser and never sent anywhere.</span>
+                    </div>
+                    <textarea id="tuya-creds-json" rows="4" spellcheck="false" placeholder='{"id": "bf…", "uuid": "…", "key": "…", "product_id": "y6kttvd6"}'
+                        style="width: 100%; box-sizing: border-box; font-family: monospace; font-size: 0.7rem; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--text-muted); border-radius: 0.25rem; padding: 0.5rem;"></textarea>
+                    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                        <button onclick="tuyaImportCredentials()" class="btn-main"
+                            style="padding: 0.4rem 1rem; background-color: var(--btn-blue);">Save credentials</button>
+                        <button onclick="tuyaRefresh()"
+                            style="background: none; border: 1px solid var(--text-muted); color: var(--text-muted); border-radius: 0.25rem; padding: 0.4rem 0.75rem; cursor: pointer;">Read
+                            state</button>
+                        <span id="tuya-creds-known" style="font-size: 0.7rem; color: var(--text-muted); font-family: monospace;"></span>
+                    </div>
+                </div>
+
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <span class="setting-title">Battery</span>
+                        <span class="setting-desc">Recharges over USB-C</span>
+                    </div>
+                    <div class="setting-control">
+                        <span id="tuya-battery" style="font-family: monospace; font-size: 0.8rem; color: var(--text-muted);"></span>
+                    </div>
+                </div>
+
+                <div class="setting-row" id="tuya-row-mode">
+                    <div class="setting-info">
+                        <span class="setting-title">Mode</span>
+                        <span class="setting-desc">Push taps once; switch holds the arm down until toggled back</span>
+                    </div>
+                    <div class="setting-control">
+                        <select id="tuya-opt-mode" onchange="tuyaSetOption('mode', this.value)"
+                            style="background: var(--bg-main); color: var(--text-main); border: 1px solid var(--text-muted); border-radius: 0.25rem; padding: 0.3rem;">
+                            <option value="push">Push</option>
+                            <option value="switch">Switch</option>
+                            <option value="program">Program</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="setting-row" id="tuya-row-up_position">
+                    <div class="setting-info">
+                        <span class="setting-title">Up position</span>
+                        <span class="setting-desc">Where the arm rests when released</span>
+                    </div>
+                    <div class="setting-control" style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="range" id="tuya-opt-up_position" min="0" max="50"
+                            oninput="document.getElementById('tuya-val-up_position').textContent = this.value"
+                            onchange="tuyaSetOption('up_position', this.value)">
+                        <span id="tuya-val-up_position" style="font-family: monospace; font-size: 0.8rem; min-width: 2.5rem;"></span>
+                    </div>
+                </div>
+
+                <div class="setting-row" id="tuya-row-down_position">
+                    <div class="setting-info">
+                        <span class="setting-title">Down position</span>
+                        <span class="setting-desc">How far the arm swings to press</span>
+                    </div>
+                    <div class="setting-control" style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="range" id="tuya-opt-down_position" min="51" max="100"
+                            oninput="document.getElementById('tuya-val-down_position').textContent = this.value"
+                            onchange="tuyaSetOption('down_position', this.value)">
+                        <span id="tuya-val-down_position" style="font-family: monospace; font-size: 0.8rem; min-width: 2.5rem;"></span>
+                    </div>
+                </div>
+
+                <div class="setting-row" id="tuya-row-hold_time">
+                    <div class="setting-info">
+                        <span class="setting-title">Hold time</span>
+                        <span class="setting-desc">Seconds to hold the press — push mode only</span>
+                    </div>
+                    <div class="setting-control">
+                        <input type="number" id="tuya-opt-hold_time" min="0" max="10" step="1"
+                            onchange="tuyaSetOption('hold_time', this.value)"
+                            style="width: 4rem; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--text-muted); border-radius: 0.25rem; padding: 0.3rem;">
+                    </div>
+                </div>
+
+                <div class="setting-row" id="tuya-row-reverse_positions">
+                    <div class="setting-info">
+                        <span class="setting-title">Reverse direction</span>
+                        <span class="setting-desc">Swap which way the arm counts as pressed</span>
+                    </div>
+                    <div class="setting-control">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="tuya-opt-reverse_positions"
+                                onchange="tuyaSetOption('reverse_positions', this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="setting-row hidden" id="tuya-row-manual_control">
+                    <div class="setting-info">
+                        <span class="setting-title">Touch button</span>
+                        <span class="setting-desc">Fingerbot Plus only — enables the capacitive button on top</span>
+                    </div>
+                    <div class="setting-control">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="tuya-opt-manual_control"
+                                onchange="tuyaSetOption('manual_control', this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
             <!-- Activity Log moved to Diagnostics view -->
 
             <div class="terminal-prompt">
@@ -3695,6 +3828,941 @@ Example format:
                 if (bot && bot.gatt.connected) bot.gatt.disconnect();
                 switchbotBusy = false;
                 if (btn) btn.disabled = false;
+            }
+        }
+
+        // ========== TUYA BLE SWITCH ROBOT (Fingerbot, ADSBB201) ==========
+        // A second button pusher, next to the SwitchBot one, for anything the
+        // station cannot reach itself — the wall switch feeding its charger, say.
+        // It speaks Tuya's own encrypted local protocol rather than SwitchBot's
+        // plaintext one. Protocol per PROTOCOL.md §9; the reference implementation
+        // is PlusPlus-ua/ha_tuya_ble (MIT), which this follows but does not copy.
+        //
+        // device_id / uuid / local_key / product_id only exist in Tuya's cloud
+        // once the Smart Life app has paired the device, so they are pasted in
+        // once (Settings drawer below). Everything after that is local and
+        // offline — no cloud call is ever made from here.
+        const TUYA_SERVICE = '0000a201-0000-1000-8000-00805f9b34fb';
+        const TUYA_NOTIFY_UUID = '00002b10-0000-1000-8000-00805f9b34fb';
+        const TUYA_WRITE_UUID = '00002b11-0000-1000-8000-00805f9b34fb';
+        const TUYA_MTU = 20;
+
+        const TUYA_CODE = {
+            DEVICE_INFO: 0x0000,
+            PAIR: 0x0001,
+            DPS: 0x0002,
+            DEVICE_STATUS: 0x0003,
+            RECEIVE_DP: 0x8001,
+            RECEIVE_TIME_DP: 0x8003,
+            RECEIVE_SIGN_DP: 0x8004,
+            RECEIVE_SIGN_TIME_DP: 0x8005,
+            RECEIVE_DP_V4: 0x8006,
+            RECEIVE_TIME_DP_V4: 0x8007,
+            RECEIVE_TIME1_REQ: 0x8011,
+            RECEIVE_TIME2_REQ: 0x8012,
+        };
+
+        const TUYA_DT = { RAW: 0, BOOL: 1, VALUE: 2, STRING: 3, ENUM: 4, BITMAP: 5 };
+
+        // Datapoint maps are data, not logic: a new product id only ever needs a
+        // row here. Written out in full rather than spread from one another so
+        // the tests can evaluate each table standalone.
+        const TUYA_DP_TABLES = {
+            fingerbot: {
+                switch: { dp: 2, type: 1 },
+                mode: { dp: 8, type: 4, values: ['push', 'switch', 'program'] },
+                down_position: { dp: 9, type: 2, min: 51, max: 100 },
+                hold_time: { dp: 10, type: 2, min: 0, max: 10 },
+                reverse_positions: { dp: 11, type: 1 },
+                battery: { dp: 12, type: 2, readonly: true },
+                up_position: { dp: 15, type: 2, min: 0, max: 50 }
+            },
+            fingerbot_plus: {
+                switch: { dp: 2, type: 1 },
+                mode: { dp: 8, type: 4, values: ['push', 'switch', 'program'] },
+                down_position: { dp: 9, type: 2, min: 51, max: 100 },
+                hold_time: { dp: 10, type: 2, min: 0, max: 10 },
+                reverse_positions: { dp: 11, type: 1 },
+                battery: { dp: 12, type: 2, readonly: true },
+                up_position: { dp: 15, type: 2, min: 0, max: 50 },
+                manual_control: { dp: 17, type: 1 },
+                program: { dp: 121, type: 0 }
+            },
+            cubetouch: {
+                switch: { dp: 1, type: 1 },
+                mode: { dp: 2, type: 4, values: ['push', 'switch', 'program'] },
+                hold_time: { dp: 3, type: 2, min: 0, max: 10 },
+                reverse_positions: { dp: 4, type: 1 },
+                up_position: { dp: 5, type: 2, min: 0, max: 100 },
+                down_position: { dp: 6, type: 2, min: 0, max: 100 },
+                battery_charging: { dp: 7, type: 4, readonly: true, values: ['not_charging', 'charging', 'charged'] },
+                battery: { dp: 8, type: 2, readonly: true }
+            }
+        };
+
+        const TUYA_PRODUCT_TABLES = {
+            ltak7e1p: 'fingerbot', y6kttvd6: 'fingerbot', yrnk7mnn: 'fingerbot',
+            nvr2rocq: 'fingerbot', bnt7wajf: 'fingerbot', rvdceqjh: 'fingerbot',
+            '5xhbk964': 'fingerbot', bs3ubslo: 'fingerbot',
+            blliqpsj: 'fingerbot_plus', ndvkgsrm: 'fingerbot_plus',
+            yiihr7zh: 'fingerbot_plus', neq16kgd: 'fingerbot_plus',
+            '3yqdo5yt': 'cubetouch', xhf790if: 'cubetouch'
+        };
+
+        // An unknown product id gets the plain Fingerbot map rather than an error:
+        // ADSBB201 is a Fingerbot-class device whichever id it reports, and the
+        // panel says out loud that the map is a guess (see renderTuyaPanel).
+        function tuyaDpTable(creds) {
+            const table = TUYA_PRODUCT_TABLES[(creds && creds.product_id) || ''];
+            return TUYA_DP_TABLES[table] || TUYA_DP_TABLES.fingerbot;
+        }
+
+        function tuyaProductKnown(creds) {
+            return !!TUYA_PRODUCT_TABLES[(creds && creds.product_id) || ''];
+        }
+
+        // ---- primitives ----
+
+        // WebCrypto has no MD5, and Tuya's key derivation is built on it. It is
+        // not there for security, so this is a straight implementation, not a
+        // weakness to be "fixed" with SHA.
+        const MD5_S = [7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
+            5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20,
+            4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23,
+            6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21];
+
+        function md5(bytes) {
+            const K = new Uint32Array(64);
+            for (let i = 0; i < 64; i++) K[i] = Math.floor(Math.abs(Math.sin(i + 1)) * 4294967296) >>> 0;
+
+            const len = bytes.length;
+            const buf = new Uint8Array((((len + 8) >> 6) + 1) << 6);
+            buf.set(bytes);
+            buf[len] = 0x80;
+            const dv = new DataView(buf.buffer);
+            dv.setUint32(buf.length - 8, (len * 8) >>> 0, true);
+            dv.setUint32(buf.length - 4, Math.floor(len * 8 / 4294967296), true);
+
+            let a0 = 0x67452301, b0 = 0xefcdab89, c0 = 0x98badcfe, d0 = 0x10325476;
+            const m = new Uint32Array(16);
+            for (let off = 0; off < buf.length; off += 64) {
+                for (let i = 0; i < 16; i++) m[i] = dv.getUint32(off + i * 4, true);
+                let A = a0, B = b0, C = c0, D = d0;
+                for (let i = 0; i < 64; i++) {
+                    let F, g;
+                    if (i < 16) { F = (B & C) | (~B & D); g = i; }
+                    else if (i < 32) { F = (D & B) | (~D & C); g = (5 * i + 1) & 15; }
+                    else if (i < 48) { F = B ^ C ^ D; g = (3 * i + 5) & 15; }
+                    else { F = C ^ (B | ~D); g = (7 * i) & 15; }
+                    F = (F + A + K[i] + m[g]) >>> 0;
+                    A = D; D = C; C = B;
+                    B = (B + ((F << MD5_S[i]) | (F >>> (32 - MD5_S[i])))) >>> 0;
+                }
+                a0 = (a0 + A) >>> 0; b0 = (b0 + B) >>> 0; c0 = (c0 + C) >>> 0; d0 = (d0 + D) >>> 0;
+            }
+            const out = new Uint8Array(16);
+            const odv = new DataView(out.buffer);
+            odv.setUint32(0, a0, true); odv.setUint32(4, b0, true);
+            odv.setUint32(8, c0, true); odv.setUint32(12, d0, true);
+            return out;
+        }
+
+        function tuyaConcat(...parts) {
+            const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
+            let at = 0;
+            for (const p of parts) { out.set(p, at); at += p.length; }
+            return out;
+        }
+
+        function tuyaBytes(str) {
+            return new TextEncoder().encode(str);
+        }
+
+        // Tuya zero-pads to the block size; crypto.subtle can only do PKCS#7. On
+        // encrypt the input is already a multiple of 16, so subtle appends one
+        // whole block of padding and nothing else — dropping its ciphertext
+        // leaves exactly the zero-padded frame the device expects.
+        async function tuyaAesEncrypt(rawKey, iv, plaintext) {
+            const key = await crypto.subtle.importKey('raw', rawKey, { name: 'AES-CBC' }, false, ['encrypt']);
+            const out = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-CBC', iv }, key, plaintext));
+            return out.slice(0, out.length - 16);
+        }
+
+        // Decrypt is the same problem backwards: subtle rejects a zero-padded
+        // ciphertext because the final block is not valid PKCS#7. Appending a
+        // block that decrypts to a full pad (0x10 ×16) satisfies it, and CBC
+        // chaining leaves every earlier block untouched.
+        async function tuyaAesDecrypt(rawKey, iv, ciphertext) {
+            const key = await crypto.subtle.importKey('raw', rawKey, { name: 'AES-CBC' }, false, ['encrypt', 'decrypt']);
+            const last = ciphertext.slice(ciphertext.length - 16);
+            const target = new Uint8Array(16);
+            for (let i = 0; i < 16; i++) target[i] = last[i] ^ 0x10;
+            const forged = new Uint8Array(
+                await crypto.subtle.encrypt({ name: 'AES-CBC', iv: new Uint8Array(16) }, key, target)
+            ).slice(0, 16);
+            const padded = tuyaConcat(ciphertext, forged);
+            return new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-CBC', iv }, key, padded));
+        }
+
+        function tuyaCrc16(data) {
+            let crc = 0xffff;
+            for (const byte of data) {
+                crc ^= byte & 0xff;
+                for (let i = 0; i < 8; i++) {
+                    const lsb = crc & 1;
+                    crc >>>= 1;
+                    if (lsb) crc ^= 0xa001;
+                }
+            }
+            return crc;
+        }
+
+        function tuyaPackInt(value) {
+            const out = [];
+            for (; ;) {
+                let b = value & 0x7f;
+                value >>>= 7;
+                if (value) b |= 0x80;
+                out.push(b);
+                if (!value) break;
+            }
+            return new Uint8Array(out);
+        }
+
+        function tuyaUnpackInt(bytes, start) {
+            let result = 0, shift = 0, i = start;
+            for (; ;) {
+                if (i >= bytes.length) throw new Error('varint truncated');
+                if (i - start >= 5) throw new Error('varint longer than 5 bytes');
+                const b = bytes[i++];
+                result |= (b & 0x7f) << shift;
+                if (!(b & 0x80)) break;
+                shift += 7;
+            }
+            return [result >>> 0, i];
+        }
+
+        // ---- framing ----
+
+        async function tuyaBuildPackets(seq, code, data, key, responseTo = 0) {
+            const head = new Uint8Array(12);
+            const hdv = new DataView(head.buffer);
+            hdv.setUint32(0, seq);
+            hdv.setUint32(4, responseTo);
+            hdv.setUint16(8, code);
+            hdv.setUint16(10, data.length);
+
+            const body = tuyaConcat(head, data);
+            const crc = tuyaCrc16(body);
+            const withCrc = tuyaConcat(body, new Uint8Array([(crc >> 8) & 0xff, crc & 0xff]));
+            const plain = new Uint8Array(withCrc.length + (16 - (withCrc.length % 16)));
+            plain.set(withCrc);
+
+            const iv = crypto.getRandomValues(new Uint8Array(16));
+            const blob = tuyaConcat(
+                new Uint8Array([code === TUYA_CODE.DEVICE_INFO ? 0x04 : 0x05]),
+                iv,
+                await tuyaAesEncrypt(key, iv, plain)
+            );
+
+            const packets = [];
+            let pos = 0, num = 0;
+            while (pos < blob.length) {
+                let header = tuyaPackInt(num);
+                if (num === 0) {
+                    header = tuyaConcat(header, tuyaPackInt(blob.length), new Uint8Array([3 << 4]));
+                }
+                const part = blob.slice(pos, pos + TUYA_MTU - header.length);
+                packets.push(tuyaConcat(header, part));
+                pos += part.length;
+                num++;
+            }
+            return packets;
+        }
+
+        async function tuyaParseFrame(blob, keys) {
+            const key = keys[blob[0]];
+            if (!key) throw new Error(`unknown security flag 0x${blob[0].toString(16)}`);
+            const raw = await tuyaAesDecrypt(key, blob.slice(1, 17), blob.slice(17));
+            if (raw.length < 14) throw new Error('frame shorter than its header');
+
+            const dv = new DataView(raw.buffer, raw.byteOffset, raw.byteLength);
+            const length = dv.getUint16(10);
+            const end = 12 + length;
+            if (end + 2 > raw.length) throw new Error('frame length runs past the packet');
+            if (tuyaCrc16(raw.slice(0, end)) !== ((raw[end] << 8) | raw[end + 1])) {
+                throw new Error('CRC mismatch');
+            }
+            return {
+                seq: dv.getUint32(0),
+                responseTo: dv.getUint32(4),
+                code: dv.getUint16(8),
+                data: raw.slice(12, end)
+            };
+        }
+
+        function tuyaNewReassembler() {
+            return { expected: 0, total: 0, parts: [] };
+        }
+
+        // Returns the finished blob, or null while more fragments are due. Any
+        // gap or overrun drops the buffer rather than assembling a frame that
+        // would only fail its CRC further down.
+        function tuyaFeedFragment(state, packet) {
+            let [num, at] = tuyaUnpackInt(packet, 0);
+            // Fragment 0 always starts a new frame, even mid-reassembly. The
+            // reference discards it as out of order instead, which loses the
+            // whole of a retransmission rather than just the abandoned frame.
+            if (num !== state.expected && num !== 0) {
+                state.parts = [];
+                state.expected = 0;
+                return null;
+            }
+            if (num === 0) {
+                state.parts = [];
+                state.expected = 0;
+                const [total, next] = tuyaUnpackInt(packet, at);
+                state.total = total;
+                at = next + 1;
+            }
+            state.parts.push(packet.slice(at));
+            state.expected++;
+
+            const joined = tuyaConcat(...state.parts);
+            if (joined.length < state.total) return null;
+            state.parts = [];
+            state.expected = 0;
+            return joined.length === state.total ? joined : null;
+        }
+
+        // ---- datapoints ----
+
+        function tuyaEncodeDps(records) {
+            const out = [];
+            for (const { dp, type, value } of records) {
+                let bytes;
+                if (type === TUYA_DT.BOOL) {
+                    bytes = new Uint8Array([value ? 1 : 0]);
+                } else if (type === TUYA_DT.VALUE) {
+                    bytes = new Uint8Array(4);
+                    new DataView(bytes.buffer).setInt32(0, value);
+                } else if (type === TUYA_DT.ENUM) {
+                    const n = value < 0 ? 4 : value > 0xffff ? 4 : value > 0xff ? 2 : 1;
+                    bytes = new Uint8Array(n);
+                    for (let i = 0; i < n; i++) bytes[n - 1 - i] = (value >> (8 * i)) & 0xff;
+                } else if (type === TUYA_DT.STRING) {
+                    bytes = tuyaBytes(String(value));
+                } else {
+                    bytes = value instanceof Uint8Array ? value : new Uint8Array(value);
+                }
+                out.push(tuyaConcat(new Uint8Array([dp, type, bytes.length]), bytes));
+            }
+            return tuyaConcat(...out);
+        }
+
+        // Returns { dps, leftover } for a clean run of records, or null if the
+        // bytes at `offset` are not one. Callers use that null to try a
+        // different offset — see tuyaReadDpReport.
+        function tuyaDecodeDps(data, offset = 0) {
+            const dps = {};
+            let i = offset;
+            while (data.length - i >= 4) {
+                const dp = data[i], type = data[i + 1], len = data[i + 2];
+                if (type > TUYA_DT.BITMAP) return null;
+                const next = i + 3 + len;
+                if (next > data.length) return null;
+                const raw = data.slice(i + 3, next);
+                let value;
+                if (type === TUYA_DT.BOOL) {
+                    value = raw.some(b => b !== 0);
+                } else if (type === TUYA_DT.VALUE || type === TUYA_DT.ENUM) {
+                    value = 0;
+                    for (const b of raw) value = value * 256 + b;
+                    // The declared length varies per datapoint, so sign-extend
+                    // from whatever width actually arrived.
+                    const bits = len * 8;
+                    if (bits > 0 && bits < 32 && value >= 2 ** (bits - 1)) value -= 2 ** bits;
+                } else if (type === TUYA_DT.STRING) {
+                    value = new TextDecoder().decode(raw);
+                } else {
+                    value = raw;
+                }
+                dps[dp] = { type, value };
+                i = next;
+            }
+            return { dps, leftover: data.length - i };
+        }
+
+        // The reference implementation reads the signed-report flags byte at
+        // offset 2 and then parses records from offset 2 as well, while its
+        // timestamped variant parses from 3 — the two cannot both be right. So
+        // rather than pick, try each candidate and keep the one whose records
+        // consume the payload exactly.
+        function tuyaReadDpReport(data, offsets) {
+            let loose = null;
+            for (const offset of offsets) {
+                const attempt = tuyaDecodeDps(data, offset);
+                if (!attempt) continue;
+                if (attempt.leftover === 0) return attempt.dps;
+                if (!loose) loose = attempt.dps;
+            }
+            return loose || {};
+        }
+
+        // Only the end position matters here; the device's clock is not used.
+        function tuyaSkipTimestamp(data, pos) {
+            const type = data[pos];
+            if (type === 0) return pos + 14;
+            if (type === 1) return pos + 5;
+            throw new Error(`unknown timestamp format ${type}`);
+        }
+
+        // Hundredths of an hour east of UTC, matching Python's -timezone/36.
+        function tuyaTimezoneUnits(date = new Date()) {
+            return Math.round(-date.getTimezoneOffset() * 100 / 60) || 0;
+        }
+
+        // ---- session ----
+
+        let tuyaCreds = null;
+        try { tuyaCreds = JSON.parse(localStorage.getItem('POWER-tuya-creds')); } catch (e) { }
+        let tuyaSaved = null;
+        try { tuyaSaved = JSON.parse(localStorage.getItem('POWER-tuya')); } catch (e) { }
+        let tuyaState = {};
+        try { tuyaState = JSON.parse(localStorage.getItem('POWER-tuya-state')) || {}; } catch (e) { }
+        let tuyaBusy = false;
+        let tuyaShowAllNext = false;
+        let tuyaSession = null;
+
+        function tuyaStatus(msg) {
+            const el = document.getElementById('tuya-status');
+            if (el) el.textContent = msg;
+        }
+
+        // The device reports its state back the moment a press lands, and that
+        // re-render would wipe the outcome the user just asked for. So a result
+        // holds the line for a few seconds before the summary returns.
+        let tuyaResultText = '';
+        let tuyaResultUntil = 0;
+
+        function tuyaShowResult(text) {
+            tuyaResultText = text;
+            tuyaResultUntil = Date.now() + 6000;
+            tuyaStatus(text);
+            setTimeout(renderTuyaPanel, 6100);
+        }
+
+        function tuyaCredsComplete(c) {
+            return !!(c && c.device_id && c.uuid && c.local_key && c.local_key.length >= 6);
+        }
+
+        function tuyaSaveState() {
+            localStorage.setItem('POWER-tuya-state', JSON.stringify(tuyaState));
+        }
+
+        // Every DP report, solicited or not, lands here so the panel and the
+        // config drawer read from one place.
+        function tuyaApplyDps(found) {
+            const table = tuyaDpTable(tuyaCreds);
+            for (const [name, spec] of Object.entries(table)) {
+                const hit = found[spec.dp];
+                if (!hit) continue;
+                if (spec.values && typeof hit.value === 'number') {
+                    tuyaState[name] = spec.values[hit.value] !== undefined ? spec.values[hit.value] : hit.value;
+                } else if (hit.value instanceof Uint8Array) {
+                    continue;
+                } else {
+                    tuyaState[name] = hit.value;
+                }
+            }
+            tuyaState.ts = Date.now();
+            tuyaSaveState();
+            renderTuyaPanel();
+            renderTuyaConfig();
+        }
+
+        function tuyaWrite(bytes) {
+            const char = tuyaSession.writeChar;
+            if (char.properties && char.properties.writeWithoutResponse && char.writeValueWithoutResponse) {
+                return char.writeValueWithoutResponse(bytes);
+            }
+            return char.writeValueWithResponse ? char.writeValueWithResponse(bytes) : char.writeValue(bytes);
+        }
+
+        async function tuyaSend(code, data, responseTo = 0) {
+            const s = tuyaSession;
+            const seq = s.seq++;
+            const key = code === TUYA_CODE.DEVICE_INFO ? s.loginKey : s.sessionKey;
+            for (const packet of await tuyaBuildPackets(seq, code, data, key, responseTo)) {
+                await tuyaWrite(packet);
+            }
+            return seq;
+        }
+
+        function tuyaAwait(seq, timeoutMs = 10000) {
+            return new Promise((resolve, reject) => {
+                const timer = setTimeout(() => {
+                    tuyaSession.pending.delete(seq);
+                    reject(new Error('the Switch Robot did not answer in time'));
+                }, timeoutMs);
+                tuyaSession.pending.set(seq, frame => { clearTimeout(timer); resolve(frame); });
+            });
+        }
+
+        async function tuyaRequest(code, data, timeoutMs) {
+            const seq = await tuyaSend(code, data);
+            return tuyaAwait(seq, timeoutMs);
+        }
+
+        function tuyaOnNotify(event) {
+            const s = tuyaSession;
+            if (!s) return;
+            const value = event.target.value;
+            const packet = new Uint8Array(value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength));
+            let blob;
+            try {
+                blob = tuyaFeedFragment(s.rx, packet);
+            } catch (e) {
+                log(`Switch Robot: dropped a malformed fragment (${e.message})`);
+                return;
+            }
+            if (!blob) return;
+
+            tuyaParseFrame(blob, s.keys)
+                .then(frame => tuyaHandleFrame(frame))
+                .catch(e => log(`Switch Robot: could not read a packet (${e.message})`));
+        }
+
+        // Builds the reply to a device clock request. TIME1 wants the epoch in
+        // milliseconds as ASCII, TIME2 the broken-down local time; both end with
+        // the UTC offset. Python's tm_wday counts from Monday, JS from Sunday.
+        function tuyaTimeReply(code, now = new Date()) {
+            const zone = tuyaTimezoneUnits(now);
+            const zoneBytes = new Uint8Array(2);
+            new DataView(zoneBytes.buffer).setInt16(0, zone);
+            if (code === TUYA_CODE.RECEIVE_TIME1_REQ) {
+                return tuyaConcat(tuyaBytes(String(now.getTime())), zoneBytes);
+            }
+            return tuyaConcat(new Uint8Array([
+                now.getFullYear() % 100, now.getMonth() + 1, now.getDate(),
+                now.getHours(), now.getMinutes(), now.getSeconds(), (now.getDay() + 6) % 7
+            ]), zoneBytes);
+        }
+
+        // Unsolicited traffic is handled before the response is matched, because
+        // a report can arrive carrying a response_to as well. Skipping the acks
+        // makes the device retry and then drop the link.
+        function tuyaHandleFrame(frame) {
+            const s = tuyaSession;
+            if (!s) return;
+            const ackSign = () => {
+                const ack = new Uint8Array([frame.data[0], frame.data[1], frame.data[2], 0]);
+                tuyaSend(frame.code, ack, frame.seq).catch(() => { });
+            };
+            try {
+                if (frame.code === TUYA_CODE.RECEIVE_DP) {
+                    tuyaApplyDps(tuyaReadDpReport(frame.data, [0]));
+                    tuyaSend(frame.code, new Uint8Array(0), frame.seq).catch(() => { });
+                } else if (frame.code === TUYA_CODE.RECEIVE_SIGN_DP) {
+                    tuyaApplyDps(tuyaReadDpReport(frame.data, [3, 2]));
+                    ackSign();
+                } else if (frame.code === TUYA_CODE.RECEIVE_TIME_DP) {
+                    tuyaApplyDps(tuyaReadDpReport(frame.data, [tuyaSkipTimestamp(frame.data, 0)]));
+                    tuyaSend(frame.code, new Uint8Array(0), frame.seq).catch(() => { });
+                } else if (frame.code === TUYA_CODE.RECEIVE_SIGN_TIME_DP) {
+                    tuyaApplyDps(tuyaReadDpReport(frame.data, [tuyaSkipTimestamp(frame.data, 3)]));
+                    ackSign();
+                } else if (frame.code === TUYA_CODE.RECEIVE_TIME1_REQ || frame.code === TUYA_CODE.RECEIVE_TIME2_REQ) {
+                    tuyaSend(frame.code, tuyaTimeReply(frame.code), frame.seq).catch(() => { });
+                } else if (frame.code === TUYA_CODE.RECEIVE_DP_V4 || frame.code === TUYA_CODE.RECEIVE_TIME_DP_V4) {
+                    log('Switch Robot: the device is speaking protocol v4, which this app does not implement.');
+                }
+            } catch (e) {
+                log(`Switch Robot: could not read a device report (${e.message})`);
+            }
+
+            const waiter = s.pending.get(frame.responseTo);
+            if (waiter) {
+                s.pending.delete(frame.responseTo);
+                waiter(frame);
+            }
+        }
+
+        // uuid, then the six key bytes, then the device id, zero-padded to 44.
+        function tuyaPairingBlob(creds) {
+            const blob = new Uint8Array(44);
+            const uuid = tuyaBytes(creds.uuid);
+            const key6 = tuyaBytes(creds.local_key.slice(0, 6));
+            blob.set(uuid.slice(0, 16), 0);
+            blob.set(key6.slice(0, 6), uuid.length);
+            blob.set(tuyaBytes(creds.device_id).slice(0, 20), uuid.length + key6.length);
+            return blob;
+        }
+
+        async function tuyaHandshake() {
+            const s = tuyaSession;
+            const key6 = tuyaBytes(tuyaCreds.local_key.slice(0, 6));
+            s.loginKey = md5(key6);
+            s.keys = { 4: s.loginKey };
+            s.seq = 1;
+
+            const info = await tuyaRequest(TUYA_CODE.DEVICE_INFO, new Uint8Array(0));
+            if (info.data.length < 46) throw new Error('device info reply was too short');
+            if (info.data[2] !== 3) {
+                throw new Error(`device speaks protocol v${info.data[2]}, this app only implements v3`);
+            }
+            s.sessionKey = md5(tuyaConcat(key6, info.data.slice(6, 12)));
+            s.keys = { 1: info.data.slice(14, 46), 4: s.loginKey, 5: s.sessionKey };
+
+            const pair = await tuyaRequest(TUYA_CODE.PAIR, tuyaPairingBlob(tuyaCreds));
+            const result = pair.data[0];
+            if (result !== 0 && result !== 2) {
+                throw new Error(result === 1
+                    ? 'the device rejected the credentials — check local_key and device_id'
+                    : `pairing was refused (code ${result})`);
+            }
+        }
+
+        // Sleepy device: connect, do the thing, drop. A held-open link or a
+        // reconnect loop is what flattened the battery in the original Home
+        // Assistant integration, so there is deliberately neither here.
+        async function tuyaDisconnect() {
+            const s = tuyaSession;
+            tuyaSession = null;
+            if (!s) return;
+            try {
+                if (s.notifyChar) s.notifyChar.removeEventListener('characteristicvaluechanged', tuyaOnNotify);
+                if (s.device && s.device.gatt.connected) s.device.gatt.disconnect();
+            } catch (e) { }
+        }
+
+        async function tuyaFindChars(server) {
+            try {
+                const svc = await server.getPrimaryService(TUYA_SERVICE);
+                return {
+                    write: await svc.getCharacteristic(TUYA_WRITE_UUID),
+                    notify: await svc.getCharacteristic(TUYA_NOTIFY_UUID)
+                };
+            } catch (e) { }
+            for (const svc of await server.getPrimaryServices()) {
+                try {
+                    return {
+                        write: await svc.getCharacteristic(TUYA_WRITE_UUID),
+                        notify: await svc.getCharacteristic(TUYA_NOTIFY_UUID)
+                    };
+                } catch (e) { }
+            }
+            throw new Error('the Tuya BLE characteristics are missing — is this a Switch Robot?');
+        }
+
+        // Opens a session and runs `action` against it, then always drops the
+        // link. `device` must already be picked, because the chooser has to be
+        // reached before anything awaits (same user-activation rule as connect()).
+        async function tuyaWithSession(dev, action) {
+            tuyaStatus('Connecting to the Switch Robot...');
+            const timeout = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Timeout (10s) — is the Switch Robot in range?')), 10000));
+            const server = dev.gatt.connected ? dev.gatt : await Promise.race([dev.gatt.connect(), timeout]);
+            const chars = await tuyaFindChars(server);
+
+            tuyaSession = {
+                device: dev, writeChar: chars.write, notifyChar: chars.notify,
+                seq: 1, pending: new Map(), rx: tuyaNewReassembler(), keys: {}
+            };
+            try {
+                chars.notify.addEventListener('characteristicvaluechanged', tuyaOnNotify);
+                await chars.notify.startNotifications();
+                tuyaStatus('Authenticating...');
+                await tuyaHandshake();
+                return await action();
+            } finally {
+                await tuyaDisconnect();
+            }
+        }
+
+        // Picks the paired Switch Robot, or opens the chooser. Kept synchronous
+        // up to requestDevice() so the tap's activation survives (invariant 3).
+        function tuyaPickDevice() {
+            if (tuyaSaved) {
+                const known = grantedDevices.find(d => d.id === tuyaSaved.id);
+                if (known) return Promise.resolve(known);
+            }
+            const showAll = tuyaShowAllNext;
+            tuyaShowAllNext = false;
+            log('Requesting Tuya Switch Robot...');
+            tuyaStatus('Pick your Switch Robot in the device chooser...');
+            return navigator.bluetooth.requestDevice(showAll
+                ? { acceptAllDevices: true, optionalServices: [TUYA_SERVICE] }
+                : {
+                    filters: [{ services: [TUYA_SERVICE] }, { namePrefix: 'Fingerbot' }, { namePrefix: 'Switch Robot' }],
+                    optionalServices: [TUYA_SERVICE]
+                }
+            ).then(dev => {
+                tuyaSaved = { id: dev.id, name: dev.name || 'Switch Robot' };
+                localStorage.setItem('POWER-tuya', JSON.stringify(tuyaSaved));
+                log(`Paired Switch Robot: ${tuyaSaved.name}`);
+                refreshGrantedDevices();
+                renderTuyaPanel();
+                return dev;
+            });
+        }
+
+        // Wraps one connect-and-act round: guards, chooser, errors, button state.
+        async function tuyaRun(label, action) {
+            if (tuyaBusy) return;
+            if (!navigator.bluetooth) {
+                log('Web Bluetooth is not supported in this browser. Safari (Mac and iPhone) does not support it — use Chrome or Edge on desktop/Android, or the Bluefy browser on iOS.');
+                showToast('Web Bluetooth not supported — use Chrome/Edge (or Bluefy on iOS)', 'error');
+                return;
+            }
+            if (!tuyaCredsComplete(tuyaCreds)) {
+                tuyaStatus('Tuya credentials needed — tap ⚙ to paste them');
+                showToast('Switch Robot needs its Tuya credentials first', 'error');
+                showTuyaConfig(true);
+                return;
+            }
+
+            tuyaBusy = true;
+            const btn = document.getElementById('btn-tuya-toggle');
+            if (btn) btn.disabled = true;
+            const started = Date.now();
+            let picked = null;
+            try {
+                picked = await tuyaPickDevice();
+                const result = await tuyaWithSession(picked, action);
+                tuyaShowResult(`${label} ✓ (${((Date.now() - started) / 1000).toFixed(1)}s)`);
+                return result;
+            } catch (error) {
+                if (error && error.name === 'NotFoundError' && !picked) {
+                    tuyaShowAllNext = true;
+                    tuyaShowResult('No device picked — tap again to search all nearby devices');
+                    log('No Switch Robot picked. If the chooser was empty, tap again to search without the Tuya service filter, and check the browser has Nearby devices/Location permission.');
+                } else {
+                    const msg = (error && error.message) || String(error);
+                    tuyaShowResult(`${label} failed: ${msg}`);
+                    log(`Switch Robot ${label.toLowerCase()} failed: ${msg}`);
+                    showToast(`Switch Robot ${label.toLowerCase()} failed — see log`, 'error');
+                }
+            } finally {
+                await tuyaDisconnect();
+                tuyaBusy = false;
+                if (btn) btn.disabled = false;
+                renderTuyaPanel();
+            }
+        }
+
+        // ---- actions ----
+
+        async function tuyaToggle() {
+            const table = tuyaDpTable(tuyaCreds);
+            // In push mode the device does the press and clears the DP itself, so
+            // `true` is always the right thing to send. In switch mode the DP is
+            // the arm's resting position, so a toggle has to invert it.
+            const next = tuyaState.mode === 'switch' ? !tuyaState.switch : true;
+            await tuyaRun(next ? 'Press' : 'Release', async () => {
+                await tuyaSend(TUYA_CODE.DPS, tuyaEncodeDps([
+                    { dp: table.switch.dp, type: table.switch.type, value: next }
+                ]));
+                tuyaState.switch = next;
+                tuyaState.ts = Date.now();
+                tuyaSaveState();
+                showToast(`Switch Robot: ${next ? 'pressed' : 'released'}`);
+                // The device reports the change back; give it a moment to arrive
+                // before the session is torn down.
+                await new Promise(r => setTimeout(r, 600));
+            });
+        }
+
+        async function tuyaRefresh() {
+            await tuyaRun('Refresh', async () => {
+                await tuyaSend(TUYA_CODE.DEVICE_STATUS, new Uint8Array(0));
+                await new Promise(r => setTimeout(r, 1200));
+            });
+        }
+
+        // Rejects the combinations the device silently ignores rather than
+        // letting the UI claim a write that never took effect.
+        function tuyaValidateOption(name, value, table, state) {
+            const spec = table[name];
+            if (!spec) return `${name} is not supported by this device`;
+            if (spec.readonly) return `${name} is read-only`;
+            if (name === 'hold_time' && state.mode && state.mode !== 'push') {
+                return 'Hold time only applies in push mode';
+            }
+            if ((name === 'up_position' || name === 'down_position') && state.mode === 'program') {
+                return 'Positions cannot be changed in program mode';
+            }
+            if (spec.min !== undefined && (value < spec.min || value > spec.max)) {
+                return `${name.replace('_', ' ')} must be between ${spec.min} and ${spec.max}`;
+            }
+            return null;
+        }
+
+        async function tuyaSetOption(name, rawValue) {
+            const table = tuyaDpTable(tuyaCreds);
+            const spec = table[name];
+            if (!spec) { showToast(`${name} is not supported by this device`, 'error'); return; }
+
+            let value = rawValue;
+            if (spec.values) {
+                value = spec.values.indexOf(rawValue);
+                if (value < 0) { showToast(`Unknown ${name}: ${rawValue}`, 'error'); return; }
+            } else if (spec.type === TUYA_DT.VALUE) {
+                value = parseInt(rawValue, 10);
+            }
+
+            const problem = tuyaValidateOption(name, spec.values ? rawValue : value, table, tuyaState);
+            if (problem) { showToast(problem, 'error'); tuyaStatus(problem); return; }
+
+            await tuyaRun(`Set ${name.replace(/_/g, ' ')}`, async () => {
+                await tuyaSend(TUYA_CODE.DPS, tuyaEncodeDps([{ dp: spec.dp, type: spec.type, value }]));
+                tuyaState[name] = spec.values ? rawValue : value;
+                tuyaState.ts = Date.now();
+                tuyaSaveState();
+                await new Promise(r => setTimeout(r, 600));
+                renderTuyaConfig();
+            });
+        }
+
+        // ---- credentials and panel ----
+
+        function tuyaForget() {
+            if (!confirm('Forget this Switch Robot, including its stored Tuya credentials?')) return;
+            tuyaCreds = null;
+            tuyaSaved = null;
+            tuyaState = {};
+            localStorage.removeItem('POWER-tuya-creds');
+            localStorage.removeItem('POWER-tuya');
+            localStorage.removeItem('POWER-tuya-state');
+            log('Switch Robot forgotten.');
+            renderTuyaPanel();
+            renderTuyaConfig();
+        }
+
+        // Accepts either a tinytuya devices.json (whole file, or one entry) or
+        // the flat field names, so a paste from any of the usual extractors works.
+        function tuyaParseCredentials(text) {
+            let parsed;
+            try {
+                parsed = JSON.parse(text);
+            } catch (e) {
+                throw new Error('that is not valid JSON');
+            }
+            const entry = Array.isArray(parsed) ? parsed[0] : parsed;
+            if (!entry || typeof entry !== 'object') throw new Error('no device object found');
+
+            const creds = {
+                device_id: entry.device_id || entry.id || '',
+                uuid: entry.uuid || '',
+                local_key: entry.local_key || entry.key || '',
+                product_id: entry.product_id || entry.productKey || '',
+                category: entry.category || 'szjqr',
+                mac: entry.mac || '',
+                name: entry.name || ''
+            };
+            const missing = ['device_id', 'uuid', 'local_key'].filter(k => !creds[k]);
+            if (missing.length) throw new Error(`missing ${missing.join(', ')}`);
+            if (creds.local_key.length < 6) throw new Error('local_key looks too short');
+            return creds;
+        }
+
+        function tuyaImportCredentials() {
+            const box = document.getElementById('tuya-creds-json');
+            if (!box) return;
+            try {
+                tuyaCreds = tuyaParseCredentials(box.value);
+                localStorage.setItem('POWER-tuya-creds', JSON.stringify(tuyaCreds));
+                box.value = '';
+                log(`Switch Robot credentials saved for ${tuyaCreds.device_id}.`);
+                showToast('Switch Robot credentials saved');
+                renderTuyaPanel();
+                renderTuyaConfig();
+            } catch (e) {
+                showToast(`Could not read those credentials: ${e.message}`, 'error');
+                tuyaStatus(`Credentials rejected: ${e.message}`);
+            }
+        }
+
+        function showTuyaConfig(show) {
+            const panel = document.getElementById('tuya-config');
+            if (!panel) return;
+            panel.classList.toggle('hidden', !show);
+            if (show) renderTuyaConfig();
+        }
+
+        function toggleTuyaConfig() {
+            const panel = document.getElementById('tuya-config');
+            if (panel) showTuyaConfig(panel.classList.contains('hidden'));
+        }
+
+        function renderTuyaPanel() {
+            const forget = document.getElementById('btn-tuya-forget');
+            if (forget) forget.classList.toggle('hidden', !tuyaCreds && !tuyaSaved);
+
+            const ready = tuyaCredsComplete(tuyaCreds);
+            const btn = document.getElementById('btn-tuya-toggle');
+            if (btn) {
+                // Same rule as the SwitchBot button: nothing that cannot act yet
+                // should outshout Connect.
+                btn.style.backgroundColor = ready ? 'var(--btn-blue)' : 'transparent';
+                btn.style.border = ready ? 'none' : '1px solid var(--text-muted)';
+                btn.style.color = ready ? '#fff' : 'var(--text-muted)';
+                btn.textContent = tuyaState.mode === 'switch' && tuyaState.switch ? 'Release' : 'Toggle';
+            }
+            if (tuyaBusy) return;
+            if (Date.now() < tuyaResultUntil) {
+                tuyaStatus(tuyaResultText);
+                return;
+            }
+
+            if (!ready) {
+                tuyaStatus('Paste Tuya credentials (⚙) to control a Switch Robot');
+                return;
+            }
+            const bits = [];
+            if (tuyaSaved) bits.push(tuyaSaved.name);
+            if (tuyaState.mode) bits.push(`${tuyaState.mode} mode`);
+            if (typeof tuyaState.battery === 'number') bits.push(`${tuyaState.battery}%`);
+            if (!tuyaProductKnown(tuyaCreds)) bits.push('assuming Fingerbot map');
+            tuyaStatus(bits.length ? bits.join(' · ') : 'Ready — tap Toggle to press');
+        }
+
+        function renderTuyaConfig() {
+            const panel = document.getElementById('tuya-config');
+            if (!panel || panel.classList.contains('hidden')) return;
+
+            const table = tuyaDpTable(tuyaCreds);
+            const known = document.getElementById('tuya-creds-known');
+            if (known) {
+                known.textContent = tuyaCredsComplete(tuyaCreds)
+                    ? `Stored: ${tuyaCreds.device_id} · ${tuyaCreds.product_id || 'no product id'}` +
+                    (tuyaProductKnown(tuyaCreds) ? '' : ' (unrecognised — using the Fingerbot datapoint map)')
+                    : 'No credentials stored yet.';
+            }
+
+            for (const [name, spec] of Object.entries(table)) {
+                const row = document.getElementById(`tuya-row-${name}`);
+                if (row) row.classList.remove('hidden');
+                const el = document.getElementById(`tuya-opt-${name}`);
+                if (!el || tuyaState[name] === undefined) continue;
+                if (el.type === 'checkbox') el.checked = !!tuyaState[name];
+                else el.value = String(tuyaState[name]);
+                const out = document.getElementById(`tuya-val-${name}`);
+                if (out) out.textContent = String(tuyaState[name]);
+                if (spec.min !== undefined) { el.min = spec.min; el.max = spec.max; }
+            }
+            // Rows for datapoints this product does not have stay hidden.
+            for (const name of ['manual_control', 'battery_charging']) {
+                const row = document.getElementById(`tuya-row-${name}`);
+                if (row && !table[name]) row.classList.add('hidden');
+            }
+            const batt = document.getElementById('tuya-battery');
+            if (batt) {
+                batt.textContent = typeof tuyaState.battery === 'number'
+                    ? `${tuyaState.battery}%${tuyaState.battery < 20 ? ' — charge it (USB-C)' : ''}`
+                    : 'unknown — tap Read state';
+                batt.style.color = typeof tuyaState.battery === 'number' && tuyaState.battery < 20
+                    ? 'var(--btn-red, #e5484d)' : 'var(--text-muted)';
             }
         }
 
@@ -7536,6 +8604,7 @@ Example format:
 
             renderKnownDevices();
             renderSwitchbotPanel();
+            renderTuyaPanel();
             updateEnergyStrip();
             refreshGrantedDevices().then(tryAutoConnect);
 

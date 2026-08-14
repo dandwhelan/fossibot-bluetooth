@@ -121,6 +121,45 @@ Chooser-free reconnect via `getDevices()` also needs
 `chrome://flags/#enable-web-bluetooth-new-permissions-backend` on some Chrome
 builds; without it the browser forgets the grant on every launch.
 
+## The Switch Robot (Tuya BLE Fingerbot)
+
+A second button pusher beside the SwitchBot one, for what the station cannot
+reach itself. It is the only encrypted protocol in the app, and four things
+about it are easy to break:
+
+1. **Zero padding, never PKCS#7.** `crypto.subtle` can only do PKCS#7, and a
+   frame padded that way is silently rejected by the device. `tuyaAesEncrypt()`
+   drops the padding block subtle appends; `tuyaAesDecrypt()` appends a block
+   that decrypts to a full pad so subtle will accept a zero-padded frame. Both
+   are pinned against Node's own no-padding AES in `test/tuya.test.mjs` —
+   round-tripping them against each other would hide a matched pair of bugs.
+2. **Only `local_key[:6]` is key material.** The full 16 chars derive a
+   valid-looking session key that never works.
+3. **Fragment headers are variable width.** The length varint on fragment 0
+   grows to two bytes past 127, moving the protocol-version byte along. Nothing
+   may index the header at a fixed offset — decode it.
+4. **Connect on demand, and drop the link.** No persistent connection, no
+   reconnect loop: that is what flattened the battery in the original Home
+   Assistant integration. `tuyaWithSession()` disconnects in a `finally`.
+
+`ADSBB201`'s Tuya `product_id` is unconfirmed. An unrecognised id falls back to
+the plain Fingerbot datapoint map and `renderTuyaPanel()` says "assuming
+Fingerbot map" — this is deliberate, since a Fingerbot-class device is what it
+is whichever id it reports. Correct it by adding a row to
+`TUYA_PRODUCT_TABLES`, never by adding logic: the maps are data.
+
+Credentials (`device_id`, `uuid`, `local_key`, `product_id`) only exist in
+Tuya's cloud after the Smart Life app has paired the device. They are pasted in
+once via the ⚙ drawer and kept in `localStorage['POWER-tuya-creds']`. There is
+no backend to hide them behind — the spec this was built from recommends a
+server-side BLE daemon, which this repo has no room for. Anyone with the browser
+profile has the key; that is the accepted cost of a static PWA, and it is worth
+saying plainly rather than papering over.
+
+Unverified against hardware: everything. The protocol layer is unit-tested and
+the handshake is driven end-to-end against a fake device in Playwright (see
+Verification), but no real Switch Robot has been in the loop.
+
 ## ⚠️ Register 68 brick hazard
 
 **Writing `0` to Settings Reg 68 (Machine Shutdown timer) permanently bricks
@@ -206,6 +245,12 @@ Line numbers drift with every change — search for the function name instead.
   details in `PROTOCOL.md` §8. Also the onclick for `.btn-switchbot-corner`,
   the bottom-left dashboard corner icon shown while disconnected — same
   function, no separate wiring.
+- `tuyaToggle()` / `renderTuyaPanel()` / `tuyaRun()` — the "Switch Robot" panel
+  directly below the SwitchBot one: a Tuya BLE Fingerbot (`ADSBB201`, category
+  `szjqr`), for a button the station cannot reach itself. Separate GATT
+  connection and `TUYA_*` constants; touches neither the power-station connect
+  path nor its command queue. Protocol details in `PROTOCOL.md` §9, and read
+  "The Switch Robot" below before changing any of it.
 - `.btn-switchbot-corner` / `.btn-poweroff-corner` — the bottom-left corner
   icon is the physical power button by proxy, toggled by `updateStatus()`
   exactly like `.btn-connect`/`.btn-disconnect`: `switchbotPress()` while
@@ -229,9 +274,10 @@ Line numbers drift with every change — search for the function name instead.
   builder, the Reg 68 brick guard, `handleNotification()` packet decoding,
   `checkAlerts()` notification rules, the four `connect()` invariants, the
   connection status copy and its card/dashboard swap, the Diag tab's register
-  formatting and JSON round trip, daily energy accounting, and `node --check`
-  over every inline `<script>` block. Still unverified: the history chart, the
-  appliance simulator, and the SwitchBot panel. To verify
+  formatting and JSON round trip, daily energy accounting, the Tuya BLE protocol
+  layer (crypto, framing, fragmentation, datapoint coding, validation), and
+  `node --check` over every inline `<script>` block. Still unverified: the
+  history chart, the appliance simulator, and the SwitchBot panel. To verify
   anything else:
   1. Add a test — `test/extract.mjs` harvests any top-level function out of
      `index.html` and evaluates it with stubs for its free variables, so pure
@@ -261,7 +307,14 @@ Line numbers drift with every change — search for the function name instead.
   logic, drive the real `index.html` in headless Chromium (Playwright is
   preinstalled) over `python3 -m http.server`, with `navigator.bluetooth`
   replaced via `addInitScript` by a stub exposing `getDevices()`,
-  `requestDevice()` and a fake `device.gatt`. Assert on *which* API calls
+  `requestDevice()` and a fake `device.gatt`. A stub can go further than
+  recording calls: the Switch Robot work drove the whole Tuya handshake against
+  a fake device that decrypts each frame and replies, which caught a real bug
+  (the success message being wiped by the state report that follows it). Make
+  such a stub hold its own state and report *that* back — one that replays a
+  canned answer will keep overwriting what the app just wrote and read as an app
+  bug. Playwright is not a repo dependency, so keep these scripts in the
+  scratchpad rather than in `test/`. Assert on *which* API calls
   happen — e.g. "tapping Connect reaches `requestDevice`" — and run the same
   script against `git show origin/main:index.html` to prove the bug existed
   before the fix. Note `.btn-connect` matches three elements, only one of
