@@ -59,7 +59,56 @@ Open in Chrome / Edge on Android, desktop, or Bluefy on iOS.
   between commands) to avoid "GATT operation already in progress".
   See the "Robot Restaurant" analogy at the bottom of `README.md`.
 
-## Connecting and device discovery
+### Platform Distinctions
+
+1. **Classic V0 Platform (Current Web App Primary Target):**
+   - Hardware: Fossibot F2400, F3600 Pro, Aferiy P210/P310, Sydpower N052/N066.
+   - Distinct Modbus register banks: Settings `0x1103` vs Status `0x1104`.
+   - Dedicated registers for timers, limits, and controls.
+2. **Next-Gen V1 Platform (`portable-power-station-v1`, `balcony-pv`, `switch-box`):**
+   - Advertises with `protocol_version >= 1`.
+   - Unified `se` register layout (Regs 24–30 for standby timers; Reg 86 for grid export).
+   - OpCode `0x05` (Reg 75) 15-bit bitmask (`systemState`) for rapid multi-state toggling (Solar self-consumption, grid feed-in pause, buzzer, AI energy, remote shutdown).
+   - 32-bit solar cumulative Wh meters (Regs 59–60) and RTC synchronization (Regs 97–99).
+   - Documented in `PROTOCOL.md` §9 for future V1 driver development.
+3. **DC-DC Auxiliary Battery Charger (`wp`):**
+   - Vehicle/camper dual-battery DC-DC charger (`DC_DC-V1-0083`).
+   - OpCodes `0x21` / `0x22`. Alternator telemetry, flameout/undervoltage protection. Documented in `PROTOCOL.md` §10.
+
+### Error Messages & Fault Detection Architecture
+
+### 3. ⚠️ Fault Code Classification & Flashing Alerts (Reg 8 & Reg 42)
+
+- **Vendor App Implementation:** The official app does not hardcode error strings. It queries `uniCloud` (`client/device/faultCode.getList`) for product-specific bitmasks (`byte_list` and `bit_list`). When any bit is active, it shows `device.tip-2` ("There is a device failure, click to view details") and navigates to `/pages/device/log` to display the timestamped messages.
+- **Hardware Register Mapping (Classic V0):**
+  - **Input Reg 8 (`errorCode`):** Only `78` (Inverter Fault) and `79` (Safety Lockout / Temp Protection) are real errors. Normal operating devices routinely broadcast `136` or other non-zero codes — **never treat `Reg 8 > 0` as a fault**.
+  - **Input Reg 42 (`protFlags`):** Lower bits (0–12) reflect normal output MOSFET state (`+984` when USB/DC active). Bits 13–14 (`0x6000`) are the **Critical Hardware Fault Mask**. Bit 15 (`0x8000`) is a non-critical warning latch.
+  - **Combined Classification:**
+    - If `Reg 8 == 79` and `(Reg 42 & 0x6000) > 0` → Hardware Fault (`Error 79` / Critical Hardware Failure). Forces Master Enable Reg 5 to 0.
+    - If `Reg 8 == 79` and `(Reg 42 & 0x6000) == 0` → `Temp Protection` (ambient thermal limit: &lt;0°C cold charge lockout or &gt;55°C high-heat pause).
+    - If `Reg 8 == 78` → `Inverter Fault` (AC inverter overload / trip; DC and solar MPPT remain operational).
+    - Otherwise → Normal operation (`#protectionWarning` hidden).
+  - **Flashing Visual Alerting:** When any real fault is detected, the UI `#protectionWarning` banner activates with a pulsing CSS keyframe animation (`fault-active-flash`), glowing continuously with a luminous red/amber pulse.
+- **DC-DC Fault Flags (Input Reg 7):**
+  - `Bit 3 (0x08)`: Starter battery undervoltage protection active (&lt; cutoff in Reg 14).
+  - `Bit 7 (0x80)`: Engine flameout vibration protection active (vehicle engine off).
+
+### 4. 🌀 Fan Speed Telemetry & Thermal Architecture
+- **Input Reg 69 (`fan_level`):** Reports active cooling fan speed stage from `0` to `5` (0 = off, 1 = low, 5 = max cooling). When `fan_level > 0`, the web app activates an animated spinning fan icon (`🌀.spinning`).
+- **Holding Reg 57 (`ac_silent_mode`):** Caps AC charging wattage (~50%) to silence fans.
+- **Temperature Architecture (Classic V0):**
+  - There is **no direct raw °C temperature register** in the Modbus BLE stream for V0 power stations.
+  - **Input Reg 52 is NOT temperature:** It is a hardware model ID (`180` = Aferiy, `0` = Fossibot).
+  - **Thermal State Code (Input Reg 21):** When disconnected from AC grid, value **`15`** indicates **Cold Temperature Protection** (&lt;0°C cell charging freeze lockout).
+  - **Thermal Lockout Code (Input Reg 8 = 79):** Indicates environmental thermal extreme (&gt;55°C or &lt;0°C).
+- **Temperature Architecture (DC-DC):**
+  - **Input Reg 6 (`deviceTemper`):** Signed 16-bit integer directly reporting heatsink/MOSFET temperature in **°C**.
+
+### ⏱️ Register 59 vs 62 Swap Warning
+
+- **Holding Reg 59 = USB Standby Timer** in **minutes** (5m, 10m, 30m, 1h, 2h, 8h, 10h, Never/0).
+- **Holding Reg 62 = Screen Timeout Timer** in **seconds** (60s, 180s, 300s, 600s, 1800s, 3600s, 7200s, 14400s, Never/0).
+*(Older community versions inverted these two, causing 10-minute screen timeouts [600s] to be misread as USB standby).*
 
 `connect(options)` serves both a user tap and the background auto-connect
 loop, and the two must not be confused. Four invariants, each of which has
@@ -132,28 +181,55 @@ Never relax this guard. Allowed values: 5, 10, 30, 60, 480.
 
 Sourced from `PROTOCOL.md` — treat that file as authoritative.
 
-| Reg | Name | Notes |
+### Settings Bank (`0x1103`) — Read/Write Configuration
+| Reg | Name | Description |
 | --- | --- | --- |
-| 8 (Status) | Error Code | **Only 78 (inverter fault) and 79 (safety lockout) are real faults.** Healthy devices report other non-zero values (e.g. 136). |
-| 13 | AC Charge Rate | 1–5 → ~300 to ~1100 W on F2400 EU |
-| 14 | AC Charge Max Limit (W) | 1500 (US) / 1100 (EU) |
-| 20 (Status) | Total Output Power | Use this for charging detection, not Reg 39 |
-| 21 (Status) | AC Input Voltage ×10 | Doubles as state code (15 = cold-temp protection) when no AC input |
-| 24/25/26 | USB / DC / AC output toggles | 0/1 |
-| 27 | Light Mode | 0=Off, 1=On, 2=Flash, 3=SOS |
-| 42 (Status) | Protection Flags bitmask | Critical mask is `0x6000`, but only meaningful combined with Reg 8 = 79. Lower bits are normal MOSFET state. |
-| 48 (Status) | System Status Flags | 0x8000=Charging, 0x4000=Standby |
-| 52 (Status) | Model marker | 180=Aferiy, 0=Fossibot. **Not temperature.** |
-| 56 (Status) | Main SOC | 0–1000, divide by 10 for % |
-| 57 | AC Silent Charging | 0/1. **Caps charge rate ~50% so the fan stays off.** |
-| 58 / 59 (Status) | Time to Full / Time to Empty | minutes |
-| 64 | Power Off command | write 1 to shut down |
-| 66 / 67 | Discharge / Charge limit | % × 10 |
-| 68 | Machine Shutdown timer | minutes — **see brick hazard above** |
-| 69 (Status) | Fan Level | 0–5 |
+| 0 | Factory Reset / Unbind | Write `1` to unbind and restore factory defaults |
+| 11 | Hardware Model ID | Regional hardware model identification |
+| 13 | AC Charge Rate Level | 1–5 → ~300W to ~1100W+ on F2400 EU |
+| 14 | AC Max Power Limit | 1500W (US) / 1100W (EU) |
+| 16 | AC Output Frequency | 500 = 50.0 Hz, 600 = 60.0 Hz |
+| 17 | Max Hardware Charge Current | Hardware ceiling in Amps (e.g. 20A) |
+| 20 | Configured Charge Current | User setting (3A to Reg 17 A) |
+| 24/25/26 | USB / DC / AC Output Toggles | 0/1 write |
+| 27 | LED Light Mode | 0=Off, 1=Low, 2=High, 3=SOS, 4=Flash |
+| 47–50 | Sub-MCU Firmware Versions | AC MCU (47), BMS MCU (48), PV MCU (49), DC/Panel MCU (50) |
+| 56 | Key Sound / Buzzer Tone | 1 = enabled, 0 = muted |
+| 57 | Silent Charging Toggle | 1 = silent mode (caps charge rate ~50% to silence fans) |
+| 59 | USB Standby Timer | Minutes: 5, 10, 30, 60, 120, 480, 600, 0=Never |
+| 60 | AC Standby Timer | Minutes: 60, 480, 960, 1440, 0=Never |
+| 61 | DC Standby Timer | Minutes: 60, 480, 960, 1440, 0=Never |
+| 62 | Screen Timeout Timer | **Seconds**: 60, 180, 300, 600, 1800, 3600, 7200, 14400, 0=Never |
+| 63 | Schedule Charge Delay | Minutes from now until charging starts. Write `0` to cancel |
+| 64 | Power Off Command | Write `1` to initiate device power shutdown |
+| 66 | Minimum Discharge Limit | DOD cutoff threshold (% × 10, e.g. 100 = 10%) |
+| 67 | UPS Charge Limit | Max charge ceiling (% × 10, e.g. 800 = 80%) |
+| 68 | Machine Shutdown Timer | Whole device idle auto-off. Minutes: 5, 10, 30, 60, 480. **NEVER WRITE 0 (BRICK HAZARD)** |
 
-There is **no documented register that exposes a numeric battery temperature**
-on F2400 or Aferiy as of the current PROTOCOL.md.
+### Status Bank (`0x1104`) — Read-Only Telemetry
+| Reg | Name | Description |
+| --- | --- | --- |
+| 3 | AC Input Power (Ratified) | Watts |
+| 4 | DC / Solar Input Power | Watts |
+| 6 | Total Input Power | Watts |
+| 7 | AC Grid Power | Signed 16-bit watts |
+| 8 | Error Code | **Only 78 (inverter fault) and 79 (safety lockout) are real faults.** Healthy devices report 136 or other non-zero codes |
+| 20 | Total Output Power | Watts (Authoritative for load/charging detection; Reg 39 is duplicate/uncalibrated) |
+| 21 | AC Input Voltage ×10 | Volts (also doubles as state code when unplugged: 15 = cold temp protection) |
+| 41 | Power Output & State Bitmask | Bit 2=AC Out, Bit 3=AC In, Bit 4=AC Charge, Bit 5=Low-PV In, Bit 6=Low-PV Charge, Bit 7=DC Out, Bit 8=Car In, Bit 9=USB Out, Bit 10=LED Out, Bit 13=Car Charge, Bit 14=High-PV In, Bit 15=High-PV Charge |
+| 42 | Protection & MOSFET Bitmask | Bits 0–12 = MOSFET drive status (`+984` normal when USB/DC active). Bits 13–14 (`0x6000`) = Critical HW Fault. Bit 15 (`0x8000`) = System Warning latch |
+| 48 | System Status Flags | Bit 15 (`0x8000`) = Charging, Bit 14 (`0x4000`) = Standby. Bit 3 (`0x0008`) is transient inverter switching |
+| 52 | Model Identifier | 180 = Aferiy, 0 = Fossibot. **Not battery temperature** |
+| 53 / 55 | Extension Battery 1 / 2 SOC | 0 = absent, otherwise `(raw - 10) / 10 = %` |
+| 54 | Battery Capacity | 0.1 Ah units (e.g. 400 = 40.0 Ah) |
+| 56 | Main Battery SOC | 0–1000, divide by 10 for % |
+| 57 | Schedule Charge Countdown | Remaining minutes until scheduled charge begins |
+| 58 | Time to Full | Minutes remaining until 100% |
+| 59 | Time to Empty | Minutes remaining at current load |
+| 66 / 67 | Extension Battery 3 / 4 SOC | 0 = absent, otherwise `(raw - 10) / 10 = %` |
+| 69 | Fan Speed Level | 0–5 |
+
+There is **no documented register that exposes numeric battery temperature** on F2400 or Aferiy as of current reverse engineering.
 
 ## Where common code lives (index.html)
 

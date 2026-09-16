@@ -342,8 +342,9 @@
             display: flex;
         }
 
-        /* Allow Control View (Log) to be wider */
-        #view-control {
+        /* Allow Control and DC-DC Views to be wider */
+        #view-control,
+        #view-dcdc {
             max-width: 1200px;
         }
 
@@ -1745,6 +1746,44 @@
             }
         }
 
+        /* Flashing Fault Alert Animations */
+        @keyframes fault-flash {
+            0%, 100% {
+                opacity: 1;
+                transform: translateX(-50%) scale(1);
+                box-shadow: 0 0 20px rgba(239, 68, 68, 0.9), 0 0 40px rgba(239, 68, 68, 0.4);
+            }
+            50% {
+                opacity: 0.55;
+                transform: translateX(-50%) scale(0.98);
+                box-shadow: 0 0 5px rgba(239, 68, 68, 0.2);
+            }
+        }
+
+        .fault-active-flash {
+            animation: fault-flash 1s infinite ease-in-out !important;
+        }
+
+        @keyframes fault-text-pulse {
+            0%, 100% { color: #ef4444; opacity: 1; }
+            50% { color: #fca5a5; opacity: 0.6; }
+        }
+
+        .fault-text-flash {
+            animation: fault-text-pulse 1s infinite ease-in-out !important;
+            font-weight: bold;
+        }
+
+        @keyframes spin-fan {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .spinning {
+            display: inline-block;
+            animation: spin-fan 1.2s linear infinite;
+        }
+
         /* Compare Mode Styles */
         .compare-header {
             display: flex;
@@ -2328,6 +2367,12 @@
                             <div><span id="remainingHours" data-field="time_remaining">--</span></div>
                             <div><span id="remainingKwh" data-field="kwh">--</span> kWh</div>
                         </div>
+                        <div class="dash-sub" id="dash-fan-temp" style="margin-top: 0.25rem; font-size: 0.72rem; display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
+                            <span id="dash-fan-badge" title="Cooling fan speed stage">
+                                <span id="dash-fan-icon">🌀</span> Fan: <span data-field="fan_level">--</span>
+                            </span>
+                            <span id="dash-temp-badge" class="hidden" style="color: #38bdf8; font-weight: bold;" title="Thermal safety status"></span>
+                        </div>
                         <div id="extBatteries" data-field="ext_batteries" class="ext-battery-info"></div>
                     </div>
 
@@ -2612,6 +2657,18 @@
                 <h1 style="margin: 0;">Settings</h1>
             </div>
 
+            <!-- Platform Architecture Callout -->
+            <div style="background: rgba(37, 99, 235, 0.12); border: 1px solid rgba(59, 130, 246, 0.35); border-radius: var(--border-radius); padding: 0.75rem 1rem; margin: 0 1rem 1rem 1rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <span style="font-size: 1.4rem;">⚡</span>
+                    <div>
+                        <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-main);">F2400 / Classic V0 Platform</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">Modbus BLE Protocol (0x1103 / 0x1104 / 0x1106) • Fossibot F2400, F3600 &amp; Aferiy series</div>
+                    </div>
+                </div>
+                <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-green); background: rgba(74, 222, 128, 0.12); border: 1px solid rgba(74, 222, 128, 0.35); padding: 0.2rem 0.6rem; border-radius: 9999px;">Configured</span>
+            </div>
+
             <div style="padding: 0 1rem; width: 100%; box-sizing: border-box;">
                 <!-- Quick Actions Accordion -->
                 <div class="accordion open" id="acc-quick">
@@ -2619,15 +2676,28 @@
                         <div class="accordion-title">
                             <span class="accordion-icon">⚡</span>
                             Quick Actions
-                            <span class="accordion-count">7</span>
+                            <span class="accordion-count">8</span>
                         </div>
                         <span class="accordion-arrow">▼</span>
                     </div>
                     <div class="accordion-content">
                         <div class="setting-row">
                             <div class="setting-info">
+                                <span class="setting-title">Key Sound / Beep</span>
+                                <span class="setting-desc">Button press buzzer tone (Reg 56)</span>
+                            </div>
+                            <div class="setting-control">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="set-key-sound"
+                                        onchange="toggleSetting('key_sound', this.checked)">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="setting-row">
+                            <div class="setting-info">
                                 <span class="setting-title">AC Silent Charging</span>
-                                <span class="setting-desc">Quieter, slower charging</span>
+                                <span class="setting-desc">Quieter, slower charging (Reg 57)</span>
                             </div>
                             <div class="setting-control">
                                 <label class="toggle-switch">
@@ -2720,7 +2790,7 @@
                         <div class="accordion-title">
                             <span class="accordion-icon">🔋</span>
                             Power Limits
-                            <span class="accordion-count">3</span>
+                            <span class="accordion-count">5</span>
                         </div>
                         <span class="accordion-arrow">▼</span>
                     </div>
@@ -2729,7 +2799,7 @@
                         <div class="setting-row">
                             <div class="setting-info">
                                 <span class="setting-title">Charge Rate Level</span>
-                                <span class="setting-desc">Level 1-5 <span id="status-charge-profile"
+                                <span class="setting-desc">Level 1-5 (Reg 13) <span id="status-charge-profile"
                                         class="text-blue"></span></span>
                             </div>
                             <select class="setting-select" id="set-charge-profile"
@@ -2739,6 +2809,39 @@
                                 <option value="3">Level 3 (700W)</option>
                                 <option value="4">Level 4 (900W)</option>
                                 <option value="5">Level 5 (1100W)</option>
+                            </select>
+                        </div>
+
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <span class="setting-title">Max Charging Current</span>
+                                <span class="setting-desc">Current ceiling in Amps (Reg 20) <span id="status-charge-current"
+                                        class="text-blue"></span></span>
+                            </div>
+                            <select class="setting-select" id="set-charge-current"
+                                onchange="changeSelect('charge_current')">
+                                <option value="3">3 A</option>
+                                <option value="5">5 A</option>
+                                <option value="8">8 A</option>
+                                <option value="10">10 A</option>
+                                <option value="12">12 A</option>
+                                <option value="15">15 A</option>
+                                <option value="16">16 A</option>
+                                <option value="18">18 A</option>
+                                <option value="20">20 A</option>
+                            </select>
+                        </div>
+
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <span class="setting-title">AC Output Frequency</span>
+                                <span class="setting-desc">Inverter frequency (Reg 16) <span id="status-ac-freq"
+                                        class="text-blue"></span></span>
+                            </div>
+                            <select class="setting-select" id="set-ac-freq"
+                                onchange="changeSelect('ac_freq')">
+                                <option value="500">50 Hz</option>
+                                <option value="600">60 Hz</option>
                             </select>
                         </div>
 
@@ -2863,15 +2966,17 @@
                     <div class="setting-row" style="flex-direction: column; align-items: stretch;">
                         <div class="setting-info">
                             <span class="setting-title">Schedule Charge</span>
-                            <span class="setting-desc">Start charging at time (or enter minutes)</span>
+                            <span class="setting-desc">Start charging after delay (Reg 63) <span id="status-booking-charge" class="text-blue"></span></span>
                         </div>
-                        <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; align-items: center;">
-                            <input type="time" class="setting-input" id="set-booking-time" style="flex: 1;"
+                        <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; align-items: center; flex-wrap: wrap;">
+                            <input type="time" class="setting-input" id="set-booking-time" style="flex: 1; min-width: 100px;"
                                 onchange="updateBookingFromTime()">
                             <span>or</span>
-                            <input type="number" class="setting-input" id="set-booking-charge" value="0" min="0"
+                            <input type="number" class="setting-input" id="set-booking-charge" value="0" min="0" max="1440" style="width: 75px;"
                                 onchange="changeInput('booking_charge')">
                             <span>mins</span>
+                            <button class="btn-main" id="btn-cancel-booking" style="background: var(--btn-red); padding: 0.4rem 0.75rem; font-size: 0.8rem; display: none;"
+                                onclick="cancelBookingCharge()">Cancel</button>
                         </div>
                     </div>
                     <div class="setting-row" title="WARNING: writing 0 / Never to this register (Reg 68) has been reported to permanently brick Fossibot devices. The Never option has been removed.">
@@ -3041,12 +3146,126 @@
                 </div>
             </div>
 
+            <!-- Device Hardware & Firmware Accordion -->
+            <div class="accordion" id="acc-firmware">
+                <div class="accordion-header" onclick="toggleAccordion('acc-firmware')">
+                    <div class="accordion-title">
+                        <span class="accordion-icon">📟</span>
+                        Hardware &amp; Firmware
+                        <span class="accordion-count">V0</span>
+                    </div>
+                    <span class="accordion-arrow">▼</span>
+                </div>
+                <div class="accordion-content">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-title">Platform Architecture</span>
+                            <span class="setting-desc">Hardware series profile</span>
+                        </div>
+                        <span class="text-blue" style="font-weight: 600;">Classic V0 (F2400)</span>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-title">Hardware Variant (Reg 11)</span>
+                            <span class="setting-desc">Regional board / model ID</span>
+                        </div>
+                        <span id="fw-hw-id" style="font-family: monospace; font-weight: bold;">--</span>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-title">AC MCU Firmware (Reg 47)</span>
+                            <span class="setting-desc">Inverter &amp; AC charging subsystem</span>
+                        </div>
+                        <span id="fw-ac-mcu" style="font-family: monospace; font-weight: bold;">--</span>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-title">BMS MCU Firmware (Reg 48)</span>
+                            <span class="setting-desc">Battery management &amp; protection</span>
+                        </div>
+                        <span id="fw-bms-mcu" style="font-family: monospace; font-weight: bold;">--</span>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-title">PV MCU Firmware (Reg 49)</span>
+                            <span class="setting-desc">Solar MPPT &amp; DC charging controller</span>
+                        </div>
+                        <span id="fw-pv-mcu" style="font-family: monospace; font-weight: bold;">--</span>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-title">DC/Panel MCU Firmware (Reg 50)</span>
+                            <span class="setting-desc">Front display &amp; 12V output controller</span>
+                        </div>
+                        <span id="fw-dc-mcu" style="font-family: monospace; font-weight: bold;">--</span>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-title">Max AC Input Ceiling (Reg 14)</span>
+                            <span class="setting-desc">Configured maximum input wattage</span>
+                        </div>
+                        <span id="fw-max-ac" style="font-family: monospace; font-weight: bold;">--</span>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-title">Max Hardware Current (Reg 17)</span>
+                            <span class="setting-desc">Internal charge current hardware ceiling</span>
+                        </div>
+                        <span id="fw-max-current" style="font-family: monospace; font-weight: bold;">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DC-DC Auxiliary Battery Charger Accordion -->
+            <div class="accordion" id="acc-dcdc">
+                <div class="accordion-header" onclick="toggleAccordion('acc-dcdc')">
+                    <div class="accordion-title">
+                        <span class="accordion-icon">🚐</span>
+                        DC-DC Vehicle Charger Protocol
+                        <span class="accordion-count" style="background: rgba(2,132,199,0.2); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3);">wp</span>
+                    </div>
+                    <span class="accordion-arrow">▼</span>
+                </div>
+                <div class="accordion-content">
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem; line-height: 1.4;">
+                        BrightEMS profile <code style="color: #38bdf8;">DC_DC-V1-0083</code> manages dual-battery camper &amp; vehicle auxiliary chargers using the <code style="color: #38bdf8;">wp</code> Modbus BLE register architecture.
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-title">Alternator &amp; Battery Telemetry</span>
+                            <span class="setting-desc">Regs 0–6 (Input Watts, Volts, Current, Temp)</span>
+                        </div>
+                        <span style="font-size: 0.8rem; font-family: monospace; color: var(--text-muted);">0x1104</span>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-title">Engine Flameout &amp; Undervoltage</span>
+                            <span class="setting-desc">Reg 7 Bit 3 (Cutoff) &amp; Bit 7 (Vibration Sensor)</span>
+                        </div>
+                        <span style="font-size: 0.8rem; font-family: monospace; color: #f59e0b;">Bitmask</span>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-title">Voltage Profile &amp; Cutoff Sets</span>
+                            <span class="setting-desc">Reg 11 (Float/Bulk V) &amp; Reg 14 (Starter Cutoff)</span>
+                        </div>
+                        <span style="font-size: 0.8rem; font-family: monospace; color: var(--text-muted);">0x1103</span>
+                    </div>
+                    <div style="margin-top: 0.75rem;">
+                        <button onclick="switchView('dcdc')"
+                            style="width: 100%; background: #0284c7; color: white; border: none; padding: 0.5rem; border-radius: 0.375rem; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                            <span>🚐</span> Open Full DC-DC Protocol Viewer &amp; Tools →
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <!-- App Data Accordion -->
             <div class="accordion" id="acc-appdata">
                 <div class="accordion-header" onclick="toggleAccordion('acc-appdata')">
                     <div class="accordion-title">
                         <span class="accordion-icon">💾</span>
-                        App Data
+                        App Data &amp; Management
                     </div>
                     <span class="accordion-arrow">▼</span>
                 </div>
@@ -3091,6 +3310,16 @@
                         <div class="setting-control">
                             <button class="btn-main" style="background: var(--btn-red); width: 140px; padding: 0.5rem;"
                                 onclick="clearPowerHistory()">Clear</button>
+                        </div>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-title text-red">Factory Reset / Unbind</span>
+                            <span class="setting-desc">Reset station parameters &amp; unbind device (Reg 0)</span>
+                        </div>
+                        <div class="setting-control">
+                            <button class="btn-main" style="background: var(--btn-red); width: 140px; padding: 0.5rem;"
+                                onclick="confirmFactoryReset()">Reset Device</button>
                         </div>
                     </div>
                 </div>
@@ -3144,6 +3373,9 @@
                 <button id="btn-compare" onclick="toggleCompareMode()" class="hidden"
                     style="background: #ea580c; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem; flex: 1;"
                     title="Compare with imported data">🔍 Compare</button>
+                <button onclick="switchView('dcdc')"
+                    style="background: #0284c7; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem; flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.25rem;"
+                    title="View DC-DC Auxiliary Battery Charger Protocol (wp)">🚐 DC-DC Spec</button>
             </div>
             <div
                 style="display: flex; align-items: center; gap: 1rem; width: 100%; justify-content: space-between; margin-top: 0.5rem;">
@@ -3197,16 +3429,334 @@
             </div>
         </div>
 
-        <div id="full-diag-list" style="padding:1rem; padding-bottom: 5rem; font-family: monospace;"></div>
+        <!-- Live Safety, Fault & Cooling Status Card -->
+        <div id="diag-safety-card" style="margin: 0.5rem 0; padding: 0.5rem;">
+            <div id="diag-safety-content">
+                <div style="background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.3); border-radius:6px; padding:0.6rem; color:#86efac; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+                    <div>
+                        <span style="font-weight:bold; color:var(--text-green);">✅ System Status Normal</span>
+                        <span style="font-size:0.75rem; color:#aaa; margin-left:0.5rem;">No Active Hardware or Thermal Faults</span>
+                    </div>
+                    <div style="font-size:0.75rem; color:#aaa;">
+                        <span>🌀 Fan: Lvl <span data-field="fan_level">--</span>/5</span> · <span>🌡️ Thermal: Normal</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="full-diag-list" style="padding:1rem; padding-bottom: 2rem; font-family: monospace;"></div>
 
         <div id="system-summary"
-            style="margin: 1rem; margin-bottom: 2rem; padding: 1rem; background: rgba(0,0,0,0.3); border-radius: 0.5rem; border-left: 3px solid var(--text-blue); font-size: 0.9rem; line-height: 1.5; color: #eee;">
+            style="margin: 1rem; margin-bottom: 1.5rem; padding: 1rem; background: rgba(0,0,0,0.3); border-radius: 0.5rem; border-left: 3px solid var(--text-blue); font-size: 0.9rem; line-height: 1.5; color: #eee;">
             <div
                 style="font-weight: bold; color: var(--text-blue); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
                 <span>ℹ️ System Summary</span>
             </div>
             <div id="system-summary-content" style="white-space: pre-wrap;">No active data. Connect to a device or
                 import a file to see analysis.</div>
+        </div>
+
+        <!-- Fault Codes & Safety Protections Reference Table -->
+        <div id="diag-fault-ref" class="card" style="margin: 1rem; margin-bottom: 2rem; padding: 1rem; background: var(--bg-card); border-radius: 0.5rem; border: 1px solid var(--border-color);">
+            <div style="font-weight: 600; font-size: 0.95rem; color: #f87171; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>⚠️</span> Fault Codes &amp; Safety Protections Reference
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem; line-height: 1.4;">
+                Complete error code classifications and protection bitmasks reverse-engineered from power station hardware firmware and vendor diagnostics.
+            </div>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.75rem; text-align: left;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-muted);">
+                            <th style="padding: 0.35rem 0.5rem;">Reg / Source</th>
+                            <th style="padding: 0.35rem 0.5rem;">Value / Bit</th>
+                            <th style="padding: 0.35rem 0.5rem;">Classification</th>
+                            <th style="padding: 0.35rem 0.5rem;">Behavior &amp; Diagnostics</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 0.35rem 0.5rem; font-family: monospace; color: #38bdf8;">Reg 8 (errorCode)</td>
+                            <td style="padding: 0.35rem 0.5rem; font-family: monospace; color: #f87171;">78</td>
+                            <td style="padding: 0.35rem 0.5rem; color: #f59e0b; font-weight: 600;">Inverter Fault</td>
+                            <td style="padding: 0.35rem 0.5rem; color: var(--text-muted);">AC inverter tripped or overloaded. Solar MPPT and DC 12V/USB output remain fully operational. Reduce AC load.</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 0.35rem 0.5rem; font-family: monospace; color: #38bdf8;">Reg 8 + Reg 42</td>
+                            <td style="padding: 0.35rem 0.5rem; font-family: monospace; color: #ef4444;">79 + 0x6000</td>
+                            <td style="padding: 0.35rem 0.5rem; color: #ef4444; font-weight: 600;">Critical Hardware Fault</td>
+                            <td style="padding: 0.35rem 0.5rem; color: var(--text-muted);">Internal hardware safety lockout. Power board forces master system enable (Reg 5) to 0. Requires complete power cycle or factory reset.</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 0.35rem 0.5rem; font-family: monospace; color: #38bdf8;">Reg 8 + Reg 42</td>
+                            <td style="padding: 0.35rem 0.5rem; font-family: monospace; color: #fbbf24;">79 + 0x0000</td>
+                            <td style="padding: 0.35rem 0.5rem; color: #fbbf24; font-weight: 600;">Temp / Safety Protection</td>
+                            <td style="padding: 0.35rem 0.5rem; color: var(--text-muted);">Ambient thermal extreme (&lt;0°C cold charge lockout or &gt;55°C heat cutoff). Automatically clears once pack returns to safe operating temperature.</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 0.35rem 0.5rem; font-family: monospace; color: #38bdf8;">Reg 8 (errorCode)</td>
+                            <td style="padding: 0.35rem 0.5rem; font-family: monospace; color: var(--text-green);">136 (0x88)</td>
+                            <td style="padding: 0.35rem 0.5rem; color: var(--text-green); font-weight: 600;">Normal Status</td>
+                            <td style="padding: 0.35rem 0.5rem; color: var(--text-muted);">Healthy operational state code routinely sent by normal units. Must NEVER be treated as a fault.</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 0.35rem 0.5rem; font-family: monospace; color: #38bdf8;">Reg 21 (ac_voltage)</td>
+                            <td style="padding: 0.35rem 0.5rem; font-family: monospace; color: #38bdf8;">15 (1.5V)</td>
+                            <td style="padding: 0.35rem 0.5rem; color: #38bdf8; font-weight: 600;">Cold Freeze Protection</td>
+                            <td style="padding: 0.35rem 0.5rem; color: var(--text-muted);">Reported when unplugged from AC mains. Indicates cell temperature &lt;0°C (charging disabled to prevent lithium dendrite plating).</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 0.35rem 0.5rem; font-family: monospace; color: #38bdf8;">Reg 48 (statusFlags)</td>
+                            <td style="padding: 0.35rem 0.5rem; font-family: monospace; color: #aaa;">Bit 3 (0x0008)</td>
+                            <td style="padding: 0.35rem 0.5rem; color: #aaa;">Inverter Switching Transient</td>
+                            <td style="padding: 0.35rem 0.5rem; color: var(--text-muted);">Transient AC relay state during inverter start/stop. Non-authoritative; filtered to prevent false alarms.</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.35rem 0.5rem; font-family: monospace; color: #38bdf8;">DC-DC Reg 7</td>
+                            <td style="padding: 0.35rem 0.5rem; font-family: monospace; color: #f59e0b;">Bit 3 / Bit 7</td>
+                            <td style="padding: 0.35rem 0.5rem; color: #f59e0b; font-weight: 600;">Undervoltage / Flameout</td>
+                            <td style="padding: 0.35rem 0.5rem; color: var(--text-muted);">Bit 3 = Starter battery cutoff (&lt;12V). Bit 7 = Engine flameout vibration sensor tripped (halts auxiliary charging).</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- DC-DC Auxiliary Battery Charger Protocol View -->
+    <div id="view-dcdc" class="view-section">
+        <div class="header"
+            style="width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+            <button onclick="switchView('control')"
+                style="background: var(--bg-card); color: var(--text-muted); border: 1px solid var(--text-muted); padding: 0.25rem 0.5rem; border-radius: 0.25rem; display: flex; align-items: center; gap: 0.25rem; cursor: pointer;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+                Dashboard
+            </button>
+            <div style="display: flex; gap: 0.5rem;">
+                <button onclick="switchView('diagnostics')"
+                    style="background: var(--bg-card); color: #38bdf8; border: 1px solid #38bdf8; padding: 0.25rem 0.5rem; border-radius: 0.25rem; display: flex; align-items: center; gap: 0.25rem; cursor: pointer; font-size: 0.8rem;">
+                    Diagnostics
+                </button>
+                <button onclick="switchView('settings')"
+                    style="background: var(--bg-card); color: var(--text-muted); border: 1px solid var(--text-muted); padding: 0.25rem 0.5rem; border-radius: 0.25rem; display: flex; align-items: center; gap: 0.25rem; cursor: pointer; font-size: 0.8rem;">
+                    Settings
+                </button>
+            </div>
+        </div>
+
+        <!-- Banner -->
+        <div style="width: 100%; background: linear-gradient(135deg, rgba(2,132,199,0.15), rgba(14,165,233,0.05)); border: 1px solid rgba(56,189,248,0.3); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1.25rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem;">
+                <div style="font-weight: 700; font-size: 1.1rem; color: #38bdf8; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>🚐</span> DC-DC Auxiliary Battery Charger Protocol
+                </div>
+                <span style="font-size: 0.75rem; background: rgba(56,189,248,0.2); color: #38bdf8; padding: 0.2rem 0.5rem; border-radius: 9999px; font-weight: 600;">Profile: DC_DC-V1-0083 · wp</span>
+            </div>
+            <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;">
+                Reverse-engineered from the BrightEMS mobile app. Manages on-board vehicle DC-DC charging systems for camper vans, RVs, and marine dual-battery setups (Starter Battery + Alternator → Auxiliary Leisure Battery).
+            </div>
+        </div>
+
+        <!-- Dual Battery System Schematic -->
+        <div class="card" style="width: 100%; margin-bottom: 1.25rem; background: var(--bg-card); border-radius: 0.5rem; padding: 1rem; border: 1px solid var(--border-color);">
+            <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>⚡</span> Dual-Battery Vehicle Power Flow
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem;">
+                <div style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 0.375rem; padding: 0.75rem;">
+                    <div style="font-size: 0.75rem; text-transform: uppercase; color: #fbbf24; font-weight: 600; margin-bottom: 0.25rem;">Starter / Alternator (IN)</div>
+                    <div style="font-size: 0.85rem; color: var(--text-main);">Input Regs 0, 1, 2</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">Monitors alternator watts, volts, and current. Cut-off controlled via Reg 14.</div>
+                </div>
+                <div style="background: rgba(0,0,0,0.25); border: 1px solid rgba(2,132,199,0.3); border-radius: 0.375rem; padding: 0.75rem;">
+                    <div style="font-size: 0.75rem; text-transform: uppercase; color: #38bdf8; font-weight: 600; margin-bottom: 0.25rem;">DC-DC Charger Stage (wp)</div>
+                    <div style="font-size: 0.85rem; color: var(--text-main);">Reg 6 (Temp) &amp; Reg 7 (Faults)</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">Engine flameout vibration detection &amp; thermal protection stage.</div>
+                </div>
+                <div style="background: rgba(0,0,0,0.25); border: 1px solid rgba(34,197,94,0.3); border-radius: 0.375rem; padding: 0.75rem;">
+                    <div style="font-size: 0.75rem; text-transform: uppercase; color: #4ade80; font-weight: 600; margin-bottom: 0.25rem;">Auxiliary Battery (OUT)</div>
+                    <div style="font-size: 0.85rem; color: var(--text-main);">Input Regs 3, 4, 5</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">Charging power to leisure battery. Target voltage controlled via Reg 11.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Telemetry Registers Table (0x1104) -->
+        <div class="card" style="width: 100%; margin-bottom: 1.25rem; background: var(--bg-card); border-radius: 0.5rem; padding: 1rem; border: 1px solid var(--border-color);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+                <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main); display: flex; align-items: center; gap: 0.5rem;">
+                    <span>📊</span> Telemetry Registers (Status Bank 0x1104)
+                </div>
+                <span style="font-size: 0.75rem; font-family: monospace; color: var(--text-muted);">Read-Only / Broadcast</span>
+            </div>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-muted);">
+                            <th style="padding: 0.4rem 0.5rem;">Reg</th>
+                            <th style="padding: 0.4rem 0.5rem;">Field Name</th>
+                            <th style="padding: 0.4rem 0.5rem;">Unit / Scale</th>
+                            <th style="padding: 0.4rem 0.5rem;">Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 0.4rem 0.5rem; font-family: monospace; color: #38bdf8;">0</td>
+                            <td style="padding: 0.4rem 0.5rem; font-family: monospace;">inputPower</td>
+                            <td style="padding: 0.4rem 0.5rem; color: #fbbf24;">Watts</td>
+                            <td style="padding: 0.4rem 0.5rem; color: var(--text-muted);">Starter / alternator real-time input power</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 0.4rem 0.5rem; font-family: monospace; color: #38bdf8;">1</td>
+                            <td style="padding: 0.4rem 0.5rem; font-family: monospace;">inputVolt</td>
+                            <td style="padding: 0.4rem 0.5rem; color: #fbbf24;">V ÷ 10 (0.1V)</td>
+                            <td style="padding: 0.4rem 0.5rem; color: var(--text-muted);">Starter battery voltage (e.g. 138 = 13.8 V)</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 0.4rem 0.5rem; font-family: monospace; color: #38bdf8;">2</td>
+                            <td style="padding: 0.4rem 0.5rem; font-family: monospace;">inputCurrent</td>
+                            <td style="padding: 0.4rem 0.5rem; color: #fbbf24;">A ÷ 10 (0.1A)</td>
+                            <td style="padding: 0.4rem 0.5rem; color: var(--text-muted);">Alternator current draw (e.g. 250 = 25.0 A)</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 0.4rem 0.5rem; font-family: monospace; color: #38bdf8;">3</td>
+                            <td style="padding: 0.4rem 0.5rem; font-family: monospace;">outputPower</td>
+                            <td style="padding: 0.4rem 0.5rem; color: #4ade80;">Watts</td>
+                            <td style="padding: 0.4rem 0.5rem; color: var(--text-muted);">Auxiliary battery charge power</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 0.4rem 0.5rem; font-family: monospace; color: #38bdf8;">4</td>
+                            <td style="padding: 0.4rem 0.5rem; font-family: monospace;">outputVolt</td>
+                            <td style="padding: 0.4rem 0.5rem; color: #4ade80;">V ÷ 10 (0.1V)</td>
+                            <td style="padding: 0.4rem 0.5rem; color: var(--text-muted);">Auxiliary battery terminal voltage (e.g. 144 = 14.4 V)</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 0.4rem 0.5rem; font-family: monospace; color: #38bdf8;">5</td>
+                            <td style="padding: 0.4rem 0.5rem; font-family: monospace;">outputCurrent</td>
+                            <td style="padding: 0.4rem 0.5rem; color: #4ade80;">A ÷ 10 (0.1A)</td>
+                            <td style="padding: 0.4rem 0.5rem; color: var(--text-muted);">Auxiliary battery charging current (e.g. 300 = 30.0 A)</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 0.4rem 0.5rem; font-family: monospace; color: #38bdf8;">6</td>
+                            <td style="padding: 0.4rem 0.5rem; font-family: monospace;">deviceTemper</td>
+                            <td style="padding: 0.4rem 0.5rem; color: #f87171;">°C</td>
+                            <td style="padding: 0.4rem 0.5rem; color: var(--text-muted);">Internal heatsink &amp; power MOSFET temperature</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0.5rem; font-family: monospace; color: #38bdf8;">7</td>
+                            <td style="padding: 0.4rem 0.5rem; font-family: monospace;">faultFlags</td>
+                            <td style="padding: 0.4rem 0.5rem; color: #f59e0b;">Bitmask</td>
+                            <td style="padding: 0.4rem 0.5rem; color: var(--text-muted);">Bit 3 = Undervoltage Protection (8), Bit 7 = Flameout Active (128)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Configuration Registers Table (0x1103) -->
+        <div class="card" style="width: 100%; margin-bottom: 1.25rem; background: var(--bg-card); border-radius: 0.5rem; padding: 1rem; border: 1px solid var(--border-color);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+                <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main); display: flex; align-items: center; gap: 0.5rem;">
+                    <span>⚙️</span> Configuration Registers (Holding Bank 0x1103)
+                </div>
+                <span style="font-size: 0.75rem; font-family: monospace; color: var(--text-muted);">Read / Write (OpCode 0x06)</span>
+            </div>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-muted);">
+                            <th style="padding: 0.4rem 0.5rem;">Reg</th>
+                            <th style="padding: 0.4rem 0.5rem;">Setting Name</th>
+                            <th style="padding: 0.4rem 0.5rem;">Format / Range</th>
+                            <th style="padding: 0.4rem 0.5rem;">Function</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 0.4rem 0.5rem; font-family: monospace; color: #38bdf8;">10</td>
+                            <td style="padding: 0.4rem 0.5rem; font-family: monospace;">shutdownWaitTime</td>
+                            <td style="padding: 0.4rem 0.5rem;">Minutes</td>
+                            <td style="padding: 0.4rem 0.5rem; color: var(--text-muted);">Inactivity auto-shutdown idle timer</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 0.4rem 0.5rem; font-family: monospace; color: #38bdf8;">11</td>
+                            <td style="padding: 0.4rem 0.5rem; font-family: monospace;">outputVoltSet</td>
+                            <td style="padding: 0.4rem 0.5rem;">V ÷ 10 (e.g. 146 = 14.6V)</td>
+                            <td style="padding: 0.4rem 0.5rem; color: var(--text-muted);">Target auxiliary battery bulk/absorption voltage ceiling</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 0.4rem 0.5rem; font-family: monospace; color: #38bdf8;">12</td>
+                            <td style="padding: 0.4rem 0.5rem; font-family: monospace;">appControlShutdown</td>
+                            <td style="padding: 0.4rem 0.5rem;">Write 1</td>
+                            <td style="padding: 0.4rem 0.5rem; color: var(--text-muted);">Remote software power shutdown command</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 0.4rem 0.5rem; font-family: monospace; color: #38bdf8;">13</td>
+                            <td style="padding: 0.4rem 0.5rem; font-family: monospace;">flameoutProtection</td>
+                            <td style="padding: 0.4rem 0.5rem;">0 = Off, 1 = On</td>
+                            <td style="padding: 0.4rem 0.5rem; color: var(--text-muted);">Engine flameout / vehicle vibration cut-off protection toggle</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.4rem 0.5rem; font-family: monospace; color: #38bdf8;">14</td>
+                            <td style="padding: 0.4rem 0.5rem; font-family: monospace;">inputCutoffVoltSet</td>
+                            <td style="padding: 0.4rem 0.5rem;">V ÷ 10 (e.g. 122 = 12.2V)</td>
+                            <td style="padding: 0.4rem 0.5rem; color: var(--text-muted);">Starter battery low voltage cutoff to prevent draining engine battery</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Interactive Protection Bitmask Inspector (Reg 7) -->
+        <div class="card" style="width: 100%; margin-bottom: 1.25rem; background: var(--bg-card); border-radius: 0.5rem; padding: 1rem; border: 1px solid var(--border-color);">
+            <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>🛡️</span> Interactive Reg 7 Protection Bitmask Tester
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                In the vendor app, Reg 7 uses hardcoded protection bits. Check the bits below to simulate live decoded fault status:
+            </div>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.75rem;">
+                <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; cursor: pointer;">
+                    <input type="checkbox" id="dcdc-bit3-test" onchange="updateDcdcBitmaskTest()">
+                    <span>Bit 3 (0x08): Undervoltage Protection</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; cursor: pointer;">
+                    <input type="checkbox" id="dcdc-bit7-test" onchange="updateDcdcBitmaskTest()">
+                    <span>Bit 7 (0x80): Flameout Protection Active</span>
+                </label>
+            </div>
+            <div id="dcdc-bitmask-result" style="padding: 0.6rem; border-radius: 0.375rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); font-size: 0.85rem; font-family: monospace;">
+                Raw Reg 7 Value: <span style="color: #4ade80;">0 (0x00)</span> · Status: <span style="color: #4ade80;">All Clear / Normal</span>
+            </div>
+        </div>
+
+        <!-- Battery Chemistry Profiles Calculator -->
+        <div class="card" style="width: 100%; margin-bottom: 1.25rem; background: var(--bg-card); border-radius: 0.5rem; padding: 1rem; border: 1px solid var(--border-color);">
+            <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>🔋</span> Battery Chemistry &amp; Voltage Profiles (Reg 11 Helper)
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.5rem; margin-bottom: 0.75rem;">
+                <button onclick="applyDcdcProfile(146, 'LiFePO4')" style="background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.4); color: #4ade80; padding: 0.4rem; border-radius: 0.25rem; cursor: pointer; font-size: 0.75rem;">
+                    LiFePO4 (14.6V)
+                </button>
+                <button onclick="applyDcdcProfile(147, 'AGM')" style="background: rgba(56,189,248,0.15); border: 1px solid rgba(56,189,248,0.4); color: #38bdf8; padding: 0.4rem; border-radius: 0.25rem; cursor: pointer; font-size: 0.75rem;">
+                    AGM (14.7V)
+                </button>
+                <button onclick="applyDcdcProfile(142, 'GEL')" style="background: rgba(168,85,247,0.15); border: 1px solid rgba(168,85,247,0.4); color: #c084fc; padding: 0.4rem; border-radius: 0.25rem; cursor: pointer; font-size: 0.75rem;">
+                    GEL (14.2V)
+                </button>
+                <button onclick="applyDcdcProfile(144, 'Lead-Acid')" style="background: rgba(251,191,36,0.15); border: 1px solid rgba(251,191,36,0.4); color: #fbbf24; padding: 0.4rem; border-radius: 0.25rem; cursor: pointer; font-size: 0.75rem;">
+                    Lead-Acid (14.4V)
+                </button>
+                <button onclick="applyDcdcProfile(126, 'Ternary Li-ion')" style="background: rgba(244,63,94,0.15); border: 1px solid rgba(244,63,94,0.4); color: #fb7185; padding: 0.4rem; border-radius: 0.25rem; cursor: pointer; font-size: 0.75rem;">
+                    Ternary (12.6V)
+                </button>
+            </div>
+            <div id="dcdc-profile-preview" style="padding: 0.6rem; border-radius: 0.375rem; background: rgba(0,0,0,0.3); font-size: 0.8rem; font-family: monospace; color: var(--text-muted);">
+                Select a profile above to preview target voltage and Modbus write parameters.
+            </div>
         </div>
     </div>
 
@@ -3226,6 +3776,10 @@
                     stroke="currentColor" stroke-width="2" fill="none" />
             </svg>
             <span>Settings</span>
+        </button>
+        <button class="nav-item" onclick="switchView('dcdc')">
+            <span style="font-size: 1.2rem; line-height: 1;">🚐</span>
+            <span>DC-DC</span>
         </button>
     </nav>
 
@@ -3791,10 +4345,18 @@ Example format:
             const chargeRateEl = document.getElementById('status-charge-rate');
             if (chargeRateEl) chargeRateEl.textContent = chargeRateWatts + 'W';
 
-            // Reg 59: Screen Timeout (seconds)
-            const screenTimeout = settingsRegisters[59] || 0;
-            const screenTimeoutStatus = document.getElementById('status-screen-timeout');
-            if (screenTimeoutStatus) screenTimeoutStatus.textContent = screenTimeout > 0 ? Math.round(screenTimeout / 60) + ' min' : 'Never';
+            // Reg 59: USB Standby (mins)
+            const usbStandby = settingsRegisters[59] || 0;
+            const usbStandbyStatus = document.getElementById('status-usb-standby');
+            if (usbStandbyStatus) {
+                if (usbStandby === 0) {
+                    usbStandbyStatus.textContent = 'Never';
+                } else if (usbStandby < 60) {
+                    usbStandbyStatus.textContent = usbStandby + ' min';
+                } else {
+                    usbStandbyStatus.textContent = Math.round(usbStandby / 60) + 'h';
+                }
+            }
 
             // Reg 60: AC Standby (mins)
             const acStandby = settingsRegisters[60] || 0;
@@ -3822,8 +4384,10 @@ Example format:
                 }
             }
 
-            // Reg 62: Unknown (NOT USB Standby - shows 600 when USB set to 5 mins)
-            // Skipping for now until we determine what this actually is
+            // Reg 62: Screen Timeout (seconds)
+            const screenTimeout = settingsRegisters[62] || 0;
+            const screenTimeoutStatus = document.getElementById('status-screen-timeout');
+            if (screenTimeoutStatus) screenTimeoutStatus.textContent = screenTimeout > 0 ? Math.round(screenTimeout / 60) + ' min' : 'Never';
 
             // Reg 66: Discharge Lower Limit (÷10 = %)
             const dischargeLimitRaw = settingsRegisters[66] || 0;
@@ -3850,7 +4414,63 @@ Example format:
                 }
             }
 
-            console.log('Settings synced:', { chargeRate, screenTimeout, acStandby, dcStandby, machineShutdown });
+            // Reg 56: Key Sound (0/1)
+            const keySound = settingsRegisters[56];
+            const keySoundEl = document.getElementById('set-key-sound');
+            if (keySoundEl && keySound !== undefined) keySoundEl.checked = (keySound > 0);
+
+            // Reg 16: AC Output Frequency (500=50Hz, 600=60Hz)
+            const acFreq = settingsRegisters[16] || (registers[16] ? registers[16] : 0);
+            const acFreqEl = document.getElementById('set-ac-freq');
+            if (acFreqEl && acFreq) acFreqEl.value = acFreq;
+            const acFreqStatus = document.getElementById('status-ac-freq');
+            if (acFreqStatus && acFreq) acFreqStatus.textContent = (acFreq / 10).toFixed(0) + ' Hz';
+
+            // Reg 20: Max Charging Current (A)
+            const chgCur = settingsRegisters[20] || 0;
+            const chgCurEl = document.getElementById('set-charge-current');
+            if (chgCurEl && chgCur) chgCurEl.value = chgCur;
+            const chgCurStatus = document.getElementById('status-charge-current');
+            if (chgCurStatus && chgCur) chgCurStatus.textContent = chgCur + ' A';
+
+            // Live Booking Charge Status (Input Reg 57)
+            const bookingMins = registers[57] || 0;
+            const bookingStatus = document.getElementById('status-booking-charge');
+            if (bookingStatus) bookingStatus.textContent = bookingMins > 0 ? `(${bookingMins}m delay active)` : '';
+            const cancelBookingBtn = document.getElementById('btn-cancel-booking');
+            if (cancelBookingBtn) cancelBookingBtn.style.display = bookingMins > 0 ? 'inline-block' : 'none';
+
+            // Firmware & Hardware Details (Acc-Firmware)
+            const hwId = settingsRegisters[11];
+            const hwEl = document.getElementById('fw-hw-id');
+            if (hwEl) {
+                if (hwId !== undefined && hwId > 0) {
+                    const hwNames = { 0x0600: 'US Variant (0x0600)', 0x0200: 'EU Type A (0x0200)', 0x0D00: 'EU Type B (0x0D00)' };
+                    hwEl.textContent = hwNames[hwId] || '0x' + hwId.toString(16).toUpperCase().padStart(4, '0');
+                } else {
+                    hwEl.textContent = '--';
+                }
+            }
+
+            const maxAcW = settingsRegisters[14];
+            const maxAcEl = document.getElementById('fw-max-ac');
+            if (maxAcEl) maxAcEl.textContent = maxAcW ? maxAcW + ' W' : '--';
+
+            const maxCurA = settingsRegisters[17];
+            const maxCurEl = document.getElementById('fw-max-current');
+            if (maxCurEl) maxCurEl.textContent = maxCurA ? maxCurA + ' A' : '--';
+
+            const fmtMcuFw = val => (val !== undefined && val > 0) ? `v${((val & 0xff) / 10).toFixed(1)} (0x${val.toString(16).toUpperCase().padStart(4, '0')})` : '--';
+            const acMcuEl = document.getElementById('fw-ac-mcu');
+            if (acMcuEl) acMcuEl.textContent = fmtMcuFw(settingsRegisters[47]);
+            const bmsMcuEl = document.getElementById('fw-bms-mcu');
+            if (bmsMcuEl) bmsMcuEl.textContent = fmtMcuFw(settingsRegisters[48]);
+            const pvMcuEl = document.getElementById('fw-pv-mcu');
+            if (pvMcuEl) pvMcuEl.textContent = fmtMcuFw(settingsRegisters[49]);
+            const dcMcuEl = document.getElementById('fw-dc-mcu');
+            if (dcMcuEl) dcMcuEl.textContent = fmtMcuFw(settingsRegisters[50]);
+
+            console.log('Settings synced:', { chargeRate, screenTimeout, acStandby, dcStandby, machineShutdown, keySound, acFreq, chgCur });
         }
 
         const COMMANDS = {
@@ -4399,6 +5019,8 @@ Example format:
                     const battery = getRegLocal(56) / 10.0; // Main Battery SOC
                     const s1Raw = getRegLocal(53); // S1 SOC Raw
                     const s2Raw = getRegLocal(55); // S2 SOC Raw
+                    const s3Raw = getRegLocal(66); // S3 SOC Raw
+                    const s4Raw = getRegLocal(67); // S4 SOC Raw
 
                     const input = getRegLocal(3);
                     const output = getRegLocal(39);
@@ -4413,11 +5035,15 @@ Example format:
                     const acState = (stateReg & 2048) !== 0;
 
                     // Battery Extension Logic
-                    // S1/S2: 0 = missing, otherwise 10-1010. Pct = (val - 10) / 10
+                    // S1/S2/S3/S4: 0 = missing, otherwise 10-1010. Pct = (val - 10) / 10
                     let s1Pct = 0;
                     let s2Pct = 0;
+                    let s3Pct = 0;
+                    let s4Pct = 0;
                     let hasS1 = false;
                     let hasS2 = false;
+                    let hasS3 = false;
+                    let hasS4 = false;
 
                     // New Registers
                     const inputRatified = getRegLocal(3); // Reg 3 (Likely AC Input)
@@ -4448,17 +5074,29 @@ Example format:
                         s2Pct = Math.max(0, (s2Raw - 10) / 10.0);
                         hasS2 = true;
                     }
+                    if (s3Raw > 0) {
+                        s3Pct = Math.max(0, (s3Raw - 10) / 10.0);
+                        hasS3 = true;
+                    }
+                    if (s4Raw > 0) {
+                        s4Pct = Math.max(0, (s4Raw - 10) / 10.0);
+                        hasS4 = true;
+                    }
 
                     // Total Energy Calculation
                     const mainWh = (battery / 100) * settings.mainCap;
                     const s1Wh = hasS1 ? (s1Pct / 100) * settings.expCap : 0;
                     const s2Wh = hasS2 ? (s2Pct / 100) * settings.expCap : 0;
-                    const totalWh = mainWh + s1Wh + s2Wh;
+                    const s3Wh = hasS3 ? (s3Pct / 100) * settings.expCap : 0;
+                    const s4Wh = hasS4 ? (s4Pct / 100) * settings.expCap : 0;
+                    const totalWh = mainWh + s1Wh + s2Wh + s3Wh + s4Wh;
                     const totalKwh = totalWh / 1000;
 
                     let extText = [];
                     if (hasS1) extText.push(`Ext1: ${s1Pct.toFixed(1)}%`);
                     if (hasS2) extText.push(`Ext2: ${s2Pct.toFixed(1)}%`);
+                    if (hasS3) extText.push(`Ext3: ${s3Pct.toFixed(1)}%`);
+                    if (hasS4) extText.push(`Ext4: ${s4Pct.toFixed(1)}%`);
 
                     // Light State
                     if (settingsRegisters[27] !== undefined) {
@@ -4532,7 +5170,9 @@ Example format:
                         kwh: totalKwh,
                         timeText: `${timeLabel} ${timeText}`,
                         extText: extText.join(' | '),
-                        isCharging
+                        isCharging,
+                        fanLvl: getRegLocal(69),
+                        tempStatus: (getRegLocal(21) === 15) ? '❄️ Cold Protection' : (errorCode === 79 && (protFlags & 0x6000) === 0) ? '🌡️ Temp Protection' : ''
                     });
 
                     // Protection Fault Warning (Reg 42 bitmask + Reg 8 error code)
@@ -4547,18 +5187,22 @@ Example format:
                             // Error 79 + critical HW bits = Hardware Failure
                             protWarn.textContent = `Hardware Fault (0x${protFlags.toString(16).toUpperCase()}) - Check Device`;
                             protWarn.style.background = '#ef4444';
+                            protWarn.classList.add('fault-active-flash');
                             protWarn.classList.remove('hidden');
                         } else if (errorCode === 79 && !isCriticalFault) {
                             // Error 79 + no critical HW bits = Environmental protection (Cold/Hot)
                             protWarn.textContent = 'Temp/Safety Protection Active';
                             protWarn.style.background = '#d97706';
+                            protWarn.classList.add('fault-active-flash');
                             protWarn.classList.remove('hidden');
                         } else if (errorCode === 78) {
                             // Inverter fault - solar still works
                             protWarn.textContent = 'Inverter Fault (DC/Solar OK)';
                             protWarn.style.background = '#d97706';
+                            protWarn.classList.add('fault-active-flash');
                             protWarn.classList.remove('hidden');
                         } else {
+                            protWarn.classList.remove('fault-active-flash');
                             protWarn.classList.add('hidden');
                         }
                     }
@@ -4730,6 +5374,34 @@ Example format:
                 if (acSilentEl) acSilentEl.checked = (settingsRegisters[57] === 1);
             }
 
+            // Reg 56: Key Sound
+            if (settingsRegisters[56] !== undefined) {
+                const keySoundEl = document.getElementById('set-key-sound');
+                if (keySoundEl) keySoundEl.checked = (settingsRegisters[56] > 0);
+            }
+
+            // Reg 16: AC Output Frequency (500=50Hz, 600=60Hz)
+            const acFreqVal = settingsRegisters[16] || getReg(16);
+            if (acFreqVal) {
+                updateSelect('set-ac-freq', acFreqVal);
+                const acFreqStatus = document.getElementById('status-ac-freq');
+                if (acFreqStatus) acFreqStatus.textContent = (acFreqVal / 10).toFixed(0) + ' Hz';
+            }
+
+            // Reg 20: Max Charging Current
+            if (settingsRegisters[20] !== undefined) {
+                updateSelect('set-charge-current', settingsRegisters[20]);
+                const chgCurStatus = document.getElementById('status-charge-current');
+                if (chgCurStatus) chgCurStatus.textContent = settingsRegisters[20] + ' A';
+            }
+
+            // Booking Charge Status (Input Reg 57)
+            const bookingMinsVal = getReg(57);
+            const bookingStatus = document.getElementById('status-booking-charge');
+            if (bookingStatus) bookingStatus.textContent = bookingMinsVal > 0 ? `(${bookingMinsVal}m delay active)` : '';
+            const cancelBookingBtn = document.getElementById('btn-cancel-booking');
+            if (cancelBookingBtn) cancelBookingBtn.style.display = bookingMinsVal > 0 ? 'inline-block' : 'none';
+
             // Reg 27: Light Mode
             if (settingsRegisters[27] !== undefined) {
                 const lightEl = document.getElementById('set-light-mode');
@@ -4771,11 +5443,11 @@ Example format:
                 }
             };
 
-            // Reg 59: Screen Timeout (register and option values are both seconds)
+            // Reg 59: USB Standby (mins)
             if (settingsRegisters[59] !== undefined) {
-                const secs = settingsRegisters[59];
-                updateSelect('set-screen-timeout', secs);
-                updateTimeStatus('status-screen-timeout', Math.floor(secs / 60));
+                const mins = settingsRegisters[59];
+                updateSelect('set-usb-standby', mins);
+                updateTimeStatus('status-usb-standby', mins);
             }
 
             // Reg 60: AC Standby
@@ -4792,11 +5464,11 @@ Example format:
                 updateTimeStatus('status-dc-standby', val);
             }
 
-            // Reg 62: USB Standby (Seconds -> Mins)
+            // Reg 62: Screen Timeout (Seconds)
             if (settingsRegisters[62] !== undefined) {
-                const mins = Math.floor(settingsRegisters[62] / 60);
-                updateSelect('set-usb-standby', mins);
-                updateTimeStatus('status-usb-standby', mins);
+                const secs = settingsRegisters[62];
+                updateSelect('set-screen-timeout', secs);
+                updateTimeStatus('status-screen-timeout', Math.floor(secs / 60));
             }
 
             // Reg 68: Sys Standby
@@ -5068,6 +5740,28 @@ Example format:
             setField('total_w', d.totalW);
             setField('time_remaining', d.timeText);
             setField('ext_batteries', d.extText);
+
+            if (d.fanLvl !== undefined) {
+                setField('fan_level', d.fanLvl);
+                const fanIcon = document.getElementById('dash-fan-icon');
+                if (fanIcon) fanIcon.classList.toggle('spinning', d.fanLvl > 0);
+            }
+
+            const tempBadge = document.getElementById('dash-temp-badge');
+            if (tempBadge) {
+                if (d.tempStatus) {
+                    tempBadge.textContent = d.tempStatus;
+                    tempBadge.classList.remove('hidden');
+                } else {
+                    tempBadge.classList.add('hidden');
+                }
+            }
+
+            const sysEl = document.getElementById('sysWatts');
+            if (sysEl) {
+                const isFault = d.sysStatus === 'Inverter Fault' || d.sysStatus === 'Temp Protection' || (typeof d.sysStatus === 'string' && d.sysStatus.startsWith('Error'));
+                sysEl.classList.toggle('fault-text-flash', isFault);
+            }
 
             if (d.soc !== undefined) {
                 setField('soc', Math.floor(d.soc));
@@ -5510,9 +6204,44 @@ Example format:
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
 
             const targetView = document.getElementById('view-' + viewId);
-            if (targetView) targetView.classList.add('active');
+            if (targetView) {
+                targetView.classList.add('active');
+                try { window.scrollTo({ top: 0, behavior: 'instant' }); } catch (e) { }
+            }
 
             if (viewId === 'diagnostics') renderDiagnostics();
+            if (viewId === 'dcdc') updateDcdcBitmaskTest();
+        }
+
+        // DC-DC Auxiliary Battery Charger (wp) Tools
+        function updateDcdcBitmaskTest() {
+            const b3 = document.getElementById('dcdc-bit3-test');
+            const b7 = document.getElementById('dcdc-bit7-test');
+            const isB3 = b3 ? b3.checked : false;
+            const isB7 = b7 ? b7.checked : false;
+            let val = 0;
+            const msgs = [];
+            if (isB3) { val |= 8; msgs.push('<span style="color:#ef4444; font-weight:bold;">Bit 3: Undervoltage Protection (Starter Cutoff)</span>'); }
+            if (isB7) { val |= 128; msgs.push('<span style="color:#f59e0b; font-weight:bold;">Bit 7: Engine Flameout Protection Active (Alternator Cutoff)</span>'); }
+            const el = document.getElementById('dcdc-bitmask-result');
+            if (el) {
+                if (val === 0) {
+                    el.innerHTML = 'Raw Reg 7 Value: <strong style="color:var(--text-green,#22c55e);">0 (0x00)</strong> · Status: <strong style="color:var(--text-green,#22c55e);">All Clear / Normal Charging</strong>';
+                } else {
+                    el.innerHTML = `Raw Reg 7 Value: <strong style="color:#f59e0b;">${val} (0x${val.toString(16).toUpperCase().padStart(2, '0')})</strong><br>Active Alarms: ${msgs.join(' · ')}`;
+                }
+            }
+        }
+
+        function applyDcdcProfile(val, name) {
+            const preview = document.getElementById('dcdc-profile-preview');
+            if (preview) {
+                const volts = (val / 10).toFixed(1);
+                const hi = ((val >> 8) & 0xff).toString(16).padStart(2, '0').toUpperCase();
+                const lo = (val & 0xff).toString(16).padStart(2, '0').toUpperCase();
+                preview.innerHTML = `Selected: <strong style="color:#38bdf8;">${name}</strong> → Holding Reg 11 (<code style="color:#fbbf24;">outputVoltSet</code>) = <strong style="color:#fbbf24;">${val}</strong> (${volts} V)<br>` +
+                    `Modbus Write Packet: <code style="color:var(--text-green,#22c55e); background:rgba(0,0,0,0.4); padding:0.1rem 0.3rem; border-radius:3px;">11 06 00 0B ${hi} ${lo} [CRC]</code>`;
+            }
         }
 
         // Register definitions with format info for human-readable display
@@ -5522,7 +6251,7 @@ Example format:
             4: { name: 'DC Input Watts', unit: 'W' },
             5: { name: 'Unknown (0)', unit: '' },
             6: { name: 'Total Input', unit: 'W' },
-            7: { name: 'Error/Warning Code?', format: 'flags' },     // 0 during cold temp warning, needs more data
+            7: { name: 'AC Grid Power', format: 'watt' },
             8: { name: 'Active Error Code', format: 'raw' },         // 78=Inverter Fault, 79=Safety Lockout (Cold/Hot/HW). Other values (0, 136, ...) seen on healthy devices = Normal
             13: { name: 'AC Charge Rate', format: 'charge_level' },
             14: { name: 'Max AC Input', format: 'watt' },         // Confirmed 1100
@@ -5542,7 +6271,7 @@ Example format:
             35: { name: 'USB-C2 Out', format: 'watt01' },
             36: { name: 'USB-C3 Out', format: 'watt01' },
             37: { name: 'USB-C4 Out', format: 'watt01' },
-            39: { name: 'Total Output (Old?)', format: 'watt' },
+            39: { name: 'Total Output', format: 'watt' },
             40: { name: 'Pack Config V? (x10)', format: 'volt' },
             41: { name: 'Active Port Flags', format: 'flags' },        // Bit9=USB, Bit10=DC, Bit11=AC, Bit12=LED
             42: { name: 'HW GPIO & Fault Mask', format: 'flags' },    // Bit15=Warning latch, Bits13-14(0x6000)=CRITICAL FAULT, Bits0-12=MOSFET status
@@ -5555,14 +6284,14 @@ Example format:
             54: { name: 'Battery Full Capacity (0.1Ah)', format: 'capacity' }, // 374=37.4Ah (Aferiy), 762=76.2Ah (Fossibot)
             55: { name: 'Ext2 SOC', format: 'ext_soc' },
             56: { name: 'Main SOC', format: 'percent01' },       // Confirmed 867 = 86.7%
-            57: { name: 'AC Silent', format: 'toggle' },
+            57: { name: 'Booking Charge Countdown', format: 'mins' },
             58: { name: 'Time to Full', format: 'time' },
             59: { name: 'Time to Empty', format: 'time' },        // Confirmed 3466 (~57h)
             60: { name: 'AC Standby (Counter)', format: 'mins' },
             61: { name: 'DC Standby (Counter)', format: 'mins' },
             62: { name: 'USB Standby (Counter)', format: 'raw' },
-            66: { name: 'Discharge Limit (%)', format: 'percent01' },
-            67: { name: 'Charge Limit (%)', format: 'percent01' }, // Confirmed 1000 = 100.0%
+            66: { name: 'Ext3 SOC', format: 'ext_soc' },
+            67: { name: 'Ext4 SOC', format: 'ext_soc' },
             68: { name: 'Shutdown Timer?', format: 'raw' },
             69: { name: 'Fan Level', format: 'level' },
             80: { name: 'CRC Checksum', format: 'flags' }
@@ -5570,11 +6299,13 @@ Example format:
 
         // Settings Register Map (0x1103)
         const SETTINGS_REGS = {
+            0: 'Factory Reset (Write 1)',
             5: 'Master System Enable (0/1)',      // Forced to 0 during Critical Faults (Reg 42 bits 13-14)
             11: 'Hardware ID',                     // 1536(0x0600)=US Aferiy, 512(0x0200)=EU Fossibot
             13: 'AC Charge Speed Setting (1-5)',
             14: 'Max Charge Wattage (W)',         // 1500 (US), 1100 (EU)
             16: 'Frequency Setting (Hz/10)',
+            17: 'Max Charge Current Limit (A)',
             19: 'Max AC Input Current (dA)',      // 1600=16.0A (120V US), 500=5.0A (230V EU)
             20: 'Max Charging Current (1-20A)',
             21: 'AC Input Voltage',
@@ -5586,12 +6317,16 @@ Example format:
             32: 'Firmware Version?',
             40: 'Pack Voltage Calib 1',
             41: 'Pack Voltage Calib 2',
+            47: 'AC MCU Firmware Version',
+            48: 'BMS MCU Firmware Version',
+            49: 'PV MCU Firmware Version',
+            50: 'DC/Panel MCU Firmware Version',
             56: 'Key Sound (0/1)',
             57: 'Silent Charging (0/1)',
-            59: 'Screen Timeout (Seconds)',
+            59: 'USB Standby (mins)',
             60: 'AC Standby (mins)',
             61: 'DC Standby (mins)',
-            62: 'USB Standby (Seconds)',
+            62: 'Screen Timeout (Seconds)',
             63: 'Stop Charge After (mins)',
             66: 'Discharge Limit Min SoC (%/10)', // System stops discharging at this SOC
             67: 'Charge Limit Max SoC (%/10)',    // System stops charging at this SOC
@@ -5634,6 +6369,45 @@ Example format:
         let lastDiagValues = {};
 
         function renderDiagnostics() {
+            const safetyCard = document.getElementById('diag-safety-content');
+            if (safetyCard) {
+                const err = (typeof registers !== 'undefined' && registers[8]) ? registers[8] : 0;
+                const prot = (typeof registers !== 'undefined' && registers[42]) ? registers[42] : 0;
+                const fan = (typeof registers !== 'undefined' && registers[69]) ? registers[69] : 0;
+                const acv = (typeof registers !== 'undefined' && registers[21]) ? registers[21] : 0;
+                const isCrit = (err === 79 && (prot & 0x6000) > 0);
+                const isTemp = (err === 79 && (prot & 0x6000) === 0);
+                const isInv = (err === 78);
+                const isCold = (acv === 15);
+
+                if (isCrit) {
+                    safetyCard.innerHTML = `<div style="background:rgba(239,68,68,0.25); border:1px solid #ef4444; border-radius:6px; padding:0.75rem; color:#fca5a5;" class="fault-active-flash">
+                        <div style="font-weight:bold; color:#ef4444; font-size:0.95rem;">🚨 CRITICAL HARDWARE FAULT (Error 79)</div>
+                        <div style="font-size:0.8rem; margin-top:0.25rem;">Hardware protection bits active: <code>0x${prot.toString(16).toUpperCase()}</code>. Power board safety lockout active. Perform full power cycle or factory reset.</div>
+                    </div>`;
+                } else if (isTemp) {
+                    safetyCard.innerHTML = `<div style="background:rgba(217,119,6,0.25); border:1px solid #d97706; border-radius:6px; padding:0.75rem; color:#fcd34d;" class="fault-active-flash">
+                        <div style="font-weight:bold; color:#f59e0b; font-size:0.95rem;">⚠️ TEMPERATURE SAFETY PROTECTION ACTIVE</div>
+                        <div style="font-size:0.8rem; margin-top:0.25rem;">Ambient cell thermal threshold exceeded (&lt;0°C or &gt;55°C). Charging &amp; inverter paused until temperature normalizes.</div>
+                    </div>`;
+                } else if (isInv) {
+                    safetyCard.innerHTML = `<div style="background:rgba(217,119,6,0.25); border:1px solid #d97706; border-radius:6px; padding:0.75rem; color:#fcd34d;" class="fault-active-flash">
+                        <div style="font-weight:bold; color:#f59e0b; font-size:0.95rem;">⚠️ INVERTER STAGE FAULT (Error 78)</div>
+                        <div style="font-size:0.8rem; margin-top:0.25rem;">AC output overload or trip. Turn off high-wattage AC loads. Solar MPPT and DC outputs remain operational.</div>
+                    </div>`;
+                } else {
+                    safetyCard.innerHTML = `<div style="background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.3); border-radius:6px; padding:0.6rem; color:#86efac; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+                        <div>
+                            <span style="font-weight:bold; color:var(--text-green);">✅ System Status Normal</span>
+                            <span style="font-size:0.75rem; color:#aaa; margin-left:0.5rem;">(Code: ${err}${err === 136 ? ' [Healthy Status]' : ''}, Prot: 0x${prot.toString(16).toUpperCase()})</span>
+                        </div>
+                        <div style="font-size:0.75rem; color:#aaa;">
+                            <span>🌀 Fan: Lvl ${fan}/5</span> · <span>${isCold ? '❄️ Cold Protection (15)' : '🌡️ Thermal: Normal'}</span>
+                        </div>
+                    </div>`;
+                }
+            }
+
             const div = document.getElementById('full-diag-list');
             if (!div) return;
 
@@ -6536,6 +7310,9 @@ Example format:
             if (name === 'ac_silent') {
                 log(`Setting Silent Charge to ${val === 1 ? 'ON' : 'OFF'}`);
                 setRegister(57, val);
+            } else if (name === 'key_sound') {
+                log(`Setting Key Sound / Beep to ${val === 1 ? 'ON' : 'OFF'}`);
+                setRegister(56, val);
             } else if (name === 'light_mode') {
                 log(`Setting Light to ${val === 1 ? 'ON' : 'OFF'}`);
                 setRegister(27, val);
@@ -6572,20 +7349,16 @@ Example format:
             const el = document.getElementById('set-' + name.replace('_', '-'));
             let val = parseInt(el.value);
             const map = {
-                'screen_timeout': 59,
+                'screen_timeout': 62,
                 'ac_standby': 60,
                 'dc_standby': 61,
-                'usb_standby': 62,
+                'usb_standby': 59,
                 'sys_standby': 68,
                 'eps_limit': 67,
-                'charge_profile': 13
+                'charge_profile': 13,
+                'ac_freq': 16,
+                'charge_current': 20
             };
-
-            // USB Standby options are minutes but the register stores seconds.
-            // Screen Timeout option values are ALREADY seconds — do not convert.
-            if (name === 'usb_standby') {
-                val = val * 60;
-            }
 
             if (map[name]) {
                 const reg = map[name];
@@ -6606,6 +7379,24 @@ Example format:
             const el = document.getElementById('set-' + name.replace('_', '-'));
             const val = parseInt(el.value);
             if (name === 'booking_charge') setRegister(63, val);
+        }
+
+        function cancelBookingCharge() {
+            log("Cancelling scheduled charge reservation (Reg 63 -> 0)");
+            setRegister(63, 0);
+            const el = document.getElementById('set-booking-charge');
+            if (el) el.value = 0;
+            const timeEl = document.getElementById('set-booking-time');
+            if (timeEl) timeEl.value = '';
+            showToast("Scheduled charging cancelled", "info");
+        }
+
+        function confirmFactoryReset() {
+            if (confirm("⚠️ FACTORY RESET & UNBIND\n\nAre you sure you want to reset your power station to factory defaults?\n\nThis writes 1 to Register 0, restoring default charging limits, standby timers, and unbinding the device.")) {
+                log("Executing Factory Reset / Unbind (Reg 0 -> 1)");
+                setRegister(0, 1);
+                showToast("Factory reset command sent", "warning");
+            }
         }
 
         function updateBookingFromTime() {
@@ -7468,7 +8259,22 @@ Example format:
         // ========== BIT INSPECTOR ==========
         // Known bit meanings for flag registers (status / 0x1104)
         const BIT_LABELS = {
-            41: { 9: 'USB Output', 10: 'DC Output', 11: 'AC Output', 12: 'LED Light' },
+            41: {
+                2: 'AC Output (ac_discharge)',
+                3: 'AC Input Present',
+                4: 'AC Charging Active',
+                5: 'Low-PV Input Present',
+                6: 'Low-PV Charging Active',
+                7: 'DC Output (dc_discharge)',
+                8: 'Car Input Present',
+                9: 'USB Output Active',
+                10: 'LED Light / DC Output',
+                11: 'AC Output (Alt)',
+                12: 'LED Light (Alt)',
+                13: 'Car Charging Active',
+                14: 'High-PV Input Present',
+                15: 'High-PV Charging Active'
+            },
             42: { 13: 'Critical Fault (A)', 14: 'Critical Fault (B)', 15: 'Warning Latch' },
             48: { 3: 'Error Pending', 14: 'Inverter Standby', 15: 'AC Charging' }
         };

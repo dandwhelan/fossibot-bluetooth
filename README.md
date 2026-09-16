@@ -33,7 +33,9 @@ ABOK Power Ark3600 (Probalby works, but not tested)
 *   **Switchable Dashboard Layouts:** Pick the dashboard that suits you in Settings → Theme & Layout: **Classic**, **Energy Flow** (animated power-flow diagram with tappable output nodes), **Gauges** (cockpit-style radial dials), or **Pro Monitor** (data-dense table with a full-size chart on top).
 *   **Smart Time Estimates:** Automatically switches between **"Time to Full"** (⚡) when charging and **"Time to Empty"** (🔋) when discharging.
 *   **Live Power Flow:** Visualize real-time Input (Charging) and Output (Discharging) wattage with dynamic gauges.
-*   **System Health:** Monitor system voltage, frequency, and internal temperatures (fan levels).
+*   **System Health & Active Fan Monitoring:** Monitor system voltage, frequency, and real-time active cooling fan speed levels (`0`–`5`) with an animated spinning fan indicator on the dashboard whenever fans are active.
+*   **Flashing Visual Fault Alerts:** Prominent pulsing red/amber fault warning banner that immediately flashes in the UI when an issue occurs on the device (Error 78 Inverter Trip, Error 79 Critical Hardware Safety Lockout, or Thermal Extreme Protection).
+*   **Thermal Protection Detection:** Decodes internal environmental protection states: sub-zero cold freeze charging lockout (&lt;0°C via Reg 21 code 15) and high-heat inverter safety pause (&gt;55°C via Reg 8 code 79 with Reg 42 hardware mask = 0).
 *   **Battery Extensions:** Support for monitoring external battery packs (Success/Extension batteries) with individual charge levels.
 *   **Power History Chart:** Live graph of Input/Output wattage and battery % on the dashboard, with optional Fan level and AC input voltage series when active. Selectable time ranges (5m / 10m / 30m / 1h / 24h), tap the graph to read exact values at any point, and one-click **CSV export**.
 *   **Persistent History:** Chart samples are stored locally (IndexedDB) so the last 24 hours survive page reloads and reconnects.
@@ -67,22 +69,31 @@ ABOK Power Ark3600 (Probalby works, but not tested)
 *   **Hands-free recovery:** After a successful press the app waits 5 seconds for the station to boot, then starts the normal auto-connect so the dashboard comes straight back up.
 *   Works with the original Bot and the 2026 rechargeable USB-C Bot — both speak the same BLE protocol.
 
-### ⚙️ Power Management Settings
-*   **Accordion Layout:** Clean collapsible sections for Quick Actions, Power Limits, Timers, and Theme selection.
-*   **Charging Rate:** Adjust AC Charging power from **200W to 1100W+** (Verify supported limits for your specific model).
-*   **Discharge Limit:** Set a lower limit for battery discharge (e.g., stop discharging at 10%) to preserve battery health.
-*   **EPS / UPS Settings:** Configure Entry Power Supply (UPS mode) behavior and upper charge limits.
+### ⚙️ Power Management Settings (F2400 / Classic V0 Platform)
+The web application is tailored for the **Classic V0 Platform** (Fossibot F2400, F3600 Pro, Aferiy P210/P310, SYDPOWER N052/N066) communicating via Modbus BLE (0x1103 Settings / 0x1104 Status):
+*   **Platform Identifier Badge:** Active profile banner clearly identifying the Classic V0 Modbus protocol.
+*   **Key Sound / Buzzer Tone:** Remotely toggle button confirmation beep (Reg 56).
+*   **AC Output Frequency:** Switch inverter output between **50 Hz and 60 Hz** (Reg 16: 500 = 50Hz, 600 = 60Hz).
+*   **Charging Rate:** Adjust AC Charging power from **300W to 1100W+** across 5 selectable levels (Reg 13).
+*   **Max Charging Current:** Select maximum charging current ceiling in Amps (Reg 20, 3A–20A).
+*   **Discharge Limit:** Set a lower DOD limit for battery discharge (e.g., stop discharging at 10%) to preserve battery health (Reg 66).
+*   **EPS / UPS Settings:** Configure Entry Power Supply (UPS mode) behavior and upper charge limits (Reg 67: 60%–100%).
+*   **Schedule Charge Delay:** Schedule charge start countdown in minutes (Reg 63 write, Reg 57 live countdown, and one-click cancel).
+*   **Hardware & Sub-MCU Firmware Inspector:** Real-time decoding of AC Inverter, BMS, Solar MPPT, and Front Display Panel MCU firmware versions (Regs 47–50), maximum AC wattage ceiling (Reg 14), and regional hardware model IDs (Reg 11).
 *   **Standby Timers:** detailed control over auto-shutdown timers to save power:
-    *   **Screen Timeout:** 1 min, 5 min, Never.
-    *   **System Idle Shutdown (Whole Device):** Auto-shutdown the entire device after inactivity (5 min – 8 hr). ⚠️ **"Never" / 0 is not supported and has been confirmed to permanently brick devices** — the option is removed and writes of 0 to register 68 are blocked at the protocol layer.
-    *   **AC Standby:** Turn off inverter if no load detected.
-    *   **DC/USB Standby:** Turn off low-voltage ports if idle.
+    *   **Screen Timeout:** (Reg 62) 1 min, 3 min, 5 min, 10 min, 30 min, 1 hr, 2 hr, 4 hr, Never.
+    *   **System Idle Shutdown (Whole Device):** Auto-shutdown the entire device after inactivity (Reg 68: 5 min – 8 hr). ⚠️ **"Never" / 0 is not supported and has been confirmed to permanently brick devices** — the option is removed and writes of 0 to register 68 are blocked at the protocol layer.
+    *   **AC Standby:** Turn off inverter if no load detected (Reg 60: 1 hr, 8 hr, 16 hr, 24 hr, Never).
+    *   **DC Standby:** Turn off 12V DC ports if idle (Reg 61: 1 hr, 8 hr, 16 hr, 24 hr, Never).
+    *   **USB Standby:** Turn off USB ports if idle (Reg 59: 5 min, 10 min, 30 min, 1 hr, 2 hr, 8 hr, 10 hr, Never).
+*   **Factory Reset / Unbind:** Safely reset station parameters to defaults and unbind via Reg 0 with confirmation dialog.
 
 ### 🔍 Advanced Diagnostics & Reverse Engineering
 *   **Auto-Refresh:** Live status updates every 2-10 seconds for real-time debugging.
 *   **Multi-Device Comparison:** Import JSON diagnostic files from other users to compare specifications, firmware settings, and calibration data side-by-side.
 *   **Change Recorder:** Capture a baseline and automatically detect register changes after performing physical actions on the device (reverse engineering helper).
 *   **Register Inspector:** View raw BMS data streams (0x1104 Status vs 0x1103 Settings).
+*   **Safety Status Card & Fault Matrix:** Real-time health banner showing active safety states and complete reference table for Error Codes 78, 79, 136, hardware fault masks, and DC-DC protection flags.
 *   **System Summary:** Get a plain-English status report of the device state.
 *   **Visualization:** "Flash" indicators show exactly which data points are changing in real-time.
 *   **Hide Zeros:** Filter out unused registers to focus on active data.
@@ -168,6 +179,50 @@ Commands are sent to the Write Characteristic using a specific structure:
 `[Header 0x11] [Cmd 0x??] [Reg High] [Reg Low] [Val High] [Val Low] [CRC]`
 
 **See [PROTOCOL.md](PROTOCOL.md) for the complete reverse-engineered register map and packet structure details.**
+
+---
+
+### ☀️ Next-Gen V1 Platform & Balcony Solar Findings
+
+APK reverse-engineering of the manufacturer app revealed that newer hardware revisions and Balcony Solar products utilize a modernized protocol dubbed **V1 Platform** (`portable-power-station-v1`, `balcony-pv`, and `switch-box` device families, internally identified by `protocol_version >= 1` and the unified `se` register architecture):
+
+*   **Unified Register Layout (`se`):** Rather than scattering configuration across arbitrary high-numbered registers, the V1 platform condenses standby and power limits into lower contiguous holding registers:
+    *   `Reg 24`: AC Inverter Standby Sleep Timer (replaces V0 Reg 60)
+    *   `Reg 25`: LCD Screen Dim Timer (replaces V0 Reg 62)
+    *   `Reg 26`: Minimum Discharge Limit (DOD %) (replaces V0 Reg 66)
+    *   `Reg 27`: UPS Maximum Charge SOC Limit (%) (replaces V0 Reg 67)
+    *   `Reg 28`: Whole Machine Auto-Shutdown Timer (replaces V0 Reg 68)
+    *   `Reg 29`: USB / QC / PD Sleep Timer (replaces V0 Reg 59)
+    *   `Reg 30`: 12V DC Port Sleep Timer (replaces V0 Reg 61)
+    *   `Reg 86`: Grid-Tie Export / Feedback Power Maximum (Watts)
+*   **System State Bitmask (OpCode `0x05` / Reg 75):** Rapid single-packet toggling of 15 system states via bitfield flags:
+    *   `Bit 0`: Solar Self-Consumption Mode
+    *   `Bit 1`: Grid Feedback Pause
+    *   `Bit 3`: AI Dynamic Energy Scheduling
+    *   `Bit 6`: Silent Charging Mode
+    *   `Bit 7`: Buzzer / Key Sound Enable
+    *   `Bit 9`: Low-Voltage Solar PV Charge Enable
+    *   `Bit 10`: Car Charging Enable
+    *   `Bit 11`: Master DC / USB / LED / Wireless Power Enable
+    *   `Bit 13`: High-Voltage Solar PV Charge Enable
+    *   `Bit 14`: Remote App Shutdown
+*   **Balcony Solar & Energy Metering:**
+    *   32-bit Lifetime Solar Generation Wh counters (Reg 59 High Word, Reg 60 Low Word) and Daily Solar Wh (Reg 61).
+    *   Built-in RTC synchronization (Regs 97–99: Year/Month, Day/Hour, Minute/Second).
+    *   Micro-inverter grid feed-in coordination, smart socket integration, and grid export power limits.
+
+*Note: While the web app is optimized for the widely-deployed Classic V0 platform (F2400, F3600 Pro, Aferiy P210/P310), the complete V1 register definitions are fully mapped in [PROTOCOL.md Section 9](PROTOCOL.md#9-next-gen-platform-protocol-v1--balcony-solar--unified-architecture) for developers building Next-Gen drivers.*
+
+---
+
+### 🚐 DC-DC Auxiliary Battery Charger Protocol (`wp`)
+
+The manufacturer codebase also contains driver support for dual-battery vehicle/camper DC-DC chargers (`DC_DC-V1-0083` profile, `wp` register architecture):
+*   **Live Alternator Telemetry (0x1104):** Alternator input voltage, current, and wattage (`Regs 0–2`), auxiliary battery charge voltage, current, and wattage (`Regs 3–5`), and heatsink temperature (`Reg 6`).
+*   **Engine Protection:** Hardware engine flameout detection and vibration cut-off protection (`Reg 7 Bit 7` / `Reg 13`), and alternator cutoff voltage threshold (`Reg 14`).
+*   **Target Float / Bulk Voltage Setting:** Adjustable auxiliary battery charge voltage profile (`Reg 11`).
+
+*See [PROTOCOL.md Section 10](PROTOCOL.md#10-dc-dc-auxiliary-battery-charger-protocol) for complete register tables.*
 
 ---
 

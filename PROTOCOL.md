@@ -42,7 +42,7 @@ The device uses different function codes (OpCodes) for different types of data:
 | 4   | **DC Input Watts** | Watts | Solar/DC input power. |
 | 5   | Unknown | - | Always 0 across all tested devices. |
 | 6   | **Total Input Watts** | Watts | Sum of AC (Reg 3) + DC (Reg 4). |
-| 7   | Error/Warning Code? | Flags | Observed as 0 across all tested states. Needs more data. |
+| 7   | **AC Grid Power** | Watts | Signed 16-bit integer. Positive = importing AC grid power; negative = exporting / grid feedback (e.g. grid-tie). |
 | 8   | **Error Code** | Raw | Numeric error ID corresponding to the fault bitmask in Reg 42. e.g. value `79` seen alongside Reg 42 = 0xE000. |
 
 ### Inverter Output
@@ -72,14 +72,14 @@ The device uses different function codes (OpCodes) for different types of data:
 | 35  | USB-C2 Output | Watts &times; 10 | Second USB-C port output. |
 | 36  | USB-C3 Output | Watts &times; 10 | Third USB-C port output. |
 | 37  | USB-C4 Output | Watts &times; 10 | Fourth USB-C port output. |
-| 39  | Output Watts (Legacy) | Watts | **Deprecated.** Use Reg 20 instead. |
+| 39  | **Total Output Power** | Watts | Output wattage across all active ports. Primary total output power gauge used on the official vendor app dashboard. |
 
 ### System Flags & Protection
 
 | Reg | Name | Format | Notes |
 |:----|:-----|:-------|:------|
 | 40  | Pack Config Voltage | V &times; 10 | Pack voltage calibration value. |
-| 41  | **Capability Flags** | Bitmask | Active output/capability flags. Bit 9=USB, Bit 10=DC, Bit 11=AC. Varies significantly by device state. |
+| 41  | **Port & Subsystem Active Flags** | Bitmask | Real-time port & charging state machine. Bit 2 = AC Out Active; Bit 3 = AC In Present (Grid); Bit 4 = AC In Charging Active; Bit 5 = Low PV In Present; Bit 6 = Low PV Charging Active; Bit 7 = DC Out Active; Bit 8 = Car In Present; Bit 13 = Car In Charging Active; Bit 14 = High PV In Present; Bit 15 = High PV Charging Active. Bits 2+3 simultaneous = UPS Bypass Mode. |
 | 42  | **Protection Flags (Critical)** | Bitmask | **0 = OK.** Non-zero = active system fault. `0xE000` (bits 13,14,15) = Critical Hardware Failure. Correlates with Error Code in Reg 8. **Dashboard shows warning when non-zero.** |
 | 47  | Hardware Constant | Flags | Always 0x3000 (12288) across all 5 tested devices. Not a sensor. |
 | 48  | **System Status Flags** | Bitmask | `0x8000` = AC Charging, `0x4000` = Inverter Standby/Ready, `0x0008` = Error Pending. |
@@ -100,13 +100,15 @@ The device uses different function codes (OpCodes) for different types of data:
 
 | Reg | Name | Format | Notes |
 |:----|:-----|:-------|:------|
-| 57  | AC Silent Mode | 0/1 | Silent charging status. |
+| 57  | **Booking Charge Delay** | Minutes | Countdown timer for scheduled charging (in minutes remaining). 0 when no schedule is active. |
+| 58  | **Time to Full** | Minutes | Estimated charge time remaining. Indicates "Already Full" if <= 0 while SOC is 100% and AC connected without active output load. |
+| 59  | **Time to Empty** | Minutes | Estimated discharge time remaining under current load. |
 | 60  | AC Standby Counter | Minutes | Current AC standby countdown. |
 | 61  | DC Standby Counter | Minutes | Current DC standby countdown. |
 | 62  | USB Standby | Raw | Always 255 (0xFF) across all tested devices. Likely "disabled" sentinel. |
 | 63  | Unused | Raw | Always 65535 (0xFFFF) across all tested devices. Padding/sentinel. |
-| 66  | Discharge Limit | 0.1% | Current discharge limit setting. e.g. 100 = 10%. |
-| 67  | Charge Limit | 0.1% | Current charge limit setting. e.g. 1000 = 100%. |
+| 66  | **Ext3 SOC** | Special | Extension Battery 3 SOC. 0=Missing, else (val-10)/10 = %. (Discharge Limit is Settings Reg 66). |
+| 67  | **Ext4 SOC** | Special | Extension Battery 4 SOC. 0=Missing, else (val-10)/10 = %. (Charge Limit is Settings Reg 67). |
 | 68  | Shutdown Timer | Raw | Machine shutdown countdown. |
 | 69  | **Fan Level** | 0-5 | Current fan speed level. |
 | 80  | CRC Checksum | Hex | Packet checksum value. |
@@ -121,6 +123,7 @@ The device uses different function codes (OpCodes) for different types of data:
 
 | Reg | Name | Format | Notes |
 |:----|:-----|:-------|:------|
+| 0   | **Factory Reset / Unbind** | 1 | Writing 1 triggers device unbind and factory defaults reset. |
 | 2   | Active Charge State | 1-4 | 1=Slow, 4=Const Current. Correlates with Reg 13. |
 | 3   | AC Input Watts | Watts | 0-1100. Rate at which AC is being drawn. |
 | 4   | DC Input Watts | Watts | 0-500. Solar/Car Input. |
@@ -135,13 +138,14 @@ The device uses different function codes (OpCodes) for different types of data:
 | 13  | **AC Charge Speed Setting** | 1-5 | User's preferred charge speed dial position. Mirrored in Input Reg 2 (unless throttled). |
 | 14  | **Max Charge Wattage** | Watts | Power cap for Charge Speed "5". 1500W (US), 1100W (EU). |
 | 16  | Frequency Setting | Hz &times; 10 | Output frequency (500 = 50Hz, 600 = 60Hz). |
+| 17  | **Max Charge Current Limit** | Amps | Hardware capability ceiling for AC charging current (e.g. 10, 15, or 20A). Defines selectable upper bound for Reg 20. |
 | 19  | **Max AC Input Current** | Deci-Amps | Hardcoded safety limit. `1600` = 16.0A (120V US), `500` = 5.0A (230V EU). |
+| 20  | **Charge Current Setting** | Amps | Configurable AC charging current limit (1 to Reg 17 Amps). |
 
 ### Readings & Toggles
 
 | Reg | Name | Format | Notes |
 |:----|:-----|:-------|:------|
-| 20  | Total Output / DC Max | Amps | DC output max current setting. |
 | 21  | AC Input Voltage | V &times; 10 | Measured AC input voltage. |
 | 22  | Battery Voltage | V &times; 10 | Measured battery voltage. |
 | 24  | USB Enabled | 0/1 | USB ports toggle. |
@@ -151,18 +155,22 @@ The device uses different function codes (OpCodes) for different types of data:
 | 32  | Firmware Version | Raw | Device firmware version identifier. |
 | 40  | Pack Voltage Calib 1 | Raw | Battery pack calibration value 1. |
 | 41  | Pack Voltage Calib 2 | Raw | Battery pack calibration value 2. |
+| 47  | **AC Firmware Version** | High/Low Byte | Microcontroller firmware version for AC inverter module (`IntUtils.intToHighLow`). |
+| 48  | **BMS Firmware Version** | High/Low Byte | Microcontroller firmware version for Battery Management System. |
+| 49  | **PV Firmware Version** | High/Low Byte | Microcontroller firmware version for Solar MPPT module. |
+| 50  | **DC / Panel Version** | High/Low Byte | Microcontroller firmware version for front display / DC module. |
 
 ### Timers & Limits
 
 | Reg | Name | Format | Notes |
 |:----|:-----|:-------|:------|
 | 56  | Key Sound | 0/1 | Button beep toggle. |
-| 57  | Silent Charging | 0/1 | Mute charging sounds. |
-| 59  | Screen Timeout | Minutes | 0 = Never. e.g. 30 = 30 mins. |
-| 60  | AC Standby Time | Minutes | Auto-off timer for AC. 0 = Never. |
-| 61  | DC Standby Time | Minutes | Auto-off timer for DC. 0 = Never. |
-| 62  | USB Standby Time | Seconds | Auto-off timer for USB. 0 = Never. |
-| 63  | Booking Charge | Minutes | Scheduled charging delay. |
+| 57  | Silent Charging | 0/1 | Mute charging sounds / cap fan speed. |
+| 59  | USB Standby Time | Seconds | Auto-off timer for USB ports. Allowed: 0, 180, 300, 600, 1800. 0 = Never. |
+| 60  | AC Standby Time | Seconds | Auto-off timer for AC inverter (stored in seconds, UI shows minutes). Allowed: 0, 480, 960, 1440. 0 = Never. |
+| 61  | DC Standby Time | Seconds | Auto-off timer for 12V DC (stored in seconds, UI shows minutes). Allowed: 0, 480, 960, 1440. 0 = Never. |
+| 62  | Screen Timeout | Seconds | Auto-off timer for LCD display (stored in seconds: 180=3m, 300=5m, 600=10m, 1800=30m). 0 = Never. |
+| 63  | Booking Charge | Minutes | Scheduled charging delay timer in minutes. |
 | 64  | Power Off | 1 | Command to shutdown device. |
 | 66  | **Discharge Limit** | 0.1% | Min SoC %. Stop discharging at this %. e.g. 100 = 10%. |
 | 67  | **Charge Limit** | 0.1% | Max SoC %. Stop charging at this %. e.g. 1000 = 100%. |
@@ -385,3 +393,160 @@ wrong password.
 For discovery, Bots advertise service data under UUID `0xFD3D` (device type
 byte `H` / `0x48`; older firmware also advertises the 128-bit service UUID).
 The 2026 rechargeable USB-C Bot uses the same protocol as the original.
+
+---
+
+## 9. Next-Gen Platform (Protocol V1 / Balcony Solar & Unified Architecture)
+
+For devices advertising with firmware `protocol_version >= 1` (newer power station revisions and Balcony Solar energy storage devices), the Sydpower platform maps to a modernized unified register set (`se` architecture in BrightEMS):
+
+### Holding Registers (V1 Settings)
+
+| Reg | Name | Description |
+|:----|:-----|:------------|
+| 1   | `grid_charge_power_level_set` | AC grid charge speed level profile |
+| 4   | `timeZone` | Device timezone configuration |
+| 5   | `DST_start_time` | Daylight Saving Time start |
+| 6   | `DST_end_time` | Daylight Saving Time end |
+| 21  | `DC_input_max_curr` | Max DC charging current hardware limit |
+| 23  | `DC_input_max_curr_set` | Configured DC charging current |
+| 24  | `Offline_AC_output_sleep_time` | AC inverter standby sleep timer (replaces V0 Reg 60) |
+| 25  | `LCD_dim_time` | Screen auto-dim / timeout timer (replaces V0 Reg 62) |
+| 26  | `discharge_soc_min_limit` | Minimum discharge limit (DOD %) (replaces V0 Reg 66) |
+| 27  | `ups_charge_soc_max_limit` | Maximum charge limit (%) in UPS mode (replaces V0 Reg 67) |
+| 28  | `shutdown_wait_time` | Whole machine auto-shutdown idle timer (replaces V0 Reg 68) |
+| 29  | `USB_QC_PD_sleep_time` | USB output standby sleep timer (replaces V0 Reg 59) |
+| 30  | `DC_12V_output_sleep_time` | 12V DC output standby sleep timer (replaces V0 Reg 61) |
+| 31  | `ECO_SOC` | Battery SOC threshold for ECO mode |
+| 32  | `dod_deep_discharge` | Deep discharge recovery enable / calibration |
+| 84  | `LowBatteryNotification` | Low battery audible / push notification threshold |
+| 85  | `UPS_mode_set` | UPS mode priority setting |
+| 86  | `grid_tie_out_power_max_set` | Maximum grid-tie export / feedback power in Watts |
+| 88  | `charge_priority` | Charging source priority (Solar vs Grid) |
+
+### Status Registers & System Control (V1 Telemetry)
+
+* **Input Reg 75 (`systemState`)**: Active system state and function toggle bitmask, controlled via OpCode `0x05` (`GET_BLE_INPUT_REGISTER_SET`):
+  * Bit 0: `pvSelfConsumption` (Solar self-consumption mode)
+  * Bit 1: `grid_function_pause` (Pause grid feed-in)
+  * Bit 2: `system_idle_set` (Idle mode toggle)
+  * Bit 3: `AI_energy_control` (Automated dynamic energy scheduling)
+  * Bit 4: `AC_backup_output_onoff` (AC emergency backup power output)
+  * Bit 5: `DC_input_type` (DC input type select)
+  * Bit 6: `silent_charging_mode` (Silent charging fan cap toggle)
+  * Bit 7: `Buzzer_enable` (Key beep buzzer toggle)
+  * Bit 8: `Low_PV_Vol_Exist_status` (Low-voltage solar input present)
+  * Bit 9: `Low_PV_charge_onoff` (Low-voltage solar charging toggle)
+  * Bit 10: `Car_charge_onoff` (Car charging toggle)
+  * Bit 11: `DC_usb_pd_led_wirelesscharge_Port_Out_onoff` (DC/USB/LED master toggle)
+  * Bit 12: `High_PV_Vol_Exist_status` (High-voltage solar input present)
+  * Bit 13: `High_PV_charge_onoff` (High-voltage solar charging toggle)
+  * Bit 14: `APP_control_remote_shutoff` (Remote shutdown command)
+* **Input Reg 70 (`grid_charge_appointment_time`)**: Scheduled charge countdown timer (in minutes).
+* **Input Regs 59–61 (Energy Metering)**:
+  * Reg 59: `PV_charge_energy_total_H` (High 16 bits of lifetime cumulative solar generation Wh)
+  * Reg 60: `PV_charge_energy_total_L` (Low 16 bits of lifetime cumulative solar generation Wh)
+  * Reg 61: `PV_charge_energy_today` (Today's solar generation Wh)
+* **Input Reg 78 (`total_DC_discharge_power`)**: Total DC discharge power in Watts.
+* **Input Regs 97–99 (Device Real-Time Clock)**:
+  * Reg 97: Year (High byte) & Month (Low byte)
+  * Reg 98: Day (High byte) & Hour (Low byte)
+  * Reg 99: Minute (High byte) & Second (Low byte)
+
+---
+
+## 10. DC-DC Auxiliary Battery Charger Protocol
+
+BrightEMS also manages vehicle auxiliary DC-DC battery chargers (`DC_DC-V1-0083` profile, `wp` register mapping):
+
+### Telemetry (Input Registers 0x1104)
+
+| Reg | Name | Unit | Notes |
+|:----|:-----|:-----|:------|
+| 0   | `inputPower` | Watts | Starter / alternator input power |
+| 1   | `inputVolt` | V &times; 10 | Starter / alternator input voltage |
+| 2   | `inputCurrent` | A &times; 10 | Alternator input current |
+| 3   | `outputPower` | Watts | Auxiliary battery charging power |
+| 4   | `outputVolt` | V &times; 10 | Auxiliary battery charge voltage |
+| 5   | `outputCurrent` | A &times; 10 | Auxiliary battery charge current |
+| 6   | `deviceTemper` | &deg;C | Internal heatsink / power stage temperature |
+| 7   | `faultFlags` | Bitmask | Bit 3 = Undervoltage Protection, Bit 7 = Engine Flameout Protection active |
+
+### Configuration (Holding Registers 0x1103)
+
+| Reg | Name | Description |
+|:----|:-----|:------------|
+| 10  | `shutdownWaitTime` | Standby shutdown delay timer |
+| 11  | `outputVoltSet` | Target auxiliary battery float/bulk voltage setting |
+| 12  | `appControlShutdown` | Remote software power shutdown |
+| 13  | `flameoutProtection` | Engine vibration/flameout cut-off protection toggle |
+| 14  | `inputCutoffVoltSet` | Alternator cutoff voltage threshold |
+
+---
+
+## 11. Fault Codes, Error Classification & Safety Protections Matrix
+
+Firmware telemetry reports safety events and hardware faults across dedicated status registers and bitmasks:
+
+### Classic V0 Platform (F2400 / F3600 Pro / AFERIY / SYDPOWER)
+
+#### Input Register 8 (`errorCode`)
+| Value | Classification | Meaning & Hardware Behavior |
+|:---:|:---|:---|
+| **`0`** | **Normal** | System healthy; no active faults. |
+| **`78`** | **Inverter Stage Fault** | AC output stage tripped or overloaded (short circuit, high load, or inverter bridge thermal overload). **Solar MPPT charging, DC car port, and USB outputs remain operational.** |
+| **`79`** | **Safety Lockout / Protection** | Evaluated in combination with **Input Reg 42** bits 13–14: <br>• **If `(Reg 42 & 0x6000) > 0`**: **Critical Hardware Failure** (`Error 79`). Power board hardware comparator or MOSFET punch-through detected. Master System Enable (Holding Reg 5) is forced to `0`. Requires AC disconnection and full power cycle/reset.<br>• **If `(Reg 42 & 0x6000) === 0`**: **Environmental Temperature Protection**. Battery cell temperature is out of safe operating envelope (&lt;0°C cold freeze charging lockout or &gt;55°C high-temperature thermal limit). Automatically clears when cell temperatures normalize. |
+| **`136`** (`0x88`) | **Normal Running Status** | Routinely broadcast by healthy F2400 and F3600 units under standard charging/discharging. **Must NEVER be interpreted as an error.** |
+| *Other* | **State Indicator** | Firmware lifecycle states (e.g. `1`). Not actionable faults. |
+
+#### Input Register 42 (`protFlags`) — Hardware Protection Bitmask
+* **Bits 0–12 (`0x1FFF`)**: Active MOSFET gate drive lines (e.g., `+984` / `0x03D8` when DC/USB active, `0xE3D8` under active load). Normal operating state.
+* **Bits 13–14 (`0x6000`)**: **Critical Hardware Fault Mask**. Represents internal hardware fault comparator lines.
+* **Bit 15 (`0x8000`)**: Hardware warning / protection latch.
+
+#### Input Register 48 (`statusFlags`)
+* **Bit 15 (`0x8000`)**: Active Charging (AC grid or DC solar).
+* **Bit 14 (`0x4000`)**: Inverter Standby.
+* **Bit 3 (`0x0008`)**: Transient AC switching state during relay transition. (Filtered to avoid false alarm flashes).
+
+#### Input Register 21 (`ac_voltage`) Multiplexed State Code
+* When the station is unplugged from AC mains, Reg 21 reports multiplexed operational status:
+  * Value **`15`** (`1.5V`): **Cold Temperature Freeze Protection Active** (&lt;0°C). Lithium cell charge current inhibited to prevent lithium dendrite plating.
+
+---
+
+### DC-DC Auxiliary Vehicle Charger (`wp` / `DC_DC-V1-0083`)
+
+#### Input Register 7 (`faultFlags`)
+| Bit | Hex Value | Name | Function |
+|:---:|:---:|:---|:---|
+| **Bit 3** | `0x08` | `undervoltage-protection` | **Starter Battery Undervoltage Cutoff**. Alternator/starter voltage dropped below the threshold in Holding Reg 14 (e.g. 12.0V). DC-DC charger stops drawing current to preserve engine cranking power. |
+| **Bit 7** | `0x80` | `flameout-protection` | **Engine Flameout Vibration Protection Active**. Accelerometer/vibration sensor detected engine shutdown. Charger halts to prevent draining starter battery with engine off. |
+
+---
+
+## 12. Fan Control, Cooling Levels & Thermal Telemetry Architecture
+
+### Fan Speed Telemetry (Input Reg 69)
+* **Register**: Input Register 69 in Status Bank (`0x1104`).
+* **Name**: `fan_level`
+* **Values**: `0` to `5`
+  * `0`: Cooling fans stopped (silent / idle).
+  * `1`: Low speed (whisper cooling, typical at low charge wattages &lt;300W).
+  * `2`: Medium-low cooling.
+  * `3`: Medium cooling (~600W–1000W charging).
+  * `4`: High-speed cooling (heavy load / rapid charging).
+  * `5`: Maximum forced-air cooling (1100W+ charging or high ambient temperature).
+* **Silent Charging Override**: Holding Register 57 (`ac_silent_mode`). Setting to `1` throttles maximum AC charge rate by ~50% to maintain `fan_level` at 0–1 for quiet overnight operation.
+
+### Temperature Measurement Architecture & Common Misconceptions
+* **V0 Power Stations (F2400 / F3600 Pro / AFERIY):**
+  * **No Direct Numeric °C Register in Modbus Telemetry**: The BMS and AC Inverter Sub-MCUs do not broadcast raw cell temperature in degrees Celsius over the Modbus BLE connection.
+  * **Reg 52 Myth**: Input Register 52 was previously theorized to be temperature in early community projects. APK reverse engineering proved it is a static **Hardware Model Constant** (`180` = AFERIY, `0` = FOSSIBOT).
+  * **Thermal Envelope Enforcement**: The BMS enforces thermal safety boundaries internally and reports violations via **Reg 21 = 15** (Cold Lockout &lt;0°C) and **Reg 8 = 79** with Reg 42 mask `0x6000 === 0` (Thermal Extreme Lockout).
+* **Next-Gen V1 Platform (`se`):**
+  * BMS User Status registers (Regs 37–45) report **Bit 9** (`BMS_user_status_BatHeat`): Active battery self-heating pad engaged for sub-zero temperature operation.
+* **DC-DC Auxiliary Vehicle Charger (`wp`):**
+  * **Input Register 6 (`deviceTemper`)**: Broadcasts direct real-time internal heatsink and power MOSFET temperature in **signed °C** (`vk.myfn.IntUtils.unsignIntToSignInt_16Bit`).
+
+
