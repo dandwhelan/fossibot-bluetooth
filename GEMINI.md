@@ -84,6 +84,19 @@ APK reverse engineering revealed three distinct hardware families in the manufac
 ### 3. DC-DC Auxiliary Vehicle Charger (`wp` / `DC_DC-V1-0083`)
 - Dual-battery camper/vehicle charger. OpCodes `0x21` / `0x22`. Alternator input metrics (Regs 0–2), auxiliary battery charge metrics (Regs 3–5), engine flameout vibration protection (Reg 7 Bit 7 / Reg 13), and undervoltage protection (Reg 7 Bit 3). Fully documented in `PROTOCOL.md` §10.
 
+### 4. Smart Transfer Switch Box (`switch-box` / ATS)
+- Home backup and emergency automatic transfer switch accessory.
+- Status Bank (`0x1104`): Input Reg 4 = Mode (1=Mains, 2=Smart), Input Reg 12 = Grid State (1=ON GRID, 2=OFF GRID, 3=FAULT), Input Reg 11 = Forced off-grid status.
+- Settings Bank (`0x1103`): Holding Reg 12 = Force off-grid toggle (1 = isolate from grid and run loads on power station; 0 = restore mains bypass). Documented in `PROTOCOL.md` §13.
+
+### 5. Multi-MCU Distributed Firmware Architecture (Classic V0)
+- Distributed sub-MCUs reporting independent firmware in holding registers:
+  - Reg 47: AC Inverter Sub-MCU
+  - Reg 48: BMS Battery Sub-MCU
+  - Reg 49: Solar MPPT Sub-MCU
+  - Reg 50: DC Front Display Panel MCU
+  - Decoding formula: `v((val & 0xff) / 10).toFixed(1)`. Documented in `PROTOCOL.md` §14.
+
 ---
 
 ## 🚨 Critical Safety Rules & Protocol Invariants

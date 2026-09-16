@@ -74,6 +74,11 @@ Open in Chrome / Edge on Android, desktop, or Bluefy on iOS.
 3. **DC-DC Auxiliary Battery Charger (`wp`):**
    - Vehicle/camper dual-battery DC-DC charger (`DC_DC-V1-0083`).
    - OpCodes `0x21` / `0x22`. Alternator telemetry, flameout/undervoltage protection. Documented in `PROTOCOL.md` §10.
+4. **Smart Transfer Switch Box (`switch-box` / ATS):**
+   - Home emergency backup and automatic transfer switch accessory.
+   - Input Reg 4 (1=Mains, 2=Smart), Input Reg 12 (1=ON GRID, 2=OFF GRID, 3=FAULT), Holding Reg 12 (Forced Off-Grid toggle). Documented in `PROTOCOL.md` §13.
+5. **Multi-MCU Distributed Architecture (Classic V0):**
+   - Distributed Sub-MCUs in holding registers: AC Inverter (47), BMS Battery (48), Solar MPPT (49), DC Front Panel (50). Decoded via `v((val & 0xff) / 10).toFixed(1)`. Documented in `PROTOCOL.md` §14.
 
 ### Error Messages & Fault Detection Architecture
 

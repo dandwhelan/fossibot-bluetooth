@@ -549,4 +549,66 @@ Firmware telemetry reports safety events and hardware faults across dedicated st
 * **DC-DC Auxiliary Vehicle Charger (`wp`):**
   * **Input Register 6 (`deviceTemper`)**: Broadcasts direct real-time internal heatsink and power MOSFET temperature in **signed °C** (`vk.myfn.IntUtils.unsignIntToSignInt_16Bit`).
 
+---
+
+## 13. Smart Transfer Switch Box (`switch-box` / Automatic Transfer Switch ATS)
+
+BrightEMS supports an automated transfer switch accessory (`switch-box`) used for home backup, emergency power transfer, and off-grid sub-panel control:
+
+### Telemetry (Input Registers 0x1104)
+
+| Reg | Name | Format / Values | Description |
+|:---:|:-----|:----------------|:------------|
+| **4** | `operating_mode` | `1` / `2` | `1` = Mains Mode (grid priority with pass-through) <br> `2` = Smart Mode (dynamic off-grid scheduling) |
+| **11**| `forced_off_grid_state` | `0` / `1` | `0` = Grid bypass connected <br> `1` = Grid disconnected, loads running on portable power station |
+| **12**| `grid_transfer_state` | `1` / `2` / `3` | `1` = **ON GRID** (mains power active & normal) <br> `2` = **OFF GRID** (transferred to battery power station) <br> `3` = **FAULT** (transfer relay error / fault) |
+
+### Control (Holding Registers 0x1103)
+
+| Reg | Name | Value | Description |
+|:---:|:-----|:------|:------------|
+| **12**| `forced_off_grid_control` | `0` / `1` | Write `1` to force disconnect from grid and switch home/van loads 100% to the power station battery; write `0` to restore grid bypass. (Active only when Reg 4 is in Smart Mode `2`). |
+
+---
+
+## 14. Sub-MCU Multi-Processor Firmware Architecture (Classic V0)
+
+Classic V0 power stations utilize a distributed multi-MCU internal architecture. Each subsystem runs dedicated firmware reported in holding registers:
+
+| Holding Reg | Sub-MCU Subsystem | Firmware Decoding Formula | Description |
+|:---:|:---|:---|:---|
+| **47** | `mcu_version_ac` | `v((val & 0xff) / 10).toFixed(1)` | Bidirectional AC Inverter / Charger Sub-MCU |
+| **48** | `mcu_version_bms`| `v((val & 0xff) / 10).toFixed(1)` | Battery Management System (BMS) Sub-MCU |
+| **49** | `mcu_version_pv` | `v((val & 0xff) / 10).toFixed(1)` | High/Low Solar MPPT Solar Controller Sub-MCU |
+| **50** | `mcu_version_dc` | `v((val & 0xff) / 10).toFixed(1)` | DC Front Panel, Screen & Button MCU |
+
+- **Special Control Commands:**
+  - **Holding Reg 0 (`factory_reset`)**: Writing `1` restores factory settings and unbinds the unit.
+  - **Holding Reg 64 (`power_off`)**: Writing `1` initiates remote soft power shutdown.
+
+---
+
+## 15. Balcony Solar RTC, Smart Meter Tracking & Zero-Export Control (`balcony-pv`)
+
+The Balcony Solar and Next-Gen V1 micro-inverter platform (`balcony-pv`) integrates advanced solar self-consumption and household metering features:
+
+### Real-Time Clock (RTC) Registers (Input 0x1104)
+The micro-inverter internal clock is synced and decoded across three contiguous 16-bit registers using high/low byte splitting:
+* **Input Reg 97 (`device_time_year_month`)**:
+  - `High Byte + 2000` = Year (e.g. `26` &rarr; `2026`)
+  - `Low Byte` = Month (`1`–`12`)
+* **Input Reg 98 (`device_time_day_hour`)**:
+  - `High Byte` = Day of Month (`1`–`31`)
+  - `Low Byte` = Hour (`0`–`23`)
+* **Input Reg 99 (`device_time_min_sec`)**:
+  - `High Byte` = Minute (`0`–`59`)
+  - `Low Byte` = Second (`0`–`59`)
+
+### Dynamic Zero-Export & Smart Meter Integration
+* **Sub-Device Smart Socket Meters (`isSocketMeterActive`)**: The mobile app and cloud communicate with external smart plugs and CT clamp energy meters via BLE/MQTT.
+* **Holding Reg 86 (`grid_tie_out_power_max_set`)**: Micro-inverter output ceiling in Watts (0W to 800W). By dynamically adjusting Reg 86 in real time to match the household's live load, the system achieves **0W Grid Export** (pure self-consumption) without feeding excess power back into the utility grid.
+* **Holding Reg 88 (`charge_priority`)**: Configures battery vs household supply priority.
+* **Debug Mode (`debug_mode`)**: High byte set to `1` engages internal hardware debug telemetry stream.
+
+
 

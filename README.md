@@ -226,6 +226,17 @@ The manufacturer codebase also contains driver support for dual-battery vehicle/
 
 ---
 
+### ⚡ Smart Automatic Transfer Switch Box (`switch-box` / ATS)
+
+The manufacturer ecosystem includes an automated transfer switch box (`switch-box`) for whole-home backup, RV sub-panel switching, and dynamic off-grid scheduling:
+*   **Operational Mode (Input Reg 4):** Switches between `1 = Mains Mode` (grid priority pass-through) and `2 = Smart Mode` (dynamic automated off-grid scheduling).
+*   **Grid Transfer Status (Input Reg 12):** Live state reporting `1 = ON GRID` (mains active), `2 = OFF GRID` (sub-panel isolated and powered by the portable power station), or `3 = FAULT`.
+*   **Forced Off-Grid Control (Holding Reg 12):** Remotely force the relay to disconnect from the electrical utility grid and run 100% off the portable power station battery.
+
+*See [PROTOCOL.md Section 13](PROTOCOL.md#13-smart-transfer-switch-box-switch-box--automatic-transfer-switch-ats) for full protocol details.*
+
+---
+
 ## 🤝 Contributing & Development
 
 This project is open-source and depends on community investigation to map unknown registers for different models.
