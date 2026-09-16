@@ -2346,6 +2346,7 @@
                         <div class="dash-label">Input</div>
                         <div class="dash-val text-green"><span id="inputWatts" data-field="input_w">--</span> <span
                                 style="font-size:0.75rem;">W</span></div>
+                        <div class="dash-sub">Grid: <span data-field="ac_voltage">--</span></div>
                     </div>
 
                     <div class="dash-col center">
@@ -2367,7 +2368,10 @@
                             <div><span id="remainingHours" data-field="time_remaining">--</span></div>
                             <div><span id="remainingKwh" data-field="kwh">--</span> kWh</div>
                         </div>
-                        <div class="dash-sub" id="dash-fan-temp" style="margin-top: 0.25rem; font-size: 0.72rem; display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
+                        <div class="dash-sub" id="dash-fan-temp" style="margin-top: 0.25rem; font-size: 0.72rem; display: flex; align-items: center; justify-content: center; gap: 0.4rem; flex-wrap: wrap;">
+                            <span id="dash-batv-badge" title="Battery pack voltage">
+                                🔋 <span data-field="battery_voltage">--</span>
+                            </span>
                             <span id="dash-fan-badge" title="Cooling fan speed stage">
                                 <span id="dash-fan-icon">🌀</span> Fan: <span data-field="fan_level">--</span>
                             </span>
@@ -2542,6 +2546,10 @@
                     <div class="pm-row">
                         <span class="pm-label">AC In</span><span></span>
                         <span class="pm-val" data-field="ac_voltage">--</span>
+                    </div>
+                    <div class="pm-row">
+                        <span class="pm-label">Bat V</span><span></span>
+                        <span class="pm-val" data-field="battery_voltage">--</span>
                     </div>
                     <div class="pm-row">
                         <span class="pm-label">Fan</span><span></span>
@@ -5172,7 +5180,9 @@ Example format:
                         extText: extText.join(' | '),
                         isCharging,
                         fanLvl: getRegLocal(69),
-                        tempStatus: (getRegLocal(21) === 15) ? '❄️ Cold Protection' : (errorCode === 79 && (protFlags & 0x6000) === 0) ? '🌡️ Temp Protection' : ''
+                        batV: getRegLocal(22) ? (getRegLocal(22) / 100).toFixed(1) + 'V' : '--',
+                        acV: (getRegLocal(21) / 10).toFixed(1) + 'V',
+                        tempStatus: (getRegLocal(21) === 15) ? '❄️ <0°C' : (errorCode === 79 && (protFlags & 0x6000) === 0) ? '🌡️ >55°C' : (getRegLocal(69) > 0) ? '🌀 Lvl ' + getRegLocal(69) : '🌡️ OK'
                     });
 
                     // Protection Fault Warning (Reg 42 bitmask + Reg 8 error code)
@@ -5344,7 +5354,11 @@ Example format:
                 totalW: total,
                 soc: battery,
                 kwh: (battery / 100) * (settings.mainCap / 1000),
-                isCharging: input > output
+                isCharging: input > output,
+                fanLvl: input > output ? 1 : 0,
+                batV: (48.0 + (battery * 0.05)).toFixed(1) + 'V',
+                acV: input > 0 ? '230.0V' : '0.0V',
+                tempStatus: '🌡️ OK'
             });
         }
 
@@ -5485,6 +5499,7 @@ Example format:
 
             setField('fan_level', fanLvl);
             setField('ac_voltage', (getReg(21) / 10).toFixed(1) + 'V');
+            setField('battery_voltage', valBatV ? (valBatV / 100).toFixed(1) + 'V' : '--');
 
             // Safe Retrieval
             const inAC = getReg(3);
@@ -5740,6 +5755,8 @@ Example format:
             setField('total_w', d.totalW);
             setField('time_remaining', d.timeText);
             setField('ext_batteries', d.extText);
+            if (d.batV !== undefined) setField('battery_voltage', d.batV);
+            if (d.acV !== undefined) setField('ac_voltage', d.acV);
 
             if (d.fanLvl !== undefined) {
                 setField('fan_level', d.fanLvl);
