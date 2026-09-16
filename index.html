@@ -2349,7 +2349,7 @@
                     </div>
 
                     <div class="dash-col center">
-                        <div class="dash-sub" style="margin-bottom: 0.25rem;">Sys: <span id="sysWatts" data-field="sys_status">--</span></div>
+                        <div class="dash-sub" style="margin-bottom: 0.25rem;">Sys: <span id="sysWatts" data-field="sys_status">--</span><span id="sys-temp" class="sys-temp-badge" style="margin-left: 0.35rem; display: none; font-size: 0.75rem; color: #38bdf8;"></span></div>
                         <div class="battery-ring-container">
                             <svg data-widget="battery-ring" width="100%" height="100%" viewBox="0 0 36 36" style="transform: rotate(-90deg);">
                                 <path class="ring-bg"
@@ -5492,7 +5492,7 @@ Example format:
             const inTot = getReg(6);
             const capAh = getReg(54); // 374 = 37.4
             const soh = (capAh > 0) ? ((capAh / 400.0) * 100).toFixed(1) : 0;
-            const modelConst = getReg(52); // Model Constant: 180=Fossibot, 0=Aferiy (NOT temperature)
+            const modelConst = getReg(52); // Model Constant: 180=Aferiy, 0=Fossibot (NOT temperature)
 
             const diagEl = document.getElementById('diagnostics');
             if (diagEl) {
@@ -5761,6 +5761,16 @@ Example format:
             if (sysEl) {
                 const isFault = d.sysStatus === 'Inverter Fault' || d.sysStatus === 'Temp Protection' || (typeof d.sysStatus === 'string' && d.sysStatus.startsWith('Error'));
                 sysEl.classList.toggle('fault-text-flash', isFault);
+            }
+
+            const sysTemp = document.getElementById('sys-temp');
+            if (sysTemp) {
+                if (d.tempStatus) {
+                    sysTemp.textContent = `· ${d.tempStatus}`;
+                    sysTemp.style.display = 'inline';
+                } else {
+                    sysTemp.style.display = 'none';
+                }
             }
 
             if (d.soc !== undefined) {
