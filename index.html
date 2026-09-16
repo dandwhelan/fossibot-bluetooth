@@ -3236,7 +3236,7 @@
                 </div>
                 <div class="accordion-content">
                     <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem; line-height: 1.4;">
-                        BrightEMS profile <code style="color: #38bdf8;">DC_DC-V1-0083</code> manages dual-battery camper &amp; vehicle auxiliary chargers using the <code style="color: #38bdf8;">wp</code> Modbus BLE register architecture.
+                        Reverse-engineered reference for Fossibot's separate <strong>campervan/RV dual-battery vehicle charger</strong> (<code style="color: #38bdf8;">DC_DC-V1-0083</code>). <em>Note: Your portable power station (F2400/F3600) live stats are on the main Dashboard.</em>
                     </div>
                     <div class="setting-row">
                         <div class="setting-info">
@@ -3555,15 +3555,27 @@
         </div>
 
         <!-- Banner -->
-        <div style="width: 100%; background: linear-gradient(135deg, rgba(2,132,199,0.15), rgba(14,165,233,0.05)); border: 1px solid rgba(56,189,248,0.3); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1.25rem;">
+        <div style="width: 100%; background: linear-gradient(135deg, rgba(2,132,199,0.15), rgba(14,165,233,0.05)); border: 1px solid rgba(56,189,248,0.3); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem;">
             <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem;">
                 <div style="font-weight: 700; font-size: 1.1rem; color: #38bdf8; display: flex; align-items: center; gap: 0.5rem;">
                     <span>🚐</span> DC-DC Auxiliary Battery Charger Protocol
                 </div>
-                <span style="font-size: 0.75rem; background: rgba(56,189,248,0.2); color: #38bdf8; padding: 0.2rem 0.5rem; border-radius: 9999px; font-weight: 600;">Profile: DC_DC-V1-0083 · wp</span>
+                <span style="font-size: 0.75rem; background: rgba(56,189,248,0.2); color: #38bdf8; padding: 0.2rem 0.5rem; border-radius: 9999px; font-weight: 600;">Reference Spec · DC_DC-V1-0083 (wp)</span>
             </div>
             <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;">
-                Reverse-engineered from the BrightEMS mobile app. Manages on-board vehicle DC-DC charging systems for camper vans, RVs, and marine dual-battery setups (Starter Battery + Alternator → Auxiliary Leisure Battery).
+                Reverse-engineered protocol specification from BrightEMS for Fossibot/AFERIY in-vehicle dual-battery charging accessories (camper vans, RVs, and boats: Starter Battery + Alternator → Auxiliary Leisure Battery).
+            </div>
+        </div>
+
+        <!-- Clarification Notice -->
+        <div style="width: 100%; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 0.5rem; padding: 0.85rem 1rem; margin-bottom: 1.25rem; font-size: 0.82rem; color: #fbbf24; line-height: 1.5;">
+            <div style="font-weight: 700; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.4rem;">
+                <span>ℹ️</span> Why are there no live numbers here?
+            </div>
+            This tab is an <strong>educational protocol reference</strong> for a <em>separate physical hardware product</em> (the under-hood vehicle DC-DC charger). 
+            Your connected device is a <strong>Portable Power Station (F2400 / F3600 / AFERIY)</strong>, which does not have alternator inputs or starter battery sensors.
+            <div style="margin-top: 0.5rem;">
+                👉 <strong>To view your power station's live stats</strong>, tap <button onclick="switchView('control')" style="background: rgba(245, 158, 11, 0.25); border: 1px solid #fbbf24; color: #fbbf24; padding: 0.15rem 0.5rem; border-radius: 0.25rem; cursor: pointer; font-size: 0.75rem; font-weight: 600;">← Dashboard</button> at the top left.
             </div>
         </div>
 
