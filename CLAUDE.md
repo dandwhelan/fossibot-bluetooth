@@ -295,6 +295,16 @@ Line numbers drift with every change — search for the function name instead.
   connected. Never let the connected state fall through to a SwitchBot press
   — a paired Bot pressing an already-on station's power button would turn it
   *off*.
+- `#btn-poweroff-main` — the labelled "Power off" button beside SwitchBot's
+  Press, shown only while connected. Same `toggleSetting('power_off')` path;
+  `updateStatus()` toggles it through the `poweroffCornerBtns` selector, so
+  it and the corner icon can never disagree.
+- Control view layout — the block headed "Control view: one phone screen" at
+  the end of the first `<style>`. Connected, the view must fit 390×844 and
+  360×740 without scrolling (measure `document.documentElement.scrollHeight`
+  in Playwright with the simulator registers fed through `mockSimulate()`);
+  at 900px and up it splits into two columns. Adding anything to Control
+  means taking the height back from somewhere else.
 
 ## Conventions
 
