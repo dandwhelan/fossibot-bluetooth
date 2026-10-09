@@ -482,6 +482,7 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
+            box-sizing: border-box;
             touch-action: manipulation;
         }
 
@@ -1908,6 +1909,203 @@
             box-sizing: border-box;
             overflow-y: auto;
         }
+
+        /* ===== Control view: one phone screen, two columns on desktop =====
+           The 6rem view padding exists for the bottom nav, which is hidden,
+           so on Control it only pushed the page past one screen. */
+        #view-control {
+            padding-bottom: 0.5rem;
+        }
+
+        #view-control :focus-visible {
+            outline: 2px solid var(--text-blue);
+            outline-offset: 2px;
+        }
+
+        #dash-main,
+        #controls {
+            margin-bottom: 0.75rem;
+        }
+
+        .battery-ring-container {
+            margin: 0.35rem auto;
+        }
+
+        #controls {
+            gap: 0.75rem;
+        }
+
+        #controls .control-tile {
+            padding: 0.7rem 0.5rem 0.6rem;
+            gap: 0.15rem;
+        }
+
+        #controls .control-tile svg {
+            width: 1.6rem;
+            height: 1.6rem;
+            transform: none;
+        }
+
+        #controls .control-tile span {
+            font-weight: 600;
+        }
+
+        #controls .control-tile .info-btn {
+            top: 0.35rem;
+            right: 0.35rem;
+            width: 1.2rem;
+            height: 1.2rem;
+            font-size: 0.65rem;
+            opacity: 0.7;
+        }
+
+        /* State in words as well as color */
+        #controls .control-tile::after {
+            content: "Off";
+            font-size: 0.7rem;
+            opacity: 0.8;
+        }
+
+        #controls .control-tile.active::after {
+            content: "On";
+        }
+
+        #controls.disabled .control-tile::after {
+            content: "";
+        }
+
+        #view-control #history-panel {
+            margin-bottom: 0.75rem !important;
+        }
+
+        .history-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        #view-control #switchbot-panel {
+            margin-bottom: 0 !important;
+        }
+
+        #view-control #btn-switchbot-press {
+            padding: 0.5rem 1rem !important;
+        }
+
+        #view-control .dash-col.left > div,
+        #view-control .dash-col.right > div {
+            white-space: nowrap;
+        }
+
+        .btn-poweroff-main {
+            flex: 0 0 auto;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 999px;
+            background: var(--btn-red);
+            color: #fff;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .btn-poweroff-main:hover {
+            background: var(--btn-red-hover);
+        }
+
+        [data-theme="terminal"] .btn-poweroff-main {
+            background: transparent;
+            border: 1px solid #ff3333;
+            color: #ff3333;
+            border-radius: 0;
+        }
+
+        @media (max-width: 899px) {
+            #historyChart,
+            [data-layout="promon"] #historyChart {
+                height: 96px;
+            }
+
+            #connect-help {
+                padding: 2.5rem 1rem 1.25rem;
+                gap: 0.45rem;
+            }
+        }
+
+        @media (max-width: 380px) {
+            #view-control .chart-hint {
+                display: none;
+            }
+
+            #view-control .dashboard {
+                padding: 1rem 0.75rem;
+            }
+
+            #view-control .dash-col.center {
+                min-width: 5.25rem;
+            }
+
+            #view-control .battery-ring-container {
+                width: 5.25rem;
+                height: 5.25rem;
+            }
+
+            #view-control .dash-col.left .dash-sub,
+            #view-control .dash-col.right .dash-sub {
+                font-size: 0.8rem;
+            }
+        }
+
+        @media (max-width: 340px) {
+            #view-control .dash-col.left > div,
+            #view-control .dash-col.right > div {
+                white-space: normal;
+            }
+        }
+
+        @media (max-width: 899px) and (max-height: 760px) {
+            #historyChart,
+            [data-layout="promon"] #historyChart {
+                height: 72px;
+            }
+        }
+
+        @media (min-width: 900px) {
+            .container:has(#view-control.active),
+            #view-control {
+                max-width: 64rem;
+            }
+
+            #view-control #dash-area {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+                column-gap: 1.25rem;
+                align-items: start;
+            }
+
+            #view-control #dash-main {
+                grid-column: 1;
+                grid-row: 1;
+            }
+
+            #view-control #controls {
+                grid-column: 1;
+                grid-row: 2;
+            }
+
+            #view-control #history-panel {
+                grid-column: 2;
+                grid-row: 1 / span 2;
+            }
+
+            #view-control #historyChart {
+                height: 180px;
+            }
+
+            #view-control .conn-bar {
+                max-width: none;
+            }
+        }
     </style>
     <style>
         /* New styles for Concept B integration */
@@ -2324,7 +2522,7 @@
                 <div id="connect-help" class="hidden">
                     <div id="connect-help-title">Connect your power station</div>
                     <ol id="connect-help-steps">
-                        <li><b>Switch the station on</b><span>Press its power button — its screen should light
+                        <li><b>Switch the station on</b><span>Press its power button. Its screen should light
                                 up.</span></li>
                         <li><b>Turn on Bluetooth</b><span>On this phone, and let the browser find nearby
                                 devices.</span></li>
@@ -2350,7 +2548,7 @@
                     </div>
 
                     <div class="dash-col center">
-                        <div class="dash-sub" style="margin-bottom: 0.25rem;">Sys: <span id="sysWatts" data-field="sys_status">--</span><span id="sys-temp" class="sys-temp-badge" style="margin-left: 0.35rem; display: none; font-size: 0.75rem; color: #38bdf8;"></span></div>
+                        <div class="dash-sub" style="margin-bottom: 0.25rem;">Sys: <span id="sysWatts" data-field="sys_status">--</span></div>
                         <div class="battery-ring-container">
                             <svg data-widget="battery-ring" width="100%" height="100%" viewBox="0 0 36 36" style="transform: rotate(-90deg);">
                                 <path class="ring-bg"
@@ -2384,7 +2582,7 @@
                         <div class="dash-label">Output</div>
                         <div class="dash-val text-blue"><span id="outputWatts" data-field="output_w">--</span> <span
                                 style="font-size:0.75rem;">W</span></div>
-                        <div class="dash-sub">Tot: <span id="totalWatts" data-field="total_w">--</span>W</div>
+                        <div class="dash-sub">Total <span id="totalWatts" data-field="total_w">--</span> W</div>
                     </div>
                 </div>
                 </div>
@@ -2596,7 +2794,7 @@
                 style="position: relative; width: 100%; background: var(--bg-card); border-radius: var(--border-radius); padding: 0.75rem; box-sizing: border-box; margin-bottom: 1rem;">
                 <div class="history-header" onclick="toggleHistoryCollapsed()" role="button" tabindex="0"
                     aria-expanded="true" aria-controls="history-body">
-                    <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Power History</span>
+                    <span class="history-title">Power history</span>
                     <span id="history-arrow" class="history-arrow">▼</span>
                 </div>
                 <div id="history-body">
@@ -2620,10 +2818,10 @@
                         <span>┄ Battery %</span>
                         <span id="legend-fan" style="color: #f59e0b; display: none;">▬ Fan</span>
                         <span id="legend-acv" style="color: #c084fc; display: none;">┄ AC V</span>
-                        <span style="margin-left: auto; opacity: 0.7;">tap graph for values</span>
+                        <span class="chart-hint" style="margin-left: auto; opacity: 0.7;">tap graph for values</span>
                     </div>
-                    <div id="energy-strip" style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.4rem; font-family: monospace;"></div>
-                    <div id="session-stats" style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.15rem; font-family: monospace;"></div>
+                    <div id="energy-strip" style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.4rem;"></div>
+                    <div id="session-stats" style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.15rem;"></div>
                 </div>
             </div>
             </div>
@@ -2633,14 +2831,16 @@
             <div id="switchbot-panel"
                 style="display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; width: 100%; background: var(--bg-card); border-radius: var(--border-radius); padding: 0.75rem; box-sizing: border-box; margin-bottom: 1rem;">
                 <div style="display: flex; flex-direction: column; gap: 0.15rem; min-width: 0;">
-                    <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">SwitchBot Power Button</span>
-                    <span id="switchbot-status" style="font-size: 0.7rem; color: var(--text-muted); font-family: monospace;"></span>
+                    <span class="history-title">SwitchBot power button</span>
+                    <span id="switchbot-status" style="font-size: 0.7rem; color: var(--text-muted);"></span>
                 </div>
                 <div style="display: flex; gap: 0.5rem; align-items: center; flex-shrink: 0;">
                     <button id="btn-switchbot-forget" class="hidden" onclick="switchbotForget()" title="Forget this SwitchBot"
                         style="background: none; border: 1px solid var(--text-muted); color: var(--text-muted); border-radius: 0.25rem; padding: 0.2rem 0.5rem; cursor: pointer;">✕</button>
                     <button id="btn-switchbot-press" class="btn-main" onclick="switchbotPress()"
                         style="flex: 0 0 auto; padding: 0.5rem 1.5rem; background-color: var(--btn-blue);">Press</button>
+                    <button id="btn-poweroff-main" class="btn-poweroff-main hidden"
+                        onclick="toggleSetting('power_off')">Power off</button>
                 </div>
             </div>
 
@@ -4511,7 +4711,7 @@ Example format:
         const connectBtns = document.querySelectorAll('.btn-connect');
         const disconnectBtns = document.querySelectorAll('.btn-disconnect');
         const switchbotCornerBtns = document.querySelectorAll('.btn-switchbot-corner');
-        const poweroffCornerBtns = document.querySelectorAll('.btn-poweroff-corner');
+        const poweroffCornerBtns = document.querySelectorAll('.btn-poweroff-corner, .btn-poweroff-main');
 
         // Psychedelic Images
         const psyImages = [
@@ -5194,7 +5394,7 @@ Example format:
                         fanLvl: getRegLocal(69),
                         batV: getRegLocal(22) ? (getRegLocal(22) / 100).toFixed(1) + 'V' : '--',
                         acV: (getRegLocal(21) / 10).toFixed(1) + 'V',
-                        tempStatus: (getRegLocal(21) === 15) ? '❄️ <0°C' : (errorCode === 79 && (protFlags & 0x6000) === 0) ? '🌡️ >55°C' : (getRegLocal(69) > 0) ? '🌀 Lvl ' + getRegLocal(69) : '🌡️ OK'
+                        tempStatus: (getRegLocal(21) === 15) ? '❄️ <0°C' : (errorCode === 79 && (protFlags & 0x6000) === 0) ? '🌡️ >55°C' : '🌡️ OK'
                     });
 
                     // Protection Fault Warning (Reg 42 bitmask + Reg 8 error code)
@@ -5790,16 +5990,6 @@ Example format:
             if (sysEl) {
                 const isFault = d.sysStatus === 'Inverter Fault' || d.sysStatus === 'Temp Protection' || (typeof d.sysStatus === 'string' && d.sysStatus.startsWith('Error'));
                 sysEl.classList.toggle('fault-text-flash', isFault);
-            }
-
-            const sysTemp = document.getElementById('sys-temp');
-            if (sysTemp) {
-                if (d.tempStatus) {
-                    sysTemp.textContent = `· ${d.tempStatus}`;
-                    sysTemp.style.display = 'inline';
-                } else {
-                    sysTemp.style.display = 'none';
-                }
             }
 
             if (d.soc !== undefined) {
@@ -8172,7 +8362,7 @@ Example format:
 
             if (pts.length < 2) {
                 ctx.fillStyle = 'rgba(255,255,255,0.3)';
-                ctx.font = '12px monospace';
+                ctx.font = '12px ' + getComputedStyle(document.body).fontFamily;
                 ctx.fillText('Collecting data...', 10, h / 2);
                 return;
             }
