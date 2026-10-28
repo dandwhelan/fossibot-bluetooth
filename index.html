@@ -4315,6 +4315,7 @@ Example format:
         try { switchbotSaved = JSON.parse(localStorage.getItem('POWER-switchbot')); } catch (e) { }
         let switchbotBusy = false;
         let switchbotShowAllNext = false;
+        let switchbotForceChooser = false;
 
         function switchbotStatus(msg) {
             const el = document.getElementById('switchbot-status');
@@ -4390,17 +4391,20 @@ Example format:
             const btn = document.getElementById('btn-switchbot-press');
             if (btn) btn.disabled = true;
             let bot = null;
+            let pickedNow = false;
             try {
                 // Chooser-free path for a Bot the browser still remembers. The
                 // granted list is cached at startup, so the first-pair path below
                 // still holds the tap's user activation when it reaches
                 // requestDevice() (same rule as connect()).
-                if (switchbotSaved) bot = grantedDevices.find(d => d.id === switchbotSaved.id) || null;
+                if (switchbotSaved && !switchbotForceChooser) bot = grantedDevices.find(d => d.id === switchbotSaved.id) || null;
+                switchbotForceChooser = false;
                 if (!bot) {
                     const showAll = switchbotShowAllNext;
                     switchbotShowAllNext = false;
                     log('Requesting SwitchBot device...');
                     switchbotStatus('Pick your SwitchBot in the device chooser...');
+                    pickedNow = true;
                     bot = await navigator.bluetooth.requestDevice(showAll
                         ? { acceptAllDevices: true, optionalServices: [SWITCHBOT_SERVICE] }
                         : {
@@ -4460,13 +4464,24 @@ Example format:
                     switchbotShowAllNext = true;
                     switchbotStatus('No Bot picked — tap Press again to search all nearby devices');
                     log('No SwitchBot picked. If the chooser was empty, tap Press again to search without the SwitchBot filter, and check the browser has Nearby devices/Location permission.');
+                } else if (bot && !pickedNow) {
+                    // A remembered Bot that will not connect must not keep the
+                    // chooser out of reach, or a reset or swapped Bot can never
+                    // be paired again.
+                    switchbotForceChooser = true;
+                    switchbotStatus(`Could not reach ${switchbotSaved ? switchbotSaved.name : 'the Bot'} — tap Press to pick it again`);
+                    log(`SwitchBot error: ${error.message || error}. The next tap on Press opens the device chooser.`);
+                    showToast('SwitchBot not reachable — tap Press to pick it again', 'error');
                 } else {
                     switchbotStatus(`SwitchBot error: ${error.message || error}`);
                     log(`SwitchBot error: ${error.message || error}`);
                     showToast('SwitchBot press failed — see log', 'error');
                 }
             } finally {
-                if (bot && bot.gatt.connected) bot.gatt.disconnect();
+                // Also cancels a connect the 10 s timeout gave up on; left
+                // pending it can land later and hold the link open, and a
+                // connected Bot stops advertising and vanishes from the chooser.
+                if (bot) bot.gatt.disconnect();
                 switchbotBusy = false;
                 if (btn) btn.disabled = false;
             }
