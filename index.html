@@ -4303,6 +4303,7 @@ Example format:
         const SWITCHBOT_SERVICE = 'cba20d00-224d-11e6-9fb8-0002a5d5c51b';
         const SWITCHBOT_WRITE_UUID = 'cba20002-224d-11e6-9fb8-0002a5d5c51b';
         const SWITCHBOT_NOTIFY_UUID = 'cba20003-224d-11e6-9fb8-0002a5d5c51b';
+        const SWITCHBOT_COMPANY_ID = 0x0969;
         const SWITCHBOT_RESULTS = {
             0x02: 'the Bot reported an error',
             0x03: 'the Bot is busy — try again in a moment',
@@ -4408,7 +4409,17 @@ Example format:
                     bot = await navigator.bluetooth.requestDevice(showAll
                         ? { acceptAllDevices: true, optionalServices: [SWITCHBOT_SERVICE] }
                         : {
-                            filters: [{ services: [SWITCHBOT_SERVICE] }, { services: [0xfd3d] }, { namePrefix: 'WoHand' }, { namePrefix: 'Bot' }],
+                            // Bots often advertise no name and keep 0xfd3d in service
+                            // data, not the service list, so the company ID (Woan
+                            // Technology, 0x0969) is what reliably singles them out.
+                            // No serviceData filter: Chrome rejects the whole request.
+                            filters: [
+                                { manufacturerData: [{ companyIdentifier: SWITCHBOT_COMPANY_ID }] },
+                                { services: [SWITCHBOT_SERVICE] },
+                                { services: [0xfd3d] },
+                                { namePrefix: 'WoHand' },
+                                { namePrefix: 'Bot' }
+                            ],
                             optionalServices: [SWITCHBOT_SERVICE]
                         });
                     switchbotSaved = { id: bot.id, name: bot.name || 'SwitchBot' };
@@ -4460,7 +4471,13 @@ Example format:
                     showToast('SwitchBot press failed — see log', 'error');
                 }
             } catch (error) {
-                if (error && error.name === 'NotFoundError' && !bot) {
+                if (error && error.name === 'TypeError' && !bot) {
+                    // Browsers without manufacturerData/serviceData filters read
+                    // those entries as empty filters and refuse the whole request.
+                    switchbotShowAllNext = true;
+                    switchbotStatus('This browser cannot filter for SwitchBots — tap Press again to search all nearby devices');
+                    log(`SwitchBot filter not supported here (${error.message}). The next tap searches all nearby devices.`);
+                } else if (error && error.name === 'NotFoundError' && !bot) {
                     switchbotShowAllNext = true;
                     switchbotStatus('No Bot picked — tap Press again to search all nearby devices');
                     log('No SwitchBot picked. If the chooser was empty, tap Press again to search without the SwitchBot filter, and check the browser has Nearby devices/Location permission.');
