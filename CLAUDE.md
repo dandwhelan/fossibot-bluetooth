@@ -284,7 +284,10 @@ Line numbers drift with every change — search for the function name instead.
   and `SWITCHBOT_*` constants; does not touch the power-station connect path
   or its command queue. Bot password = CRC32 only, stored as
   `POWER-switchbot-key`; paired Bot stored as `POWER-switchbot`. Protocol
-  details in `PROTOCOL.md` §8. Also the onclick for `.btn-switchbot-corner`,
+  details in `PROTOCOL.md` §8. A remembered Bot skips the chooser; if it fails to connect,
+  `switchbotForceChooser` makes the next tap open the chooser (same rule as
+  invariant 2 for the station), and `finally` always calls `gatt.disconnect()`
+  so a timed-out connect cannot land later and stop the Bot advertising. Also the onclick for `.btn-switchbot-corner`,
   the bottom-left dashboard corner icon shown while disconnected — same
   function, no separate wiring.
 - `.btn-switchbot-corner` / `.btn-poweroff-corner` — the bottom-left corner
