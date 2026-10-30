@@ -7489,7 +7489,7 @@ Example format:
             } else if (currentHasData) {
                 // SINGLE DEVICE SUMMARY
                 const volts = (registers[18] || 0) / 10;
-                const wattsIn = registers[3] || 0;
+                const wattsIn = registers[6] || registers[3] || 0;
                 const wattsOut = registers[39] || 0;
                 const soc = (registers[56] || 0) / 10;
                 const flags = registers[41] || 0;
