@@ -6639,7 +6639,7 @@ Example format:
             const floor = settingsRegisters[66] ? (settingsRegisters[66] / 10).toFixed(0) + '%' : '?';
             return `<div style="margin-top:0.5rem; background:rgba(59,130,246,0.15); border:1px solid rgba(59,130,246,0.4); border-radius:6px; padding:0.6rem; color:#93c5fd; font-size:0.8rem;">
                 <div style="font-weight:bold;">🔌 AC bypass active while a scheduled charge is pending (${countdown} min left)</div>
-                <div style="margin-top:0.25rem;">The timer only delays battery charging; with mains plugged in the loads still run straight from the grid. Grid in: ${registers[3] || 0}W · Output: ${registers[20] || 0}W · SOC ${soc}% · UPS limit ${limit} · Discharge floor ${floor}. To stop grid draw, cancel the timer (Reg 63 = 0) or unplug AC.</div>
+                <div style="margin-top:0.25rem;">The timer only delays battery charging; with mains plugged in the loads still run straight from the grid. Input: ${registers[6] || registers[3] || 0}W · Output: ${registers[20] || 0}W · SOC ${soc}% · UPS limit ${limit} · Discharge floor ${floor}. To stop grid draw, cancel the timer (Reg 63 = 0) or unplug AC.</div>
             </div>`;
         }
 
