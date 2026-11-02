@@ -5157,9 +5157,13 @@ Example format:
                             // clean instead of stacking on a half-open connect.
                             try { device.gatt.disconnect(); } catch (_) { }
                             const timedOut = /^Timeout/.test(e && e.message || '');
-                            if (attempt >= 4 || timedOut || (auto && autoConnectCancelled)) throw e;
-                            log(`Connect attempt ${attempt} failed (${e.message || e}), retrying...`);
-                            await new Promise(r => setTimeout(r, 1000));
+                            if (attempt >= 5 || timedOut || (auto && autoConnectCancelled)) throw e;
+                            // The station keeps a previous session's link alive for
+                            // several seconds and refuses new ones until it drops,
+                            // so back off rather than hammer it (1s apart all failed).
+                            const waitMs = [2000, 3000, 5000, 5000][attempt - 1];
+                            log(`Connect attempt ${attempt} failed (${e.message || e}), retrying in ${waitMs / 1000}s...`);
+                            await new Promise(r => setTimeout(r, waitMs));
                         }
                     }
                 } catch (e) {
