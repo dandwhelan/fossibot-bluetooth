@@ -5138,7 +5138,7 @@ Example format:
 
                 try {
                     // Cold BLE connections on mobile can take well over 5s
-                    const timeoutMs = auto ? 10000 : 5000;
+                    const timeoutMs = 15000;
                     const connectPromise = device.gatt.connect();
                     const timeoutPromise = new Promise((_, reject) =>
                         setTimeout(() => reject(new Error(`Timeout (${timeoutMs / 1000}s)`)), timeoutMs)
@@ -5146,13 +5146,27 @@ Example format:
 
                     server = await Promise.race([connectPromise, timeoutPromise]);
                 } catch (e) {
-                    throw e; // Pass to outer handler
+                    // Abandon the pending attempt so the next one starts clean
+                    // instead of stacking on a half-open GATT connect.
+                    try { device.gatt.disconnect(); } catch (_) { }
+                    throw e;
                 }
 
                 await new Promise(r => setTimeout(r, 500));
 
                 log("Getting Service...");
-                service = await server.getPrimaryService(SERVICE_UUID);
+                // A fresh link often reports "No Services found" or a busy GATT
+                // on the first discovery; a short wait and retry succeeds.
+                for (let attempt = 1; ; attempt++) {
+                    try {
+                        service = await server.getPrimaryService(SERVICE_UUID);
+                        break;
+                    } catch (e) {
+                        if (attempt >= 3 || !device.gatt.connected) throw e;
+                        log(`Service discovery attempt ${attempt} failed (${e.message || e}), retrying...`);
+                        await new Promise(r => setTimeout(r, 800));
+                    }
+                }
 
                 log("Getting Characteristics...");
                 writeChar = await service.getCharacteristic(WRITE_UUID);
