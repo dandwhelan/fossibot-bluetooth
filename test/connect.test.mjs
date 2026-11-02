@@ -67,7 +67,7 @@ function makeConnect({
 
     // Long timers are the failure deadlines; letting them fire would race the
     // stubs, and letting them stay pending would hold the process open.
-    const setTimeoutStub = (fn, ms) => (ms >= 5000 ? 0 : setTimeout(fn, 0));
+    const setTimeoutStub = (fn, ms) => (ms >= 10000 ? 0 : setTimeout(fn, 0));
 
     const api = loadFunctions(['connect'], {
         navigator: hasBluetooth ? { bluetooth } : {},
