@@ -5138,21 +5138,49 @@ Example format:
 
                 try {
                     // Cold BLE connections on mobile can take well over 5s
-                    const timeoutMs = auto ? 10000 : 5000;
-                    const connectPromise = device.gatt.connect();
-                    const timeoutPromise = new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error(`Timeout (${timeoutMs / 1000}s)`)), timeoutMs)
-                    );
-
-                    server = await Promise.race([connectPromise, timeoutPromise]);
+                    const timeoutMs = 15000;
+                    // Android Chrome rejects the first gatt.connect() after the
+                    // chooser with an instant "Connection attempt failed"; the
+                    // retry a second later usually succeeds, so do it here
+                    // rather than making the user tap again. Timeouts are not
+                    // retried — they already waited long enough.
+                    for (let attempt = 1; ; attempt++) {
+                        try {
+                            const connectPromise = device.gatt.connect();
+                            const timeoutPromise = new Promise((_, reject) =>
+                                setTimeout(() => reject(new Error(`Timeout (${timeoutMs / 1000}s)`)), timeoutMs)
+                            );
+                            server = await Promise.race([connectPromise, timeoutPromise]);
+                            break;
+                        } catch (e) {
+                            // Abandon the pending attempt so the next one starts
+                            // clean instead of stacking on a half-open connect.
+                            try { device.gatt.disconnect(); } catch (_) { }
+                            const timedOut = /^Timeout/.test(e && e.message || '');
+                            if (attempt >= 4 || timedOut || (auto && autoConnectCancelled)) throw e;
+                            log(`Connect attempt ${attempt} failed (${e.message || e}), retrying...`);
+                            await new Promise(r => setTimeout(r, 1000));
+                        }
+                    }
                 } catch (e) {
-                    throw e; // Pass to outer handler
+                    throw e;
                 }
 
                 await new Promise(r => setTimeout(r, 500));
 
                 log("Getting Service...");
-                service = await server.getPrimaryService(SERVICE_UUID);
+                // A fresh link often reports "No Services found" or a busy GATT
+                // on the first discovery; a short wait and retry succeeds.
+                for (let attempt = 1; ; attempt++) {
+                    try {
+                        service = await server.getPrimaryService(SERVICE_UUID);
+                        break;
+                    } catch (e) {
+                        if (attempt >= 3 || !device.gatt.connected) throw e;
+                        log(`Service discovery attempt ${attempt} failed (${e.message || e}), retrying...`);
+                        await new Promise(r => setTimeout(r, 800));
+                    }
+                }
 
                 log("Getting Characteristics...");
                 writeChar = await service.getCharacteristic(WRITE_UUID);
