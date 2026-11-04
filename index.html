@@ -3590,6 +3590,10 @@
                 <label style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.25rem;">
                     <input type="checkbox" id="diag-hide-zero" onchange="renderDiagnostics()"> Hide 0s
                 </label>
+                <label style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.25rem;"
+                    title="Browsers hide the real Bluetooth MAC; this is the browser's opaque device ID">
+                    <input type="checkbox" id="diag-show-ble-id" onchange="try{localStorage.setItem('POWER-show-ble-id',this.checked?'1':'')}catch(e){}renderDiagnostics()"> BLE ID
+                </label>
                 <!-- SOH Display -->
                 <div style="font-size: 0.8rem; color: var(--text-blue); font-weight: bold; padding: 0.25rem 0.5rem; background: rgba(0,0,0,0.2); border-radius: 4px;"
                     id="diag-soh-display">
@@ -6676,6 +6680,26 @@ Example format:
         }
 
         function renderDiagnostics() {
+            const bleCb = document.getElementById('diag-show-ble-id');
+            if (bleCb) {
+                if (!bleCb.dataset.init) {
+                    bleCb.dataset.init = '1';
+                    try { bleCb.checked = !!localStorage.getItem('POWER-show-ble-id'); } catch (e) { }
+                }
+                let bleRow = document.getElementById('diag-ble-id');
+                if (!bleRow) {
+                    bleRow = document.createElement('div');
+                    bleRow.id = 'diag-ble-id';
+                    bleRow.style.cssText = 'font-size:0.75rem;margin-top:0.5rem;word-break:break-all;color:var(--text-muted)';
+                    bleCb.closest('div[style*="justify-content"]').after(bleRow);
+                }
+                bleRow.style.display = bleCb.checked ? '' : 'none';
+                if (bleCb.checked) {
+                    bleRow.textContent = (typeof device !== 'undefined' && device)
+                        ? `${device.name || 'Unnamed'} — BLE ID: ${device.id} (browsers hide the real MAC address)`
+                        : 'BLE ID: not connected';
+                }
+            }
             const safetyCard = document.getElementById('diag-safety-content');
             if (safetyCard) {
                 const err = (typeof registers !== 'undefined' && registers[8]) ? registers[8] : 0;
